@@ -8,7 +8,8 @@ public class UE_ReNe : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] {
+		PublicDependencyModuleNames.AddRange(new string[] 
+		{
 			"Core",
 			"CoreUObject",
 			"Engine",
@@ -18,10 +19,15 @@ public class UE_ReNe : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"SlateCore",
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"OnlineSubsystem",
+			"OnlineSubsystemSteam",
+		});
 
 		PublicIncludePaths.AddRange(new string[] {
 			"UE_ReNe",
@@ -30,7 +36,7 @@ public class UE_ReNe : ModuleRules
 			"UE_ReNe/Variant_Shooter",
 			"UE_ReNe/Variant_Shooter/AI",
 			"UE_ReNe/Variant_Shooter/UI",
-			"UE_ReNe/Variant_Shooter/Weapons"
+			"UE_ReNe/Variant_Shooter/Weapons",
 		});
 		
 		// 모듈 포함 경로 정리: Public/Private 및 모듈 루트
