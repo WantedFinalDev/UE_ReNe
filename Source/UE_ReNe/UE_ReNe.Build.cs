@@ -18,10 +18,21 @@ public class UE_ReNe : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
+<<<<<<< Updated upstream
 			"Slate"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
+=======
+			"Slate",
+			"SlateCore", "OnlineSubsystem", "OnlineSubsystemSteam",
+		});
+
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			
+		});
+>>>>>>> Stashed changes
 
 		PublicIncludePaths.AddRange(new string[] {
 			"UE_ReNe",
