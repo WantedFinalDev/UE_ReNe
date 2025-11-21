@@ -26,7 +26,6 @@ void AUE_ReNePlayerController::BeginPlay()
 	{
 		// spawn the mobile controls widget
 		MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
-
 		if (MobileControlsWidget)
 		{
 			// add the controls to the player screen
