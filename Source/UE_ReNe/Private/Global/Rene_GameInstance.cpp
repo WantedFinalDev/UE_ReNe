@@ -1,8 +1,116 @@
 #include "Global/Rene_GameInstance.h"
+#include "OnlineSessionSettings.h"
+#include "OnlineSubsystemUtils.h"
+#include "Online/OnlineSessionNames.h"
 
 void URene_GameInstance::Init()
 {
 	Super::Init();
 	
+	IOnlineSubsystem* sys = Online::GetSubsystem(GetWorld());
+	if (sys == nullptr) return;
+	p_ReneSessionInterface = sys->GetSessionInterface();
 	
+	if (p_ReneSessionInterface.IsValid())
+	{
+		p_ReneSessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &URene_GameInstance::OnCreateReneSession);
+		p_ReneSessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &URene_GameInstance::OnFindReneSession);
+		p_ReneSessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this, &URene_GameInstance::OnJoinReneSession);
+	}
+}
+
+void URene_GameInstance::CreateReneSession(int32 n_maxplayer, FString s_sessionname)
+{
+	FOnlineSessionSettings settings;
+	FName sysname = Online::GetSubsystem(GetWorld())->GetSubsystemName();
+	
+	settings.bIsLANMatch = sysname.IsEqual(TEXT("NULL"));
+	settings.NumPublicConnections = n_maxplayer;
+	settings.bShouldAdvertise = true;
+	settings.bAllowJoinInProgress = true;
+	settings.bUseLobbiesIfAvailable = true;
+	settings.bIsLANMatch = false;
+	settings.bUsesPresence = true;
+	settings.Set(FName(TEXT("sessionname")), s_sessionname, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	
+	
+	if (p_ReneSessionInterface == nullptr) return;
+	FUniqueNetIdPtr netid = GetWorld()->GetFirstLocalPlayerFromController()->GetUniqueNetIdForPlatformUser().GetUniqueNetId();
+	p_ReneSessionInterface->CreateSession(*netid, FName(s_sessionname), settings);
+}
+
+void URene_GameInstance::JoinReneSession(int32 idx)
+{
+	FOnlineSessionSearchResult selected = p_ReneSessionSearch->SearchResults[idx];
+	selected.Session.SessionSettings.bUseLobbiesIfAvailable = true;
+	selected.Session.SessionSettings.bUsesPresence = true;
+	
+	FString str; 
+	selected.Session.SessionSettings.Get(FName(TEXT("sessionname")), str);
+	p_ReneSessionInterface->JoinSession(0, FName(*str), selected);
+}
+
+void URene_GameInstance::FindReneSession()
+{	
+	p_ReneSessionSearch = MakeShared<FOnlineSessionSearch>();
+	
+	FName sysname = Online::GetSubsystem(GetWorld())->GetSubsystemName();
+	
+	p_ReneSessionSearch->bIsLanQuery = sysname.IsEqual(TEXT("NULL"));
+	p_ReneSessionSearch->MaxSearchResults = 100;
+	p_ReneSessionSearch->QuerySettings.Set(SEARCH_LOBBIES, true, EOnlineComparisonOp::Equals);
+	
+	if (!p_ReneSessionInterface.IsValid()) return;
+	p_ReneSessionInterface->FindSessions(0, p_ReneSessionSearch.ToSharedRef());
+}
+
+void URene_GameInstance::OnCreateReneSession(FName sessionname, bool b_success)
+{
+	FName sysname = Online::GetSubsystem(GetWorld())->GetSubsystemName();
+	UE_LOG(LogTemp, Warning, TEXT("Online Sub System : %s"), *sysname.ToString());
+	
+	if (b_success)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s Session Created"), *sessionname.ToString());
+		 GetWorld()->ServerTravel(TEXT("/Game/Maps/BoothMap?listen"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s Session Creation Failed"), *sessionname.ToString());
+	}
+}
+
+void URene_GameInstance::OnFindReneSession(bool b_success)
+{
+	if (!b_success)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Searching Session has Failed!"));
+		return;
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("Searching Session has Completed"));
+	auto search_result = p_ReneSessionSearch->SearchResults;
+	for (int32 i = 0 ; i < search_result.Num() ; i++)
+	{
+		FString str;
+		search_result[i].Session.SessionSettings.Get(FName(TEXT("sessionname")), str);
+		UE_LOG(LogTemp, Warning, TEXT("%d 번 세션 : %s"), i, *str);
+	}
+	
+}
+
+void URene_GameInstance::OnJoinReneSession(FName session_name, EOnJoinSessionCompleteResult::Type result)
+{
+	if (result == EOnJoinSessionCompleteResult::Type::Success)
+	{
+		FString URL;
+		
+		if (p_ReneSessionInterface->GetResolvedConnectString(session_name, URL))
+			if (APlayerController* pc = GetWorld()->GetFirstPlayerController())
+				pc->ClientTravel(URL, TRAVEL_Absolute);
+			else
+				UE_LOG(LogTemp, Error, TEXT("PC MIA"))
+		else
+			UE_LOG(LogTemp, Error, TEXT("URL has Fuckedup"));
+	}
 }
