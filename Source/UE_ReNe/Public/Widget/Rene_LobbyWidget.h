@@ -5,6 +5,8 @@
 #include "Rene_LobbyWidget.generated.h"
 
 
+class UEditableTextBox;
+class UWidgetSwitcher;
 class UScrollBox;
 class UButton;
 UCLASS()
@@ -28,12 +30,22 @@ private:
 	UFUNCTION()
 	void OnClickedFind();
 	
+	UFUNCTION()
+	void OnClickedCreate();
 	
+	UFUNCTION()
+	void OnClickedCreateSession();
+	
+	UFUNCTION()
+	void OnClickedBack();
 	
 	
 	
 	/* Field */
 public:
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UWidgetSwitcher> Switcher;
+	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> btn_Find;
 	
@@ -41,10 +53,25 @@ public:
 	TObjectPtr<UButton> btn_CloseList;
 	
 	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UButton> btn_Create;
+
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UButton> btn_CreateSession;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UButton> btn_BackToMain;
+	
+	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UScrollBox> scr_SessionList;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UEditableTextBox> etxt_SessionName;
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UEditableTextBox> etxt_MaxPlayer;
 	
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class URene_SessionInfoWidget> session_info_widget;
+
 	
 	
 	
