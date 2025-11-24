@@ -1,3 +1,10 @@
+# Custom
+.idea/
+RiderLink/
+.vscode
+.claude/
+*.code-workspace
+
 # Visual Studio 2015 user specific files
 .vs/
 
@@ -73,3 +80,5 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+Content/Characters/Player/MetaHuman/MH_Preset1.uasset
+Content/MetaHumans/MH_Preset1/Face/SKM_MH_Preset1_FaceMesh.uasset
