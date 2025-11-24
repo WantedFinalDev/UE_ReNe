@@ -106,6 +106,7 @@ void URene_GameInstance::OnFindReneSession(bool b_success)
 		{
 			FString str;
 			search_result[i].Session.SessionSettings.Get(FName(TEXT("sessionname")), str);
+			OnFindReneSessionComplete.Broadcast(i, str);
 			UE_LOG(LogTemp, Warning, TEXT("%d 번 세션 : %s"), i, *str);
 		}
 	}
@@ -120,10 +121,13 @@ void URene_GameInstance::OnJoinReneSession(FName session_name, EOnJoinSessionCom
 		
 		if (p_ReneSessionInterface->GetResolvedConnectString(session_name, URL))
 			if (APlayerController* pc = GetWorld()->GetFirstPlayerController())
+			{
 				pc->ClientTravel(URL, TRAVEL_Absolute);
+				UE_LOG(LogTemp, Warning, TEXT("Joined URL : %s"), *URL)
+			}
 			else
-				UE_LOG(LogTemp, Error, TEXT("PC MIA"))
+				UE_LOG(LogTemp, Error, TEXT("Player Controller MIA"))
 		else
-			UE_LOG(LogTemp, Error, TEXT("URL has Fuckedup"));
+			UE_LOG(LogTemp, Error, TEXT("URL has FuckedUp"));
 	}
 }

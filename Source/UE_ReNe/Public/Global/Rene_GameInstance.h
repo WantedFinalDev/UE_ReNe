@@ -7,6 +7,8 @@
 #include "Rene_GameInstance.generated.h"
 
 
+using FOnFindReneSessionCompleteDelegate = TMulticastDelegate<void (int32, FString)>;
+
 UCLASS()
 class UE_RENE_API URene_GameInstance : public UGameInstance
 {
@@ -38,7 +40,7 @@ public:
 	
 	TSharedPtr<class FOnlineSessionSearch> p_ReneSessionSearch;
 	
-	
+	FOnFindReneSessionCompleteDelegate OnFindReneSessionComplete;
 	
 private:
 	
