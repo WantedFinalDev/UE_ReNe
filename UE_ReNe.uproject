@@ -78,6 +78,10 @@
 		{
 			"Name": "LiveLinkCamera",
 			"Enabled": true
+		},
+		{
+			"Name": "OnlineSubsystemSteam",
+			"Enabled": true
 		}
 	]
 }
