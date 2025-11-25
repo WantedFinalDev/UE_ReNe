@@ -12,24 +12,32 @@ class UE_RENE_API ARene_Lobby_GameMode : public AGameModeBase
 	
 	/* Method */
 public:
+	virtual void BeginPlay() override;
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void EnableUIControll();
 	
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void DisableUIControll();
 	
-	
-	
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	URene_LobbyWidget* GetLobbyUI() { return LobbyUI; }
 private:
-	
 	
 	
 	
 	
 	/* Field */
 public:
-	
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class URene_LobbyWidget> LobbyUIClass;
 	
 	
 	
 private:
-	
+	UPROPERTY()
+	class URene_LobbyWidget* LobbyUI;
 	
 	
 	

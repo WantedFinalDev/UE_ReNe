@@ -2,6 +2,7 @@
 
 #include "Components/Button.h"
 #include "Global/Rene_GameInstance.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 void URene_StartWidget::NativeConstruct()
@@ -15,7 +16,9 @@ void URene_StartWidget::NativeConstruct()
 
 void URene_StartWidget::OnClickedEnter()
 {
-	
+	/*APlayerController* pc = GetWorld()->GetFirstPlayerController();
+	pc->ClientTravel("/Game/Maps/LobbyMap", TRAVEL_Absolute);*/
+	UGameplayStatics::OpenLevel(GetWorld(), "LobbyMap");
 }
 
 void URene_StartWidget::OnClickedExit()

@@ -29,6 +29,18 @@ void URene_LobbyWidget::OnFindComplete(int idx, FString str)
 void URene_LobbyWidget::OnClickedCloseList()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Close List"))
+
+	// UI를 화면에서 숨기기
+	SetVisibility(ESlateVisibility::Collapsed);
+
+	// 입력 모드를 Game Only로 변경
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (PC)
+	{
+		FInputModeGameOnly InputMode;
+		PC->SetInputMode(InputMode);
+		PC->SetShowMouseCursor(false);
+	}
 }
 
 void URene_LobbyWidget::OnClickedFind()

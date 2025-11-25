@@ -122,6 +122,9 @@ void URene_GameInstance::OnJoinReneSession(FName session_name, EOnJoinSessionCom
 		if (p_ReneSessionInterface->GetResolvedConnectString(session_name, URL))
 			if (APlayerController* pc = GetWorld()->GetFirstPlayerController())
 			{
+				FInputModeGameOnly im;
+				pc->SetInputMode(im);
+				pc->SetShowMouseCursor(false);
 				pc->ClientTravel(URL, TRAVEL_Absolute);
 				UE_LOG(LogTemp, Warning, TEXT("Joined URL : %s"), *URL)
 			}
