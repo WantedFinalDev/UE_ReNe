@@ -5,6 +5,9 @@
 #include "Rene_StartWidget.generated.h"
 
 
+class UEditableTextBox;
+class UButton;
+
 UCLASS()
 class UE_RENE_API URene_StartWidget : public UUserWidget
 {
@@ -12,19 +15,32 @@ class UE_RENE_API URene_StartWidget : public UUserWidget
 	
 	/* Method */
 public:
-	
+	virtual void NativeConstruct() override;
 	
 	
 	
 private:
-	
+	UFUNCTION()
+	void OnClickedEnter();
+	UFUNCTION()
+	void OnClickedExit();
 	
 	
 	
 	
 	/* Field */
 public:
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UButton> btn_Enter;
 	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UButton> btn_Exit;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UEditableTextBox> etxt_ID;
+
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UEditableTextBox> etxt_PW;
 	
 	
 	
