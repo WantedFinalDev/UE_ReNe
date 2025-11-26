@@ -6,7 +6,7 @@
 void ARebe_Booth_PlayerState::CreateUI()
 {
 	APlayerController* pc = GetPlayerController();
-	if (!pc || !pc->IsLocalController()) return;
+	if (!pc) return;
 	
 	if (HasAuthority())
 		SHOWWARNF(TEXT("HOST UI GEN"))
