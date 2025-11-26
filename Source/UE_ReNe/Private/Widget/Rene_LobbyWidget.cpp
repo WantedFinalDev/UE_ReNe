@@ -46,6 +46,7 @@ void URene_LobbyWidget::OnClickedCloseList()
 
 void URene_LobbyWidget::OnClickedFind()
 {
+	scr_SessionList->ClearChildren();
 	URene_GameInstance* GI = Cast<URene_GameInstance>(GetGameInstance());
 	GI->FindReneSession();
 }
