@@ -12,7 +12,6 @@ class UE_RENE_API ARebe_Booth_PlayerState : public APlayerState
 	
 	/* Method */
 public:
-	void CreateUI();
 	
 	
 	
@@ -27,7 +26,6 @@ private:
 	
 	/* Field */
 public:
-	
 	
 	
 	

@@ -2,14 +2,7 @@
 
 #include "UE_ReNe.h"
 #include "Blueprint/UserWidget.h"
+#include "Widget/Rene_Company_Widget.h"
+#include "Widget/Rene_Seeker_Widget.h"
 
-void ARebe_Booth_PlayerState::CreateUI()
-{
-	APlayerController* pc = GetPlayerController();
-	if (!pc) return;
-	
-	if (HasAuthority())
-		SHOWWARNF(TEXT("HOST UI GEN"))
-	else
-		SHOWWARNF(TEXT("CLIENT UI GEN"))
-}
+

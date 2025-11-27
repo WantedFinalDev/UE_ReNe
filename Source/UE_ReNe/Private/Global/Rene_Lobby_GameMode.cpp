@@ -12,10 +12,6 @@ void ARene_Lobby_GameMode::BeginPlay()
 void ARene_Lobby_GameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
-	if (HasAuthority()) 
-		SHOWWARN();
-	
-	SHOWWARN();
 	
 	checkf(IsValid(LobbyUIClass), TEXT("LobbyUIClass must be set in BP_Lobby_GameMode!"));
 	
