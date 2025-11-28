@@ -108,7 +108,7 @@ void URene_GameInstance::OnFindReneSession(bool b_success)
 		for (int32 i = 0 ; i < search_result.Num() ; i++)
 		{
 			FString str;
-			search_result[i].Session.SessionSettings.Get(FName(TEXT("sessionname")), str);
+			search_result[i].Session.SessionSettings.Get(FName(TEXT("ROOMNAME")), str);
 			OnFindReneSessionComplete.Broadcast(i, str);
 			UE_LOG(LogTemp, Warning, TEXT("%d 번 세션 : %s"), i, *str);
 		}
