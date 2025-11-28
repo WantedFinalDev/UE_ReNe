@@ -82,3 +82,7 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+Content/Characters/Player/MetaHuman/MH_Preset1.uasset
+Content/MetaHumans/MH_Preset1/Face/SKM_MH_Preset1_FaceMesh.uasset
+Content/Characters/Player/MetaHuman/MH_Preset2.uasset
+Content/Characters/Player/MetaHuman/MH_Preset3.uasset
