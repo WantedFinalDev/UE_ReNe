@@ -22,9 +22,9 @@ public:
 	void CreateSeekerUI();
 
 private:
-	void InputUIMode();
-	
-	
+	void EnableUIControll();
+	void DisableUIControll();
+	TObjectPtr<class UUserWidget> GetUserWidget();
 	
 	
 	/* Field */
@@ -33,13 +33,13 @@ public:
 	TSubclassOf<class URene_Company_Widget> companyui_class;
 	
 	UPROPERTY()
-	URene_Company_Widget* company_ui;
+	TObjectPtr<URene_Company_Widget> company_ui;
 	
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class URene_Seeker_Widget> seekerui_class;
 	
 	UPROPERTY()
-	URene_Seeker_Widget* seeker_ui;
+	TObjectPtr<URene_Seeker_Widget> seeker_ui;
 	
 	
 	
