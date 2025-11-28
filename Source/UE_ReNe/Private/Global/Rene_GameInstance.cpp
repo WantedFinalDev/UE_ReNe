@@ -1,6 +1,7 @@
 #include "Global/Rene_GameInstance.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystemUtils.h"
+#include "UE_ReNe.h"
 #include "Online/OnlineSessionNames.h"
 
 void URene_GameInstance::Init()
@@ -31,12 +32,13 @@ void URene_GameInstance::CreateReneSession(int32 n_maxplayer, FString s_sessionn
 	settings.bAllowJoinInProgress = true;
 	settings.bUseLobbiesIfAvailable = true;
 	settings.bUsesPresence = true;
-	settings.Set(FName(TEXT("sessionname")), s_sessionname, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	settings.Set(FName(TEXT("GAMEID")), FString(TEXT("UE_ReNe")), EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	settings.Set(FName(TEXT("ROOMNAME")), s_sessionname, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 	
 	
 	if (p_ReneSessionInterface == nullptr) return;
 	FUniqueNetIdPtr netid = GetWorld()->GetFirstLocalPlayerFromController()->GetUniqueNetIdForPlatformUser().GetUniqueNetId();
-	p_ReneSessionInterface->CreateSession(*netid, FName(s_sessionname), settings);
+	p_ReneSessionInterface->CreateSession(*netid, NAME_GameSession, settings);
 }
 
 void URene_GameInstance::JoinReneSession(int32 idx)
@@ -51,8 +53,9 @@ void URene_GameInstance::JoinReneSession(int32 idx)
 	selected.Session.SessionSettings.bUsesPresence = true;
 	
 	FString str; 
-	selected.Session.SessionSettings.Get(FName(TEXT("sessionname")), str);
-	p_ReneSessionInterface->JoinSession(0, FName(*str), selected);
+	selected.Session.SessionSettings.Get(FName(TEXT("ROOMNAME")), str);
+	SHOWWARNF(TEXT("Joining %s Room"), *str)
+	p_ReneSessionInterface->JoinSession(0, NAME_GameSession, selected);
 }
 
 void URene_GameInstance::FindReneSession()
@@ -66,7 +69,7 @@ void URene_GameInstance::FindReneSession()
 	p_ReneSessionSearch->bIsLanQuery = sysname.IsEqual(TEXT("NULL"));
 	p_ReneSessionSearch->MaxSearchResults = 100;
 	if (!sysname.IsEqual(TEXT("NULL")))
-		p_ReneSessionSearch->QuerySettings.Set(SEARCH_LOBBIES, true, EOnlineComparisonOp::Equals);
+		p_ReneSessionSearch->QuerySettings.Set(FName(TEXT("GAMEID")), FString(TEXT("UE_ReNe")), EOnlineComparisonOp::Equals);
 	
 	if (!p_ReneSessionInterface.IsValid()) return;
 	p_ReneSessionInterface->FindSessions(0, p_ReneSessionSearch.ToSharedRef());
