@@ -69,7 +69,10 @@ void URene_GameInstance::FindReneSession()
 	p_ReneSessionSearch->bIsLanQuery = sysname.IsEqual(TEXT("NULL"));
 	p_ReneSessionSearch->MaxSearchResults = 100;
 	if (!sysname.IsEqual(TEXT("NULL")))
+	{
+		p_ReneSessionSearch->QuerySettings.Set(SEARCH_LOBBIES, true, EOnlineComparisonOp::Equals);
 		p_ReneSessionSearch->QuerySettings.Set(FName(TEXT("GAMEID")), FString(TEXT("UE_ReNe")), EOnlineComparisonOp::Equals);
+	}
 	
 	if (!p_ReneSessionInterface.IsValid()) return;
 	p_ReneSessionInterface->FindSessions(0, p_ReneSessionSearch.ToSharedRef());
