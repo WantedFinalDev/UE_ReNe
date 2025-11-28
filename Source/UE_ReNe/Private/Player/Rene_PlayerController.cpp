@@ -37,7 +37,7 @@ void ARene_PlayerController::CreateCompanyUI()
 	SHOWWARNF(TEXT("Company UI has Gen"))
 	company_ui = CreateWidget<URene_Company_Widget>(this, companyui_class);
 	company_ui->AddToViewport();
-	InputUIMode();
+	EnableUIControll();
 }
 
 void ARene_PlayerController::CreateSeekerUI()
@@ -47,12 +47,29 @@ void ARene_PlayerController::CreateSeekerUI()
 	SHOWWARNF(TEXT("Seeker UI has Gen"))
 	seeker_ui = CreateWidget<URene_Seeker_Widget>(this, seekerui_class);
 	seeker_ui->AddToViewport();
-	InputUIMode();
+	EnableUIControll();
 }
 
-void ARene_PlayerController::InputUIMode()
+void ARene_PlayerController::EnableUIControll()
 {
-	FInputModeGameOnly im;
-	bShowMouseCursor = false;
+	bShowMouseCursor = true;
+	FInputModeUIOnly im;
 	SetInputMode(im);
+}
+
+void ARene_PlayerController::DisableUIControll()
+{
+	bShowMouseCursor = false;
+	FInputModeGameOnly im;
+	SetInputMode(im);
+}
+
+TObjectPtr<class UUserWidget> ARene_PlayerController::GetUserWidget()
+{
+	if (IsValid(company_ui))
+		return company_ui;
+	else if (IsValid(seeker_ui))
+		return seeker_ui;
+	else
+		return nullptr;
 }
