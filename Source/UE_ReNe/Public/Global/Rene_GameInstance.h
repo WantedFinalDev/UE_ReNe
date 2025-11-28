@@ -4,6 +4,7 @@
 #include "OnlineSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "Data/ReneUserData.h"
 #include "Rene_GameInstance.generated.h"
 
 
@@ -20,13 +21,14 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	void CreateReneSession(int32 n_maxplayer, FString s_sessionname);
-	
 	UFUNCTION(BlueprintCallable)
 	void JoinReneSession(int32 idx);
-	
 	UFUNCTION(BlueprintCallable)
 	void FindReneSession();
-
+	
+	// Login Process
+	void SetReneUserData(const FString& id, const FString& name, const int32 level);
+	FReneUserData GetUserData() { return f_userdata; }
 	
 private:
 	void OnCreateReneSession(FName sessionname, bool b_success);
@@ -42,8 +44,11 @@ public:
 	
 	FOnFindReneSessionCompleteDelegate OnFindReneSessionComplete;
 	
-private:
 	
+	
+private:
+	UPROPERTY()
+	FReneUserData f_userdata;
 	
 	
 	
