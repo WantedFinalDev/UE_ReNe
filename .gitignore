@@ -4,6 +4,8 @@ RiderLink/
 .vscode
 .claude/
 *.code-workspace
+*.DotSettings.user
+
 
 # Visual Studio 2015 user specific files
 .vs/
@@ -82,3 +84,5 @@ Plugins/**/Intermediate/*
 DerivedDataCache/*
 Content/Characters/Player/MetaHuman/MH_Preset1.uasset
 Content/MetaHumans/MH_Preset1/Face/SKM_MH_Preset1_FaceMesh.uasset
+Content/Characters/Player/MetaHuman/MH_Preset2.uasset
+Content/Characters/Player/MetaHuman/MH_Preset3.uasset

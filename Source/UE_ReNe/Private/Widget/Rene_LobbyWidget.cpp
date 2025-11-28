@@ -23,6 +23,7 @@ void URene_LobbyWidget::NativeConstruct()
 void URene_LobbyWidget::OnFindComplete(int idx, FString str)
 {
 	URene_SessionInfoWidget* p_ui = CreateWidget<URene_SessionInfoWidget>(GetWorld(), session_info_widget);
+	p_ui->SetSessionInfo(idx, str);
 	scr_SessionList->AddChild(p_ui);
 }
 
@@ -45,6 +46,7 @@ void URene_LobbyWidget::OnClickedCloseList()
 
 void URene_LobbyWidget::OnClickedFind()
 {
+	scr_SessionList->ClearChildren();
 	URene_GameInstance* GI = Cast<URene_GameInstance>(GetGameInstance());
 	GI->FindReneSession();
 }

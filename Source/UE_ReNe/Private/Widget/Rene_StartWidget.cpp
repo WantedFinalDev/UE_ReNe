@@ -16,6 +16,8 @@ void URene_StartWidget::NativeConstruct()
 
 void URene_StartWidget::OnClickedEnter()
 {
+	// TODO : Autho Login
+	
 	/*APlayerController* pc = GetWorld()->GetFirstPlayerController();
 	pc->ClientTravel("/Game/Maps/LobbyMap", TRAVEL_Absolute);*/
 	UGameplayStatics::OpenLevel(GetWorld(), "LobbyMap");

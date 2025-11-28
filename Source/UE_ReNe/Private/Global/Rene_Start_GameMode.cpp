@@ -1,4 +1,6 @@
 #include "Global/Rene_Start_GameMode.h"
+
+#include "UE_ReNe.h"
 #include "Widget/Rene_StartWidget.h"
 #include "Blueprint/UserWidget.h"
 
@@ -13,6 +15,8 @@ void ARene_Start_GameMode::BeginPlay()
 void ARene_Start_GameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
+	
+	SHOWWARN();
 	
 	NewPlayer->bShowMouseCursor = true;
 	FInputModeUIOnly im;
