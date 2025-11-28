@@ -64,7 +64,10 @@ void ARene_PlayerController::OnPlayerListUpdated()
 		 *
 		 */
 		for (TObjectPtr<APlayerState> ps : allplayers)
+		{
+			
 			SHOWWARNF(TEXT("Player %s"), *ps->GetPlayerName())
+		}
 	}
 	
 }
@@ -77,6 +80,28 @@ TArray<TObjectPtr<class APlayerState>> ARene_PlayerController::GetAllPlayerState
 		return gs->PlayerArray;
 	}
 	return TArray<TObjectPtr<APlayerState>>();
+}
+
+void ARene_PlayerController::OnCompanyUI()
+{
+	if (IsValid(company_ui))
+	{
+		company_ui->SetVisibility(ESlateVisibility::Visible);
+		FInputModeUIOnly im;
+		SetInputMode(im);
+		bShowMouseCursor = true;
+	}
+}
+
+void ARene_PlayerController::OnSeekerUI()
+{
+	if (IsValid(seeker_ui))
+	{
+		seeker_ui->SetVisibility(ESlateVisibility::Visible);
+		FInputModeUIOnly im;
+		SetInputMode(im);
+		bShowMouseCursor = true;
+	}
 }
 
 void ARene_PlayerController::EnableUIControll()

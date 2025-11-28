@@ -10,7 +10,7 @@ struct FReneUserData
 
 	/*
 	 *	11.28.금 20:29
-	 *	Login Data 가상의 구조로 대체함
+	 *	Login Data 가상의 구조
 	 */
 	UPROPERTY(BlueprintReadWrite)
 	FString ID = TEXT("NeedInitName");
