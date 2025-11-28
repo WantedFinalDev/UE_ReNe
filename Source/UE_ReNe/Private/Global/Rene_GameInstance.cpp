@@ -78,6 +78,15 @@ void URene_GameInstance::FindReneSession()
 	p_ReneSessionInterface->FindSessions(0, p_ReneSessionSearch.ToSharedRef());
 }
 
+void URene_GameInstance::SetReneUserData(const FString& id, const FString& name, const int32 level)
+{
+	f_userdata.ID = id;
+	f_userdata.Name = name;
+	f_userdata.Level = level;
+	
+	SHOWWARNF(TEXT("Login Complete : %s"), *name)
+}
+
 void URene_GameInstance::OnCreateReneSession(FName sessionname, bool b_success)
 {
 	FName sysname = Online::GetSubsystem(GetWorld())->GetSubsystemName();

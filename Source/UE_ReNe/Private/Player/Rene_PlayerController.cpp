@@ -2,6 +2,8 @@
 
 #include "UE_ReNe.h"
 #include "Blueprint/UserWidget.h"
+#include "GameFramework/PlayerState.h"
+#include "Global/Rene_Booth_GameState.h"
 #include "Widget/Rene_Company_Widget.h"
 #include "Widget/Rene_Seeker_Widget.h"
 
@@ -48,6 +50,33 @@ void ARene_PlayerController::CreateSeekerUI()
 	seeker_ui = CreateWidget<URene_Seeker_Widget>(this, seekerui_class);
 	seeker_ui->AddToViewport();
 	EnableUIControll();
+}
+
+void ARene_PlayerController::OnPlayerListUpdated()
+{
+	TObjectPtr<ARene_Booth_GameState> gs = GetWorld()->GetGameState<ARene_Booth_GameState>();
+	if (IsValid(gs))
+	{
+		TArray<TObjectPtr<APlayerState>> allplayers = gs->PlayerArray;
+		
+		// TODO : Transmission list to Company Widget
+		/*
+		 *
+		 */
+		for (TObjectPtr<APlayerState> ps : allplayers)
+			SHOWWARNF(TEXT("Player %s"), *ps->GetPlayerName())
+	}
+	
+}
+
+TArray<TObjectPtr<class APlayerState>> ARene_PlayerController::GetAllPlayerState()
+{
+	TObjectPtr<ARene_Booth_GameState> gs = GetWorld()->GetGameState<ARene_Booth_GameState>();
+	if (IsValid(gs))
+	{
+		return gs->PlayerArray;
+	}
+	return TArray<TObjectPtr<APlayerState>>();
 }
 
 void ARene_PlayerController::EnableUIControll()

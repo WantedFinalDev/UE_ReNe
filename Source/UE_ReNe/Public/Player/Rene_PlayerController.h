@@ -20,6 +20,9 @@ public:
 	
 	void CreateCompanyUI();
 	void CreateSeekerUI();
+	
+	void OnPlayerListUpdated();
+	TArray<TObjectPtr<class APlayerState>> GetAllPlayerState();
 
 private:
 	void EnableUIControll();
