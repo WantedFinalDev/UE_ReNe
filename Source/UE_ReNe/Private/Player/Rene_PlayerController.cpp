@@ -54,14 +54,22 @@ void ARene_PlayerController::CreateSeekerUI()
 
 void ARene_PlayerController::OnPlayerListUpdated()
 {
+	/*if (!IsValid(company_ui)) return;
+
+	
+	if (company_ui->IsVisible()) 
+	{
+		company_ui->PopulateUserList();
+	}*/
 	TObjectPtr<ARene_Booth_GameState> gs = GetWorld()->GetGameState<ARene_Booth_GameState>();
 	if (IsValid(gs))
 	{
 		TArray<TObjectPtr<APlayerState>> allplayers = gs->PlayerArray;
 		
-		// TODO : Transmission list to Company Widget
+		// TODO : Throw list to Company Widget
 		/*
-		 *
+		 *	?? 여기 뭐였지
+		 *	Populate에서 이미 구현중인 내용임.
 		 */
 		for (TObjectPtr<APlayerState> ps : allplayers)
 		{

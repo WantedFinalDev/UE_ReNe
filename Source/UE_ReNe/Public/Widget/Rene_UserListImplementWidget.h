@@ -32,7 +32,7 @@ private:
 public:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> btn_P2P;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UTextBlock> txt_UserName;
 	
@@ -42,6 +42,7 @@ public:
 	
 	
 private:
+	//	CompanyWidget.PopulateUserList() 로부터 지정됨.
 	UPROPERTY()
 	TObjectPtr<APlayerState> playerstate;
 	
