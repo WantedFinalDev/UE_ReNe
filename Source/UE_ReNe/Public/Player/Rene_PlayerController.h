@@ -23,14 +23,17 @@ public:
 	
 	void OnPlayerListUpdated();
 	TArray<TObjectPtr<class APlayerState>> GetAllPlayerState();
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_TeleportWithTarget(APlayerState* targetstate, FVector targetlocation);
 	
 	/*	InputAction, InputMappingContext 바인드 필요
-	 *	
+	 *	@ key pressed -> On xx UI() 호출 : UI on/off
 	 */
 	UFUNCTION(BlueprintCallable)
 	void OnCompanyUI();
 	UFUNCTION(BlueprintCallable)
 	void OnSeekerUI();
+
 
 private:
 	void EnableUIControll();
@@ -53,7 +56,6 @@ public:
 	// GM : PostLogin에서 미리 생성함. 사라지지않음.
 	UPROPERTY()
 	TObjectPtr<URene_Seeker_Widget> seeker_ui;
-	
 	
 	
 	

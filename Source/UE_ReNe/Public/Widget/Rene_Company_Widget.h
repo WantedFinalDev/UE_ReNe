@@ -47,6 +47,10 @@ public:
 	UPROPERTY(EditAnywhere, Category=UI)
 	TSubclassOf<class URene_UserListImplementWidget> ImplementWidget;
 	
+	//	Private Room : Placed TargetPoint Actor
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<class ATargetPoint> p_MeetingPoint;
+	
 private:
 	bool bIsVisibleList = false;
 	

@@ -82,6 +82,19 @@ TArray<TObjectPtr<class APlayerState>> ARene_PlayerController::GetAllPlayerState
 	return TArray<TObjectPtr<APlayerState>>();
 }
 
+void ARene_PlayerController::ServerRPC_TeleportWithTarget_Implementation(APlayerState* targetstate, FVector targetlocation)
+{
+	if (!HasAuthority()) return;
+	APawn* host = GetPawn();
+	APawn* target = targetstate ? targetstate->GetPawn() : nullptr;
+	
+	if (!host || !target) return;
+	target->SetActorLocation(targetlocation);
+	host->SetActorLocation(targetlocation + FVector(100, 100, 0));	// 캐릭터 겹침 방지 offset
+	
+	SHOWWARNF(TEXT("\nTeleport Complete | %s"), *targetstate->GetPlayerName())
+}
+
 void ARene_PlayerController::OnCompanyUI()
 {
 	if (IsValid(company_ui))

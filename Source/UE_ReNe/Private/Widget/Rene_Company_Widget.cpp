@@ -60,16 +60,27 @@ void URene_Company_Widget::PopulateUserList()
 		{
 			if (!player) continue;
 			
+			// Host 제외
+			if (player == GetOwningPlayer()->PlayerState)
+				continue;
+			
 			TObjectPtr<URene_UserListImplementWidget> imp_ui = CreateWidget<URene_UserListImplementWidget>(GetOwningPlayer(), ImplementWidget);
 			
-			if (imp_ui)
+			if (imp_ui && p_MeetingPoint)
 			{
 				imp_ui->SetUserImplementInfo(player);
+				
+				imp_ui->targetpoint = p_MeetingPoint;
 				
 				scr_UserList->AddChild(imp_ui);
 				
 				// 별도 배열 공간 필요시 이용
 				// arr_userlistwidget.Add(imp_ui);
+			}
+			else
+			{
+				SHOWERRORF("implement UI OR TargetPoint MIA")
+				return;
 			}
 		}
 	}

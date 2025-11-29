@@ -36,7 +36,8 @@ public:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UTextBlock> txt_UserName;
 	
-	
+	UPROPERTY()
+	TObjectPtr<class ATargetPoint> targetpoint;
 	
 	
 	

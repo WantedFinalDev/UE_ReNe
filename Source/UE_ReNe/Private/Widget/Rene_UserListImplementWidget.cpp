@@ -2,7 +2,9 @@
 
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
+#include "Engine/TargetPoint.h"
 #include "GameFramework/PlayerState.h"
+#include "Player/Rene_PlayerController.h"
 
 void URene_UserListImplementWidget::SetUserImplementInfo(APlayerState* ps)
 {
@@ -20,5 +22,8 @@ void URene_UserListImplementWidget::NativeConstruct()
 
 void URene_UserListImplementWidget::OnClickedP2P()
 {
+	TObjectPtr<ARene_PlayerController> pc_host = Cast<ARene_PlayerController>(GetOwningPlayer());
 	
+	if (!pc_host || !IsValid(targetpoint)) return;
+	pc_host->ServerRPC_TeleportWithTarget(playerstate, targetpoint->GetActorLocation());
 }
