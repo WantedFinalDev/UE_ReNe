@@ -76,6 +76,17 @@ protected:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
 
+	/** Voice Session local handlers */
+	void RequestStartVoiceSession();
+	void RequestEndVoiceSession();
+
+	/** Voice Session server RPCs */
+	UFUNCTION(Server, Reliable)
+	void Server_RequestStartVoiceSession();
+
+	UFUNCTION(Server, Reliable)
+	void Server_RequestEndVoiceSession();
+
 protected:
 
 	/** Set up input action bindings */

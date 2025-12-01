@@ -9,11 +9,14 @@
 #include "Blueprint/UserWidget.h"
 #include "UE_ReNe.h"
 #include "Widgets/Input/SVirtualJoystick.h"
+#include "VoiceChat/Rene_VoiceChatComponent.h"
 
 AUE_ReNePlayerController::AUE_ReNePlayerController()
 {
 	// set the player camera manager class
 	PlayerCameraManagerClass = AUE_ReNeCameraManager::StaticClass();
+
+	VoiceChatComponent = CreateDefaultSubobject<URene_VoiceChatComponent>(TEXT("VoiceChatComponent"));
 }
 
 void AUE_ReNePlayerController::BeginPlay()
@@ -65,5 +68,24 @@ void AUE_ReNePlayerController::SetupInputComponent()
 			}
 		}
 	}
+
+	InputComponent->BindAction("PushToTalk", IE_Pressed, this, &AUE_ReNePlayerController::OnPushToTalkPressed);
+	InputComponent->BindAction("PushToTalk", IE_Released, this, &AUE_ReNePlayerController::OnPushToTalkReleased);
 	
+}
+
+void AUE_ReNePlayerController::OnPushToTalkPressed()
+{
+	if (VoiceChatComponent)
+	{
+		VoiceChatComponent->StartTalking();
+	}
+}
+
+void AUE_ReNePlayerController::OnPushToTalkReleased()
+{
+	if (VoiceChatComponent)
+	{
+		VoiceChatComponent->StopTalking();
+	}
 }

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "VoiceChat/Rene_VoiceChatComponent.h"
 #include "UE_ReNePlayerController.generated.h"
 
 class UInputMappingContext;
@@ -23,6 +24,9 @@ public:
 
 	/** Constructor */
 	AUE_ReNePlayerController();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Voice")
+	class URene_VoiceChatComponent* VoiceChatComponent;
 
 protected:
 
@@ -46,5 +50,8 @@ protected:
 
 	/** Input mapping context setup */
 	virtual void SetupInputComponent() override;
+
+	void OnPushToTalkPressed();
+	void OnPushToTalkReleased();
 
 };

@@ -9,6 +9,9 @@
 #include "InputActionValue.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "UE_ReNe.h"
+#include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
+#include "Global/Rene_Booth_GameMode.h"
 
 AUE_ReNeCharacter::AUE_ReNeCharacter()
 {
@@ -59,6 +62,10 @@ void AUE_ReNeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		// Looking/Aiming
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AUE_ReNeCharacter::LookInput);
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AUE_ReNeCharacter::LookInput);
+
+		// Voice Session Control
+		EnhancedInputComponent->BindAction(FName("StartVoiceSession"), ETriggerEvent::Started, this, &AUE_ReNeCharacter::RequestStartVoiceSession);
+		EnhancedInputComponent->BindAction(FName("EndVoiceSession"), ETriggerEvent::Started, this, &AUE_ReNeCharacter::RequestEndVoiceSession);
 	}
 	else
 	{
@@ -118,3 +125,40 @@ void AUE_ReNeCharacter::DoJumpEnd()
 	// pass StopJumping to the character
 	StopJumping();
 }
+
+void AUE_ReNeCharacter::RequestStartVoiceSession()
+{
+	Server_RequestStartVoiceSession();
+}
+
+void AUE_ReNeCharacter::RequestEndVoiceSession()
+{
+	Server_RequestEndVoiceSession();
+}
+
+void AUE_ReNeCharacter::Server_RequestStartVoiceSession_Implementation()
+{
+	AController* PC = GetController();
+	if (PC && PC->IsLocalPlayerController() && GetNetMode() == NM_ListenServer)
+	{
+		ARene_Booth_GameMode* GameMode = GetWorld()->GetAuthGameMode<ARene_Booth_GameMode>();
+		if (GameMode)
+		{
+			GameMode->TriggerStart1v1Session();
+		}
+	}
+}
+
+void AUE_ReNeCharacter::Server_RequestEndVoiceSession_Implementation()
+{
+	AController* PC = GetController();
+	if (PC && PC->IsLocalPlayerController() && GetNetMode() == NM_ListenServer)
+	{
+		ARene_Booth_GameMode* GameMode = GetWorld()->GetAuthGameMode<ARene_Booth_GameMode>();
+		if (GameMode)
+		{
+			GameMode->TriggerEnd1v1Session();
+		}
+	}
+}
+

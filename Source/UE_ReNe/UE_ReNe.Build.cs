@@ -23,6 +23,8 @@ public class UE_ReNe : ModuleRules
 			"SlateCore", 
 			"OnlineSubsystem", 
 			"OnlineSubsystemSteam",
+			"OnlineSubsystemUtils",
+			"Voice",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]
