@@ -40,8 +40,9 @@ private:
     /**
      * Sends the recorded voice data as a multipart/form-data POST request.
      * @param VoiceData The raw PCM data to upload.
+     * @param PlayerName The name of the player who recorded the audio.
      */
-    void SendHttpRequest(const TArray<uint8>& VoiceData);
+    void SendHttpRequest(const TArray<uint8>& VoiceData, const FString& PlayerName);
 
     /**
      * Callback function for when the HTTP upload request completes.

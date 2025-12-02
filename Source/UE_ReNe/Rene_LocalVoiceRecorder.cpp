@@ -5,6 +5,9 @@
 #include "VoiceModule.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
+#include "GameFramework/PlayerState.h"
+#include "GameFramework/Controller.h"
+
 
 URene_LocalVoiceRecorder::URene_LocalVoiceRecorder()
 {
@@ -154,10 +157,20 @@ void URene_LocalVoiceRecorder::StopAndUploadRecording()
     }
 
     UE_LOG(LogTemp, Log, TEXT("Uploading %d bytes of voice data."), VoiceDataToUpload.Num());
-    SendHttpRequest(VoiceDataToUpload);
+
+    // Get Player Name from the owning PlayerController
+    FString PlayerName = TEXT("UnknownPlayer");
+    if (AController* OwnerController = Cast<AController>(GetOwner()))
+    {
+        if (APlayerState* PlayerState = OwnerController->GetPlayerState<APlayerState>())
+        {
+            PlayerName = PlayerState->GetPlayerName();
+        }
+    }
+    SendHttpRequest(VoiceDataToUpload, PlayerName);
 }
 
-void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData)
+void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, const FString& PlayerName)
 {
     FHttpModule& HttpModule = FHttpModule::Get();
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
@@ -175,9 +188,13 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData)
     const FString BoundaryPrefix = TEXT("--") + Boundary + TEXT("\r\n");
     const FString BoundarySuffix = TEXT("\r\n--") + Boundary + TEXT("--\r\n");
 
+    // Generate a unique filename using PlayerName and a timestamp
+    FString Timestamp = FDateTime::UtcNow().ToString(TEXT("%Y%m%d_%H%M%S"));
+    FString UniqueFileName = FString::Printf(TEXT("%s_%s.pcm"), *PlayerName, *Timestamp);
+
     // Append boundary and headers for the binary file part
     RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*BoundaryPrefix), BoundaryPrefix.Len());
-    FString FileHeader = TEXT("Content-Disposition: form-data; name=\"voice\"; filename=\"voice.pcm\"\r\n");
+    FString FileHeader = FString::Printf(TEXT("Content-Disposition: form-data; name=\"voice\"; filename=\"%s\"\r\n"), *UniqueFileName);
     FileHeader += TEXT("Content-Type: application/octet-stream\r\n\r\n");
     RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*FileHeader), FileHeader.Len());
 
