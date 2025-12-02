@@ -131,6 +131,9 @@ void URene_LocalVoiceRecorder::StopAndUploadRecording()
     // Stop the polling timer.
     GetWorld()->GetTimerManager().ClearTimer(VoiceCaptureTimerHandle);
 
+	// Perform one final capture to get any data buffered since the last timer tick.
+	CaptureVoiceData();
+
     if (VoiceCapture.IsValid())
     {
         VoiceCapture->Stop();

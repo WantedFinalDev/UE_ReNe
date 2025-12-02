@@ -18,7 +18,7 @@ public:
 
     // The URL of your server endpoint that accepts the voice data.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HTTP")
-    FString HttpUploadURL = TEXT("http://127.0.0.1:8000/upload_voice");
+    FString HttpUploadURL = TEXT("http://172.16.20.112:8000/upload_voice");
 
     /** Starts capturing local microphone data. */
     void StartRecording();
