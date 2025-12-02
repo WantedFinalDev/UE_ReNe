@@ -18,6 +18,7 @@ public:
 	ARene_PlayerController();
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
+	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_CreateBoothUI();
@@ -66,7 +67,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	URene_VoiceChatManager* VoiceChatComponent;
 
+	UFUNCTION(BlueprintCallable)
 	void StartVoicePress();
+	UFUNCTION(BlueprintCallable)
 	void StopVoiceRelease();
-	void EndPlay(EEndPlayReason::Type EndPlayReason);
+
 };

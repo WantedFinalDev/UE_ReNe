@@ -29,7 +29,6 @@ ARene_PlayerController::ARene_PlayerController()
 void ARene_PlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-
 	
 	SHOWWARN()
 	
@@ -41,7 +40,7 @@ void ARene_PlayerController::SetupInputComponent()
 
 	if (InputComponent)
 	{
-		// "VoicePushToTalk" 는 DefaultInput.ini 또는 ProjectSettings 에서 미리 등록되어 있어야 합니다.
+		// DefaultInput.ini 또는 ProjectSettings 에서 미리 등록되어 있어야 합니다.
 		InputComponent->BindAction("VoicePushToTalk", IE_Pressed, this, &ARene_PlayerController::StartVoicePress);
 		InputComponent->BindAction("VoicePushToTalk", IE_Released, this, &ARene_PlayerController::StopVoiceRelease);
 	}
@@ -50,8 +49,6 @@ void ARene_PlayerController::SetupInputComponent()
 		UE_LOG(LogVoicePC, Warning, TEXT("SetupInputComponent: InputComponent is null"));
 	}
 }
-
-
 
 void ARene_PlayerController::ClientRPC_CreateBoothUI_Implementation()
 {
