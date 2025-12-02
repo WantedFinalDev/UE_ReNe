@@ -6,6 +6,7 @@
 #include "Global/Rene_Booth_GameState.h"
 #include "Widget/Rene_Company_Widget.h"
 #include "Widget/Rene_Seeker_Widget.h"
+#include "Voice/Rene_VoiceChatManager.h"
 #include "OnlineSubsystem.h"
 #include "Interfaces/VoiceInterface.h"
 
@@ -20,12 +21,14 @@ ARene_PlayerController::ARene_PlayerController()
 	static ConstructorHelpers::FClassFinder<URene_Seeker_Widget> wbpseeker(TEXT("/Game/UI/WBP_Seeker_Widget.WBP_Seeker_Widget_C"));
 	if (wbpseeker.Succeeded())
 		seekerui_class = wbpseeker.Class;
+
+	VoiceChatComponent = CreateDefaultSubobject<URene_VoiceChatManager>(TEXT("VoiceChatComponent"));
+
 }
 
 void ARene_PlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-	EnsureVoiceInterface();
 
 	
 	SHOWWARN()
@@ -39,8 +42,8 @@ void ARene_PlayerController::SetupInputComponent()
 	if (InputComponent)
 	{
 		// "VoicePushToTalk" 는 DefaultInput.ini 또는 ProjectSettings 에서 미리 등록되어 있어야 합니다.
-		InputComponent->BindAction("VoicePushToTalk", IE_Pressed, this, &ARene_PlayerController::StartVoice);
-		InputComponent->BindAction("VoicePushToTalk", IE_Released, this, &ARene_PlayerController::StopVoice);
+		InputComponent->BindAction("VoicePushToTalk", IE_Pressed, this, &ARene_PlayerController::StartVoicePress);
+		InputComponent->BindAction("VoicePushToTalk", IE_Released, this, &ARene_PlayerController::StopVoiceRelease);
 	}
 	else
 	{
@@ -48,30 +51,6 @@ void ARene_PlayerController::SetupInputComponent()
 	}
 }
 
-void ARene_PlayerController::EnsureVoiceInterface()
-{
-	if (VoiceInterface.IsValid())
-	{
-		return;
-	}
-
-	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
-	if (!Subsystem)
-	{
-		UE_LOG(LogVoicePC, Warning, TEXT("EnsureVoiceInterface: OnlineSubsystem::Get() returned null"));
-		return;
-	}
-
-	VoiceInterface = Subsystem->GetVoiceInterface();
-	if (!VoiceInterface.IsValid())
-	{
-		UE_LOG(LogVoicePC, Warning, TEXT("EnsureVoiceInterface: GetVoiceInterface() returned null"));
-	}
-	else
-	{
-		UE_LOG(LogVoicePC, Log, TEXT("EnsureVoiceInterface: VoiceInterface acquired"));
-	}
-}
 
 
 void ARene_PlayerController::ClientRPC_CreateBoothUI_Implementation()
@@ -197,75 +176,39 @@ TObjectPtr<class UUserWidget> ARene_PlayerController::GetUserWidget()
 		return nullptr;
 }
 
-void ARene_PlayerController::StartVoice()
+void ARene_PlayerController::StartVoicePress()
 {
-	// 로컬 컨트롤러인지 확인
 	if (!IsLocalController())
 	{
-		UE_LOG(LogVoicePC, Warning, TEXT("StartVoice called on non-local controller"));
+		UE_LOG(LogVoicePC, Warning, TEXT("StartVoicePress ignored: not local controller"));
 		return;
 	}
 
-	EnsureVoiceInterface();
-	if (!VoiceInterface.IsValid())
+	if (VoiceChatComponent)
 	{
-		UE_LOG(LogVoicePC, Warning, TEXT("StartVoice: VoiceInterface invalid"));
-		return;
+		VoiceChatComponent->StartVoice();
 	}
-
-	int32 LocalUserNum = GetLocalUserNum();
-	if (LocalUserNum < 0)
-	{
-		UE_LOG(LogVoicePC, Warning, TEXT("StartVoice: Invalid LocalUserNum (%d)"), LocalUserNum);
-		return;
-	}
-
-	UE_LOG(LogVoicePC, Log, TEXT("StartVoice: LocalUserNum=%d - calling StartNetworkedVoice"), LocalUserNum);
-	// StartNetworkedVoice는 로컬 오디오 캡처를 시작해 네트워크로 전송
-	VoiceInterface->StartNetworkedVoice(LocalUserNum);
 }
 
-void ARene_PlayerController::StopVoice()
-{    if (!IsLocalController())
+void ARene_PlayerController::StopVoiceRelease()
 {
-	UE_LOG(LogVoicePC, Warning, TEXT("StopVoice called on non-local controller"));
-	return;
-}
-
-	EnsureVoiceInterface();
-	if (!VoiceInterface.IsValid())
+	if (!IsLocalController())
 	{
-		UE_LOG(LogVoicePC, Warning, TEXT("StopVoice: VoiceInterface invalid"));
+		UE_LOG(LogVoicePC, Warning, TEXT("StopVoiceRelease ignored: not local controller"));
 		return;
 	}
 
-	int32 LocalUserNum = GetLocalUserNum();
-	if (LocalUserNum < 0)
+	if (VoiceChatComponent)
 	{
-		UE_LOG(LogVoicePC, Warning, TEXT("StopVoice: Invalid LocalUserNum (%d)"), LocalUserNum);
-		return;
+		VoiceChatComponent->StopVoice();
 	}
-
-	UE_LOG(LogVoicePC, Log, TEXT("StopVoice: LocalUserNum=%d - calling StopNetworkedVoice"), LocalUserNum);
-	VoiceInterface->StopNetworkedVoice(LocalUserNum);
 }
 
-int32 ARene_PlayerController::GetLocalUserNum() const
-{    // 로컬 플레이어에서 ControllerId 가져오기 (PIE 및 로컬 실행에서 사용)
-	if (IsLocalController())
+void ARene_PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (VoiceChatComponent)
 	{
-		ULocalPlayer* LP = GetLocalPlayer();
-		if (LP)
-		{
-			return LP->GetControllerId();
-		}
-		else
-		{
-			// 로컬 플레이어가 없는 경우 기본 0 사용 (PIE 환경에서 보통 0)
-			return 0;
-		}
+		VoiceChatComponent->StopVoice();
 	}
-
-	// 원격 컨트롤러인 경우 음성 시작 API를 로컬에서 호출하면 안됨 — 방어적 값
-	return -1;
+	Super::EndPlay(EndPlayReason);
 }

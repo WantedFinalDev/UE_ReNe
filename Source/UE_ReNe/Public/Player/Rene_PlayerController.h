@@ -4,6 +4,7 @@
 #include "UE_ReNePlayerController.h"
 #include "OnlineSubsystem.h"
 #include "Interfaces/VoiceInterface.h"
+#include "Voice/Rene_VoiceChatManager.h"
 #include "Rene_PlayerController.generated.h"
 
 
@@ -42,8 +43,8 @@ private:
 	void EnableUIControll();
 	void DisableUIControll();
 	TObjectPtr<class UUserWidget> GetUserWidget();
-	
-	
+
+
 	/* Field */
 public:
 	UPROPERTY(EditAnywhere)
@@ -62,23 +63,10 @@ public:
 	
 //======voice======
 public:
-	/** PTT 시작 — 로컬에서 호출되어야 함 */
-	UFUNCTION(BlueprintCallable, Category="Voice")
-	void StartVoice();
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	URene_VoiceChatManager* VoiceChatComponent;
 
-	/** PTT 종료 — 로컬에서 호출되어야 함 */
-	UFUNCTION(BlueprintCallable, Category="Voice")
-	void StopVoice();
-
-	/** 캐시된 VoiceInterface 포인터 (유효성 체크를 위해 사용) */
-	IOnlineVoicePtr VoiceInterface;
-
-	/** VoiceInterface 얻기 시도 (null-safe) */
-	void EnsureVoiceInterface();
-
-	/** 로컬 유저 인덱스 얻기 (로컬 플레이어 전용) */
-	int32 GetLocalUserNum() const;
-
-	
-	
+	void StartVoicePress();
+	void StopVoiceRelease();
+	void EndPlay(EEndPlayReason::Type EndPlayReason);
 };
