@@ -194,7 +194,7 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
 
     // Append boundary and headers for the binary file part
     RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*BoundaryPrefix), BoundaryPrefix.Len());
-    FString FileHeader = FString::Printf(TEXT("Content-Disposition: form-data; name=\"voice\"; filename=\"%s\"\r\n"), *UniqueFileName);
+    FString FileHeader = FString::Printf(TEXT("Content-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n"), *UniqueFileName);
     FileHeader += TEXT("Content-Type: application/octet-stream\r\n\r\n");
     RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*FileHeader), FileHeader.Len());
 
