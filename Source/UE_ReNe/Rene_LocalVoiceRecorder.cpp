@@ -164,6 +164,8 @@ void URene_LocalVoiceRecorder::StopAndUploadRecording()
     // 0번 로컬 플레이어의 컨트롤러를 가져옵니다. (로컬 클라이언트 자신을 의미)
     if (APlayerController* LocalPC = GetWorld()->GetFirstPlayerController())
     {
+        PlayerName = LocalPC->GetLocalPlayer()->GetNickname();
+        /*
         // 컨트롤러에서 PlayerState를 가져옵니다. PlayerState는 모든 클라이언트에 복제됩니다.
         if (APlayerState* PlayerState = LocalPC->GetPlayerState<APlayerState>())
         {
@@ -174,6 +176,7 @@ void URene_LocalVoiceRecorder::StopAndUploadRecording()
         {
             UE_LOG(LogTemp, Warning, TEXT("Could not find Local PlayerState."));
         }
+        */
     }
     else
     {
