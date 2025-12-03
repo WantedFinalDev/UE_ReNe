@@ -160,12 +160,24 @@ void URene_LocalVoiceRecorder::StopAndUploadRecording()
 
     // Get Player Name from the owning PlayerController
     FString PlayerName = TEXT("UnknownPlayer");
-    if (AController* OwnerController = Cast<AController>(GetOwner()))
+    
+    // 0번 로컬 플레이어의 컨트롤러를 가져옵니다. (로컬 클라이언트 자신을 의미)
+    if (APlayerController* LocalPC = GetWorld()->GetFirstPlayerController())
     {
-        if (APlayerState* PlayerState = OwnerController->GetPlayerState<APlayerState>())
+        // 컨트롤러에서 PlayerState를 가져옵니다. PlayerState는 모든 클라이언트에 복제됩니다.
+        if (APlayerState* PlayerState = LocalPC->GetPlayerState<APlayerState>())
         {
             PlayerName = PlayerState->GetPlayerName();
+            UE_LOG(LogTemp, Log, TEXT("Player Name Retrieved: %s (Successful)"), *PlayerName);
         }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Could not find Local PlayerState."));
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Could not find Local PlayerController (Index 0)."));
     }
     SendHttpRequest(VoiceDataToUpload, PlayerName);
 }
