@@ -17,12 +17,14 @@ public:
 	
 	
 private:
-	
+	UFUNCTION()
+	void OnClickedClose();
 	
 	
 	/* Field */
 public:
-	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<class UButton> btn_Close;
 	
 	
 	
