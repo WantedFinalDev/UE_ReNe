@@ -43,5 +43,5 @@ protected:
 
 private:
 	/** The hardcoded URL for the PNG file. */
-	const FString PngUrl = TEXT("http://100.115.252.51:8000/api/v1/p2p/audio-chunk2");
+	const FString PngUrl = TEXT("http://100.112.161.59:8000/api/v1/p2p/audio-chunk2");
 };
