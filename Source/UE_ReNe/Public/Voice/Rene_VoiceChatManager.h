@@ -38,4 +38,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void StopVoice();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void EstablishPrivateVoiceChannel(APlayerState* PlayerA, APlayerState* PlayerB);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void EndPrivateVoiceChannel();
 };

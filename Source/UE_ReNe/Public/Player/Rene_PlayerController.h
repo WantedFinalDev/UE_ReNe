@@ -67,8 +67,8 @@ public:
 	
 //======voice======
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Voice")
-	URene_VoiceChatManager* VoiceChatComponent;
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Voice")
+	//URene_VoiceChatManager* VoiceChatComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Voice")
 	TObjectPtr<URene_LocalVoiceRecorder> LocalVoiceRecorder;
