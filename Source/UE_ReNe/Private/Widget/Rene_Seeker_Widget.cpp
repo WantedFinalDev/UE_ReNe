@@ -16,24 +16,11 @@ void URene_Seeker_Widget::NativeConstruct()
 void URene_Seeker_Widget::OnClickedClose()
 {
 	if (!btn_Close) return;
-	
 	SetVisibility(ESlateVisibility::Collapsed);
+	
 	TObjectPtr<ARene_PlayerController> pc = Cast<ARene_PlayerController>(GetWorld()->GetFirstPlayerController());
-	FInputModeGameOnly im;
-	pc->SetInputMode(im);
-	pc->SetShowMouseCursor(false);
+	if (!pc) return;
 	
-}
-
-void URene_Seeker_Widget::OnClickedClose()
-{
-	SetVisibility(ESlateVisibility::Collapsed);
-	APlayerController* pc = GetWorld()->GetFirstPlayerController();
-	if (!pc)
-	{
-		SHOWERROR()
-		return;
-	}
 	FInputModeGameOnly im;
 	pc->SetInputMode(im);
 	pc->SetShowMouseCursor(false);
