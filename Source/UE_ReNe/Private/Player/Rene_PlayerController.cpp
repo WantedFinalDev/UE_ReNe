@@ -11,7 +11,7 @@
 #include "Interfaces/VoiceInterface.h"
 #include "EnhancedInputSubsystems.h" // Required for Enhanced Input
 #include "EnhancedInputComponent.h"   // Required for Enhanced Input
-#include "Rene_LocalVoiceRecorder.h"  // New include for local voice recorder
+#include "Network/Rene_LocalVoiceRecorder.h"  // New include for local voice recorder
 
 
 DEFINE_LOG_CATEGORY_STATIC(LogVoicePC, Log, All);

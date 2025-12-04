@@ -5,7 +5,7 @@
 #include "OnlineSubsystem.h"
 #include "Interfaces/VoiceInterface.h"
 #include "Voice/Rene_VoiceChatManager.h"
-#include "Rene_LocalVoiceRecorder.h" // New include for local voice recorder
+#include "Network/Rene_LocalVoiceRecorder.h" // New include for local voice recorder
 #include "Rene_PlayerController.generated.h"
 
 class URene_LocalVoiceRecorder; // Forward declaration for the new component

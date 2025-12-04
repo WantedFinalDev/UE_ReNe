@@ -1,6 +1,6 @@
 // Rene_LocalVoiceRecorder.cpp
 
-#include "Rene_LocalVoiceRecorder.h"
+#include "Network/Rene_LocalVoiceRecorder.h"
 #include "Modules/ModuleManager.h"
 #include "VoiceModule.h"
 #include "HttpModule.h"
@@ -194,30 +194,48 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
     Request->SetURL(HttpUploadURL);
     Request->SetVerb(TEXT("POST"));
 
+    // Determine speaker_role based on authority
+    FString SpeakerRole;
+    if (GetOwner() && GetOwner()->HasAuthority())
+    {
+        SpeakerRole = TEXT("company");
+    }
+    else
+    {
+        SpeakerRole = TEXT("seeker");
+    }
+
     // --- Manually create the multipart/form-data payload ---
     FString Boundary = FString::Printf(TEXT("rene-voice-boundary-%s"), *FGuid::NewGuid().ToString());
 
     Request->SetHeader(TEXT("Content-Type"), FString::Printf(TEXT("multipart/form-data; boundary=%s"), *Boundary));
 
     TArray<uint8> RequestPayload;
-    const FString BoundaryPrefix = TEXT("--") + Boundary + TEXT("\r\n");
-    const FString BoundarySuffix = TEXT("\r\n--") + Boundary + TEXT("--\r\n");
+    const FString BoundaryLine = TEXT("--") + Boundary + TEXT("\r\n");
+    const FString BoundaryEnd = TEXT("\r\n--") + Boundary + TEXT("--\r\n");
 
+    // 1. Append speaker_role part
+    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*BoundaryLine), BoundaryLine.Len());
+    FString SpeakerRoleHeader = FString::Printf(TEXT("Content-Disposition: form-data; name=\"speaker_role\"\r\n\r\n"));
+    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*SpeakerRoleHeader), SpeakerRoleHeader.Len());
+    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*SpeakerRole), SpeakerRole.Len());
+    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*("\r\n")), 2);
+
+    // 2. Append file part (VoiceData)
     // Generate a unique filename using PlayerName and a timestamp
     FString Timestamp = FDateTime::UtcNow().ToString(TEXT("%Y%m%d_%H%M%S"));
-    FString UniqueFileName = FString::Printf(TEXT("%s_%s.pcm"), *PlayerName, *Timestamp);
+    FString UniqueFileName = FString::Printf(TEXT("%s_%s_%s.pcm"), *SpeakerRole, *PlayerName, *Timestamp); // Assuming voice data is PCM
 
-    // Append boundary and headers for the binary file part
-    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*BoundaryPrefix), BoundaryPrefix.Len());
+    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*BoundaryLine), BoundaryLine.Len());
     FString FileHeader = FString::Printf(TEXT("Content-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n"), *UniqueFileName);
-    FileHeader += TEXT("Content-Type: application/octet-stream\r\n\r\n");
+    FileHeader += TEXT("Content-Type: application/octet-stream\r\n\r\n"); // Using octet-stream for generic binary data
     RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*FileHeader), FileHeader.Len());
 
     // Append the actual voice data
     RequestPayload.Append(VoiceData);
 
     // Append the final boundary
-    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*BoundarySuffix), BoundarySuffix.Len());
+    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*BoundaryEnd), BoundaryEnd.Len());
 
     Request->SetContent(RequestPayload);
     Request->ProcessRequest();
@@ -227,15 +245,22 @@ void URene_LocalVoiceRecorder::OnUploadComplete(FHttpRequestPtr Request, FHttpRe
 {
     if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
     {
-        UE_LOG(LogTemp, Log, TEXT("Voice data uploaded successfully. Server response: %s"), *Response->GetContentAsString());
+        FString ResponseBody = Response->GetContentAsString();
+        UE_LOG(LogTemp, Log, TEXT("Voice data uploaded successfully. Server response: %s"), *ResponseBody);
+        OnUploadSuccess.Broadcast(ResponseBody);
     }
     else
     {
-        FString ErrorReason = TEXT("Unknown error");
+        FString ErrorMessage = TEXT("Unknown error");
         if (Response.IsValid())
         {
-            ErrorReason = FString::Printf(TEXT("HTTP %d: %s"), Response->GetResponseCode(), *Response->GetContentAsString());
+            ErrorMessage = FString::Printf(TEXT("HTTP %d: %s"), Response->GetResponseCode(), *Response->GetContentAsString());
         }
-        UE_LOG(LogTemp, Error, TEXT("Voice data upload failed. Reason: %s"), *ErrorReason);
+        else
+        {
+            ErrorMessage = TEXT("HTTP request failed or no response received.");
+        }
+        UE_LOG(LogTemp, Error, TEXT("Voice data upload failed. Reason: %s"), *ErrorMessage);
+        OnUploadFailure.Broadcast(ErrorMessage);
     }
 }

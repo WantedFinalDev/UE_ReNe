@@ -8,6 +8,9 @@
 #include "Interfaces/IHttpRequest.h"
 #include "Rene_LocalVoiceRecorder.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUploadSuccess, const FString&, ResponseBody);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUploadFailure, const FString&, ErrorMessage);
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UE_RENE_API URene_LocalVoiceRecorder : public UActorComponent
 {
@@ -19,6 +22,15 @@ public:
     // The URL of your server endpoint that accepts the voice data.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HTTP")
     FString HttpUploadURL = TEXT("http://100.103.141.4:8000/temp");
+    
+    /** 업로드 성공 시 호출되는 델리게이트 */
+    UPROPERTY(BlueprintAssignable, Category = "Voice Recorder")
+    FOnUploadSuccess OnUploadSuccess;
+
+    /** 업로드 실패 시 호출되는 델리게이트 */
+    UPROPERTY(BlueprintAssignable, Category = "Voice Recorder")
+    FOnUploadFailure OnUploadFailure;
+
     /** Starts capturing local microphone data. */
     void StartRecording();
 
