@@ -3,9 +3,12 @@
 #include "Components/Button.h"
 #include "Player/Rene_PlayerController.h"
 
+
 void URene_Seeker_Widget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	btn_Close->OnClicked.AddDynamic(this, &URene_Seeker_Widget::OnClickedClose);
+
 	
 	btn_Close->OnClicked.AddDynamic(this, &URene_Seeker_Widget::OnClickedClose);
 }
@@ -20,5 +23,19 @@ void URene_Seeker_Widget::OnClickedClose()
 	pc->SetInputMode(im);
 	pc->SetShowMouseCursor(false);
 	
+}
+
+void URene_Seeker_Widget::OnClickedClose()
+{
+	SetVisibility(ESlateVisibility::Collapsed);
+	APlayerController* pc = GetWorld()->GetFirstPlayerController();
+	if (!pc)
+	{
+		SHOWERROR()
+		return;
+	}
+	FInputModeGameOnly im;
+	pc->SetInputMode(im);
+	pc->SetShowMouseCursor(false);
 }
 

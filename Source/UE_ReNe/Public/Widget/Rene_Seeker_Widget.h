@@ -5,6 +5,8 @@
 #include "Rene_Seeker_Widget.generated.h"
 
 
+class UButton;
+
 UCLASS()
 class UE_RENE_API URene_Seeker_Widget : public UUserWidget
 {
@@ -24,7 +26,7 @@ private:
 	/* Field */
 public:
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<class UButton> btn_Close;
+	TObjectPtr<UButton> btn_Close;	
 	
 	
 	

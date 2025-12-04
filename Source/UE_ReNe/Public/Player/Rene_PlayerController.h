@@ -2,8 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "UE_ReNePlayerController.h"
+#include "OnlineSubsystem.h"
+#include "Interfaces/VoiceInterface.h"
+#include "Voice/Rene_VoiceChatManager.h"
+#include "Rene_LocalVoiceRecorder.h" // New include for local voice recorder
 #include "Rene_PlayerController.generated.h"
 
+class URene_LocalVoiceRecorder; // Forward declaration for the new component
+class UInputAction;             // Forward declaration for Enhanced Input Action
 
 UCLASS()
 class UE_RENE_API ARene_PlayerController : public AUE_ReNePlayerController
@@ -14,6 +20,8 @@ class UE_RENE_API ARene_PlayerController : public AUE_ReNePlayerController
 public:
 	ARene_PlayerController();
 	virtual void BeginPlay() override;
+	virtual void SetupInputComponent() override;
+	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_CreateBoothUI();
@@ -39,8 +47,8 @@ private:
 	void EnableUIControll();
 	void DisableUIControll();
 	TObjectPtr<class UUserWidget> GetUserWidget();
-	
-	
+
+
 	/* Field */
 public:
 	UPROPERTY(EditAnywhere)
@@ -57,13 +65,19 @@ public:
 	UPROPERTY()
 	TObjectPtr<URene_Seeker_Widget> seeker_ui;
 	
-	
-	
-	
+//======voice======
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Voice")
+	URene_VoiceChatManager* VoiceChatComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Voice")
+	TObjectPtr<URene_LocalVoiceRecorder> LocalVoiceRecorder;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Actions")
+	TObjectPtr<UInputAction> PushToTalkAction;
+
 private:
-	
-	
-	
-	
-	
+	void OnStartTalking();
+	void OnStopTalking();
+
 };

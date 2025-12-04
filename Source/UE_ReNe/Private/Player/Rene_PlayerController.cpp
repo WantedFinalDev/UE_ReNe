@@ -6,6 +6,15 @@
 #include "Global/Rene_Booth_GameState.h"
 #include "Widget/Rene_Company_Widget.h"
 #include "Widget/Rene_Seeker_Widget.h"
+#include "Voice/Rene_VoiceChatManager.h"
+#include "OnlineSubsystem.h"
+#include "Interfaces/VoiceInterface.h"
+#include "EnhancedInputSubsystems.h" // Required for Enhanced Input
+#include "EnhancedInputComponent.h"   // Required for Enhanced Input
+#include "Rene_LocalVoiceRecorder.h"  // New include for local voice recorder
+
+
+DEFINE_LOG_CATEGORY_STATIC(LogVoicePC, Log, All);
 
 ARene_PlayerController::ARene_PlayerController()
 {
@@ -16,6 +25,9 @@ ARene_PlayerController::ARene_PlayerController()
 	static ConstructorHelpers::FClassFinder<URene_Seeker_Widget> wbpseeker(TEXT("/Game/UI/WBP_Seeker_Widget.WBP_Seeker_Widget_C"));
 	if (wbpseeker.Succeeded())
 		seekerui_class = wbpseeker.Class;
+
+	VoiceChatComponent = CreateDefaultSubobject<URene_VoiceChatManager>(TEXT("VoiceChatComponent"));
+	LocalVoiceRecorder = CreateDefaultSubobject<URene_LocalVoiceRecorder>(TEXT("LocalVoiceRecorder")); // Create the new component
 }
 
 void ARene_PlayerController::BeginPlay()
@@ -23,7 +35,35 @@ void ARene_PlayerController::BeginPlay()
 	Super::BeginPlay();
 	
 	SHOWWARN()
-	
+}
+
+void ARene_PlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	if (InputComponent)
+	{
+		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
+		{
+			if (PushToTalkAction)
+			{
+				EnhancedInputComponent->BindAction(PushToTalkAction, ETriggerEvent::Started, this, &ARene_PlayerController::OnStartTalking);
+				EnhancedInputComponent->BindAction(PushToTalkAction, ETriggerEvent::Completed, this, &ARene_PlayerController::OnStopTalking);
+			}
+			else
+			{
+				UE_LOG(LogVoicePC, Warning, TEXT("PushToTalkAction is not set in ARene_PlayerController. Push-to-talk will not work."));
+			}
+		}
+		else
+		{
+			UE_LOG(LogVoicePC, Warning, TEXT("SetupInputComponent: EnhancedInputComponent is null."));
+		}
+	}
+	else
+	{
+		UE_LOG(LogVoicePC, Warning, TEXT("SetupInputComponent: InputComponent is null."));
+	}
 }
 
 void ARene_PlayerController::ClientRPC_CreateBoothUI_Implementation()
@@ -54,30 +94,17 @@ void ARene_PlayerController::CreateSeekerUI()
 
 void ARene_PlayerController::OnPlayerListUpdated()
 {
-	/*if (!IsValid(company_ui)) return;
-
-	
-	if (company_ui->IsVisible()) 
-	{
-		company_ui->PopulateUserList();
-	}*/
 	TObjectPtr<ARene_Booth_GameState> gs = GetWorld()->GetGameState<ARene_Booth_GameState>();
 	if (IsValid(gs))
 	{
 		TArray<TObjectPtr<APlayerState>> allplayers = gs->PlayerArray;
 		
-		// TODO : Throw list to Company Widget
-		/*
-		 *	?? 여기 뭐였지
-		 *	Populate에서 이미 구현중인 내용임.
-		 */
 		for (TObjectPtr<APlayerState> ps : allplayers)
 		{
 			
 			SHOWWARNF(TEXT("Player %s"), *ps->GetPlayerName())
 		}
 	}
-	
 }
 
 TArray<TObjectPtr<class APlayerState>> ARene_PlayerController::GetAllPlayerState()
@@ -98,7 +125,7 @@ void ARene_PlayerController::ServerRPC_TeleportWithTarget_Implementation(APlayer
 	
 	if (!host || !target) return;
 	target->SetActorLocation(targetlocation);
-	host->SetActorLocation(targetlocation + FVector(100, 100, 0));	// 캐릭터 겹침 방지 offset
+	host->SetActorLocation(targetlocation + FVector(100, 100, 0));
 	
 	SHOWWARNF(TEXT("\nTeleport Complete | %s"), *targetstate->GetPlayerName())
 }
@@ -147,4 +174,49 @@ TObjectPtr<class UUserWidget> ARene_PlayerController::GetUserWidget()
 		return seeker_ui;
 	else
 		return nullptr;
+}
+
+void ARene_PlayerController::OnStartTalking()
+{
+	if (!IsLocalController())
+	{
+		UE_LOG(LogVoicePC, Warning, TEXT("OnStartTalking ignored: not local controller"));
+		return;
+	}
+
+    if (VoiceChatComponent)
+    {
+        VoiceChatComponent->StartVoice();
+    }
+    if (LocalVoiceRecorder)
+    {
+        LocalVoiceRecorder->StartRecording();
+    }
+}
+
+void ARene_PlayerController::OnStopTalking()
+{
+	if (!IsLocalController())
+	{
+		UE_LOG(LogVoicePC, Warning, TEXT("OnStopTalking ignored: not local controller"));
+		return;
+	}
+
+    if (VoiceChatComponent)
+    {
+        VoiceChatComponent->StopVoice();
+    }
+    if (LocalVoiceRecorder)
+    {
+        LocalVoiceRecorder->StopAndUploadRecording();
+    }
+}
+
+void ARene_PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (VoiceChatComponent)
+	{
+		VoiceChatComponent->StopVoice();
+	}
+	Super::EndPlay(EndPlayReason);
 }
