@@ -164,7 +164,15 @@ void URene_LocalVoiceRecorder::StopAndUploadRecording()
     // 0번 로컬 플레이어의 컨트롤러를 가져옵니다. (로컬 클라이언트 자신을 의미)
     if (APlayerController* LocalPC = GetWorld()->GetFirstPlayerController())
     {
-        PlayerName = LocalPC->GetLocalPlayer()->GetNickname();
+        if (ULocalPlayer* LocalPlayer = LocalPC->GetLocalPlayer())
+        {
+            PlayerName = LocalPlayer->GetNickname();
+            UE_LOG(LogTemp, Log, TEXT("Player Name Retrieved: %s (Successful)"), *PlayerName);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Could not find Local Player from PlayerController."));
+        }
         /*
         // 컨트롤러에서 PlayerState를 가져옵니다. PlayerState는 모든 클라이언트에 복제됩니다.
         if (APlayerState* PlayerState = LocalPC->GetPlayerState<APlayerState>())
@@ -211,31 +219,42 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
     Request->SetHeader(TEXT("Content-Type"), FString::Printf(TEXT("multipart/form-data; boundary=%s"), *Boundary));
 
     TArray<uint8> RequestPayload;
+    
+    // 헬퍼 람다 함수: 문자열을 UTF8로 변환하여 안전하게 페이로드에 추가
+    auto AddStringField = [&](const FString& InString)
+    {
+        FTCHARToUTF8 Convert(*InString);
+        RequestPayload.Append((uint8*)Convert.Get(), Convert.Length());
+    };
+
     const FString BoundaryLine = TEXT("--") + Boundary + TEXT("\r\n");
     const FString BoundaryEnd = TEXT("\r\n--") + Boundary + TEXT("--\r\n");
 
     // 1. Append speaker_role part
-    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*BoundaryLine), BoundaryLine.Len());
+    AddStringField(BoundaryLine);
+    
     FString SpeakerRoleHeader = FString::Printf(TEXT("Content-Disposition: form-data; name=\"speaker_role\"\r\n\r\n"));
-    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*SpeakerRoleHeader), SpeakerRoleHeader.Len());
-    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*SpeakerRole), SpeakerRole.Len());
-    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*("\r\n")), 2);
+    AddStringField(SpeakerRoleHeader);
+    AddStringField(SpeakerRole);
+    AddStringField(TEXT("\r\n")); // [수정됨] 여기서 *("\r\n")을 사용하여 크래시가 났었음
 
     // 2. Append file part (VoiceData)
     // Generate a unique filename using PlayerName and a timestamp
     FString Timestamp = FDateTime::UtcNow().ToString(TEXT("%Y%m%d_%H%M%S"));
-    FString UniqueFileName = FString::Printf(TEXT("%s_%s_%s.pcm"), *SpeakerRole, *PlayerName, *Timestamp); // Assuming voice data is PCM
+    FString UniqueFileName = FString::Printf(TEXT("%s_%s_%s.pcm"), *SpeakerRole, *PlayerName, *Timestamp);
 
-    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*BoundaryLine), BoundaryLine.Len());
+    AddStringField(BoundaryLine);
+
     FString FileHeader = FString::Printf(TEXT("Content-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n"), *UniqueFileName);
-    FileHeader += TEXT("Content-Type: application/octet-stream\r\n\r\n"); // Using octet-stream for generic binary data
-    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*FileHeader), FileHeader.Len());
+    FileHeader += TEXT("Content-Type: application/octet-stream\r\n\r\n");
+    
+    AddStringField(FileHeader);
 
     // Append the actual voice data
     RequestPayload.Append(VoiceData);
 
     // Append the final boundary
-    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*BoundaryEnd), BoundaryEnd.Len());
+    AddStringField(BoundaryEnd);
 
     Request->SetContent(RequestPayload);
     Request->ProcessRequest();
