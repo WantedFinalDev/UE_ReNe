@@ -14,10 +14,6 @@ void ARene_Booth_GameState::AddPlayerState(APlayerState* PlayerState)
 {
     Super::AddPlayerState(PlayerState);
 
-    TObjectPtr<ARene_PlayerController> pc = Cast<ARene_PlayerController>(GetWorld()->GetFirstPlayerController());
-    if (IsValid(pc))
-    {
-        Rene_PlayerArray.AddUnique(Cast<ARene_PlayerState>(PlayerState));
-        pc->OnPlayerListUpdated();
-    }
+    // 배열에만 추가, UI 업데이트는 실제로 리스트가 필요할 때 호출
+    Rene_PlayerArray.AddUnique(Cast<ARene_PlayerState>(PlayerState));
 }

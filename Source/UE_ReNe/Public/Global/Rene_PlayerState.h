@@ -43,7 +43,7 @@ public:
 	
 private:
 	UPROPERTY(Replicated)
-	FReneUserData userdata;	// 아직 쓰이지않음.
+	FReneUserData userdata;
 	
 	
 	

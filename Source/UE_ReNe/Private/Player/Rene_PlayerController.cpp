@@ -35,18 +35,34 @@ ARene_PlayerController::ARene_PlayerController()
 void ARene_PlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	LOGWARNF(TEXT("%s"), *GetPlayerState<ARene_PlayerState>()->GetPlayerName());
-	
+
 	if (IsLocalController())
 	{
 		URene_GameInstance* gi = Cast<URene_GameInstance>(GetGameInstance());
 		if (gi)
 		{
-			FReneUserData data = gi->GetUserData();
-			ServerRPC_SendUserData(data);
+			FReneUserData data = gi->GetCachedUserData();
+
+			if (HasAuthority())
+			{
+				TObjectPtr<ARene_PlayerState> ps = GetPlayerState<ARene_PlayerState>();
+				if (ps)
+				{
+					ps->SetReneUserData(data);
+					ps->SetPlayerName(data.Name);
+					LOGWARNF(TEXT("Host: PlayerState Set Directly - %s"), *data.Name);
+				}
+			}
+			else
+			{
+				ServerRPC_SendUserData(data);
+				LOGWARNF(TEXT("Client: ServerRPC Called - %s"), *data.Name);
+			}
 		}
 	}
+
+	// 확인용 로그
+	LOGWARNF(TEXT("Final Name: %s"), *GetPlayerState<ARene_PlayerState>()->GetReneUserName());
 }
 
 void ARene_PlayerController::SetupInputComponent()
@@ -104,19 +120,25 @@ void ARene_PlayerController::CreateSeekerUI()
 	EnableUIControll();
 }
 
+// 주석 처리 이유:
+// - AddPlayerState에서 호출 시 PlayerState 이름이 아직 설정되기 전이라 EmptyName이 출력됨
+// - PopulateUserList가 GameState의 Rene_PlayerArray를 직접 읽어서 UI 생성하므로 불필요
+// - 필요 시 수동으로 호출 가능하도록 코드는 남겨둠
+/*
 void ARene_PlayerController::OnPlayerListUpdated()
 {
 	TObjectPtr<ARene_Booth_GameState> gs = GetWorld()->GetGameState<ARene_Booth_GameState>();
 	if (IsValid(gs))
 	{
 		TArray<TObjectPtr<ARene_PlayerState>> allplayers = gs->Rene_PlayerArray;
-		
+
 		for (TObjectPtr<ARene_PlayerState> ps : allplayers)
 		{
 			LOGWARNF(TEXT("Player Name : %s"), *ps->GetReneUserName())
 		}
 	}
 }
+*/
 
 TArray<TObjectPtr<class APlayerState>> ARene_PlayerController::GetAllPlayerState()
 {
@@ -178,11 +200,18 @@ void ARene_PlayerController::OnSeekerUI()
 
 void ARene_PlayerController::ServerRPC_SendUserData_Implementation(struct FReneUserData data)
 {
+	LOGWARNF(TEXT("ServerRPC Start. Setting Name: %s"), *data.Name);
+
 	ARene_PlayerState* ps = GetPlayerState<ARene_PlayerState>();
 	if (ps)
 	{
 		ps->SetReneUserData(data);
 		ps->SetPlayerName(data.Name);
+		LOGWARNF(TEXT("ServerRPC Complete. PlayerName: %s"), *ps->GetReneUserName());
+	}
+	else
+	{
+		LOGERRORF(TEXT("ServerRPC Failed. PlayerName is EmptyName"));
 	}
 }
 

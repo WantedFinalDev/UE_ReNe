@@ -28,7 +28,7 @@ public:
 	
 	// Login Process
 	void SetReneUserData(const FString& id, const FString& name, const int32 level);
-	FReneUserData GetUserData() { return f_userdata; }
+	FReneUserData GetCachedUserData() { return f_userdata; }
 	
 private:
 	void OnCreateReneSession(FName sessionname, bool b_success);
