@@ -13,6 +13,11 @@ void URene_UserListImplementWidget::SetUserImplementInfo(APlayerState* ps)
 	playerstate = ps;
 }
 
+void URene_UserListImplementWidget::SetTeleportLocation(FVector v)
+{
+	TeleportLocation = v;
+}
+
 void URene_UserListImplementWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -24,6 +29,7 @@ void URene_UserListImplementWidget::OnClickedP2P()
 {
 	TObjectPtr<ARene_PlayerController> pc_host = Cast<ARene_PlayerController>(GetOwningPlayer());
 	
-	if (!pc_host || !IsValid(targetpoint)) return;
-	pc_host->ServerRPC_TeleportWithTarget(playerstate, targetpoint->GetActorLocation());
+	if (!pc_host) return;
+	pc_host->ServerRPC_TeleportWithTarget(playerstate, TeleportLocation);
 }
+

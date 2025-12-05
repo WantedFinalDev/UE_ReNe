@@ -48,8 +48,9 @@ public:
 	TSubclassOf<class URene_UserListImplementWidget> ImplementWidget;
 	
 	//	Private Room : Placed TargetPoint Actor
+	//	Vector 좌표 고정으로 대체
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TObjectPtr<class ATargetPoint> p_MeetingPoint;
+	FVector TargetOfTeleport;
 	
 private:
 	bool bIsVisibleList = false;

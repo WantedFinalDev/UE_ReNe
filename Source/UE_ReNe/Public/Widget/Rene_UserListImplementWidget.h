@@ -15,8 +15,7 @@ class UE_RENE_API URene_UserListImplementWidget : public UUserWidget
 	/* Method */
 public:
 	void SetUserImplementInfo(APlayerState* ps);
-	
-	
+	void SetTeleportLocation(FVector v);
 	
 	
 private:
@@ -36,9 +35,9 @@ public:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UTextBlock> txt_UserName;
 	
-	UPROPERTY()
-	TObjectPtr<class ATargetPoint> targetpoint;
-	
+	UPROPERTY(EditAnywhere)
+	FVector TeleportLocation;
+
 	
 	
 private:

@@ -17,6 +17,3 @@ class AUE_ReNeGameMode : public AGameModeBase
 public:
 	AUE_ReNeGameMode();
 };
-
-
-

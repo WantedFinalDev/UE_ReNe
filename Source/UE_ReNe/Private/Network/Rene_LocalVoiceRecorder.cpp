@@ -1,6 +1,6 @@
 // Rene_LocalVoiceRecorder.cpp
 
-#include "Rene_LocalVoiceRecorder.h"
+#include "Network/Rene_LocalVoiceRecorder.h"
 #include "Modules/ModuleManager.h"
 #include "VoiceModule.h"
 #include "HttpModule.h"
@@ -160,12 +160,35 @@ void URene_LocalVoiceRecorder::StopAndUploadRecording()
 
     // Get Player Name from the owning PlayerController
     FString PlayerName = TEXT("UnknownPlayer");
-    if (AController* OwnerController = Cast<AController>(GetOwner()))
+    
+    // 0번 로컬 플레이어의 컨트롤러를 가져옵니다. (로컬 클라이언트 자신을 의미)
+    if (APlayerController* LocalPC = GetWorld()->GetFirstPlayerController())
     {
-        if (APlayerState* PlayerState = OwnerController->GetPlayerState<APlayerState>())
+        if (ULocalPlayer* LocalPlayer = LocalPC->GetLocalPlayer())
+        {
+            PlayerName = LocalPlayer->GetNickname();
+            UE_LOG(LogTemp, Log, TEXT("Player Name Retrieved: %s (Successful)"), *PlayerName);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Could not find Local Player from PlayerController."));
+        }
+        /*
+        // 컨트롤러에서 PlayerState를 가져옵니다. PlayerState는 모든 클라이언트에 복제됩니다.
+        if (APlayerState* PlayerState = LocalPC->GetPlayerState<APlayerState>())
         {
             PlayerName = PlayerState->GetPlayerName();
+            UE_LOG(LogTemp, Log, TEXT("Player Name Retrieved: %s (Successful)"), *PlayerName);
         }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Could not find Local PlayerState."));
+        }
+        */
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Could not find Local PlayerController (Index 0)."));
     }
     SendHttpRequest(VoiceDataToUpload, PlayerName);
 }
@@ -179,30 +202,59 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
     Request->SetURL(HttpUploadURL);
     Request->SetVerb(TEXT("POST"));
 
+    // Determine speaker_role based on authority
+    FString SpeakerRole;
+    if (GetOwner() && GetOwner()->HasAuthority())
+    {
+        SpeakerRole = TEXT("company");
+    }
+    else
+    {
+        SpeakerRole = TEXT("seeker");
+    }
+
     // --- Manually create the multipart/form-data payload ---
     FString Boundary = FString::Printf(TEXT("rene-voice-boundary-%s"), *FGuid::NewGuid().ToString());
 
     Request->SetHeader(TEXT("Content-Type"), FString::Printf(TEXT("multipart/form-data; boundary=%s"), *Boundary));
 
     TArray<uint8> RequestPayload;
-    const FString BoundaryPrefix = TEXT("--") + Boundary + TEXT("\r\n");
-    const FString BoundarySuffix = TEXT("\r\n--") + Boundary + TEXT("--\r\n");
+    
+    // 헬퍼 람다 함수: 문자열을 UTF8로 변환하여 안전하게 페이로드에 추가
+    auto AddStringField = [&](const FString& InString)
+    {
+        FTCHARToUTF8 Convert(*InString);
+        RequestPayload.Append((uint8*)Convert.Get(), Convert.Length());
+    };
 
+    const FString BoundaryLine = TEXT("--") + Boundary + TEXT("\r\n");
+    const FString BoundaryEnd = TEXT("\r\n--") + Boundary + TEXT("--\r\n");
+
+    // 1. Append speaker_role part
+    AddStringField(BoundaryLine);
+    
+    FString SpeakerRoleHeader = FString::Printf(TEXT("Content-Disposition: form-data; name=\"speaker_role\"\r\n\r\n"));
+    AddStringField(SpeakerRoleHeader);
+    AddStringField(SpeakerRole);
+    AddStringField(TEXT("\r\n")); // [수정됨] 여기서 *("\r\n")을 사용하여 크래시가 났었음
+
+    // 2. Append file part (VoiceData)
     // Generate a unique filename using PlayerName and a timestamp
     FString Timestamp = FDateTime::UtcNow().ToString(TEXT("%Y%m%d_%H%M%S"));
-    FString UniqueFileName = FString::Printf(TEXT("%s_%s.pcm"), *PlayerName, *Timestamp);
+    FString UniqueFileName = FString::Printf(TEXT("%s_%s_%s.pcm"), *SpeakerRole, *PlayerName, *Timestamp);
 
-    // Append boundary and headers for the binary file part
-    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*BoundaryPrefix), BoundaryPrefix.Len());
+    AddStringField(BoundaryLine);
+
     FString FileHeader = FString::Printf(TEXT("Content-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n"), *UniqueFileName);
     FileHeader += TEXT("Content-Type: application/octet-stream\r\n\r\n");
-    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*FileHeader), FileHeader.Len());
+    
+    AddStringField(FileHeader);
 
     // Append the actual voice data
     RequestPayload.Append(VoiceData);
 
     // Append the final boundary
-    RequestPayload.Append((uint8*)TCHAR_TO_UTF8(*BoundarySuffix), BoundarySuffix.Len());
+    AddStringField(BoundaryEnd);
 
     Request->SetContent(RequestPayload);
     Request->ProcessRequest();
@@ -212,15 +264,22 @@ void URene_LocalVoiceRecorder::OnUploadComplete(FHttpRequestPtr Request, FHttpRe
 {
     if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
     {
-        UE_LOG(LogTemp, Log, TEXT("Voice data uploaded successfully. Server response: %s"), *Response->GetContentAsString());
+        FString ResponseBody = Response->GetContentAsString();
+        UE_LOG(LogTemp, Log, TEXT("Voice data uploaded successfully. Server response: %s"), *ResponseBody);
+        OnUploadSuccess.Broadcast(ResponseBody);
     }
     else
     {
-        FString ErrorReason = TEXT("Unknown error");
+        FString ErrorMessage = TEXT("Unknown error");
         if (Response.IsValid())
         {
-            ErrorReason = FString::Printf(TEXT("HTTP %d: %s"), Response->GetResponseCode(), *Response->GetContentAsString());
+            ErrorMessage = FString::Printf(TEXT("HTTP %d: %s"), Response->GetResponseCode(), *Response->GetContentAsString());
         }
-        UE_LOG(LogTemp, Error, TEXT("Voice data upload failed. Reason: %s"), *ErrorReason);
+        else
+        {
+            ErrorMessage = TEXT("HTTP request failed or no response received.");
+        }
+        UE_LOG(LogTemp, Error, TEXT("Voice data upload failed. Reason: %s"), *ErrorMessage);
+        OnUploadFailure.Broadcast(ErrorMessage);
     }
 }

@@ -11,7 +11,8 @@
 #include "Interfaces/VoiceInterface.h"
 #include "EnhancedInputSubsystems.h" // Required for Enhanced Input
 #include "EnhancedInputComponent.h"   // Required for Enhanced Input
-#include "Rene_LocalVoiceRecorder.h"  // New include for local voice recorder
+#include "Global/Rene_Booth_GameMode.h"
+#include "Network/Rene_LocalVoiceRecorder.h"  // New include for local voice recorder
 
 
 DEFINE_LOG_CATEGORY_STATIC(LogVoicePC, Log, All);
@@ -25,8 +26,7 @@ ARene_PlayerController::ARene_PlayerController()
 	static ConstructorHelpers::FClassFinder<URene_Seeker_Widget> wbpseeker(TEXT("/Game/UI/WBP_Seeker_Widget.WBP_Seeker_Widget_C"));
 	if (wbpseeker.Succeeded())
 		seekerui_class = wbpseeker.Class;
-
-	VoiceChatComponent = CreateDefaultSubobject<URene_VoiceChatManager>(TEXT("VoiceChatComponent"));
+	
 	LocalVoiceRecorder = CreateDefaultSubobject<URene_LocalVoiceRecorder>(TEXT("LocalVoiceRecorder")); // Create the new component
 }
 
@@ -128,7 +128,20 @@ void ARene_PlayerController::ServerRPC_TeleportWithTarget_Implementation(APlayer
 	host->SetActorLocation(targetlocation + FVector(100, 100, 0));
 	
 	SHOWWARNF(TEXT("\nTeleport Complete | %s"), *targetstate->GetPlayerName())
-}
+
+	// +++ 여기에 1:1 보이스 채팅 시작 로직을 추가 +++
+	ARene_Booth_GameMode* GameMode = GetWorld()->GetAuthGameMode<ARene_Booth_GameMode>();
+	if (GameMode)
+	{                                                                      
+		// 이 RPC를 호출한 '나 자신(호스트)'의 PlayerController와
+		// 텔레포트 대상인 'targetstate'의 PlayerController를 넘겨줍니다.       
+		APlayerController* TargetPC = Cast<APlayerController>(targetstate->GetOwner());
+		if (TargetPC)
+		{                                                                   
+			GameMode->StartOneToOneVoiceChat(this, TargetPC);                    
+		}                                                                   
+	}
+}      
 
 void ARene_PlayerController::OnCompanyUI()
 {
@@ -184,10 +197,13 @@ void ARene_PlayerController::OnStartTalking()
 		return;
 	}
 
-    if (VoiceChatComponent)
+    // Get the VoiceChatManager from the GameState
+    ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>();
+    if (GameState && GameState->VoiceChatManager)
     {
-        VoiceChatComponent->StartVoice();
+        GameState->VoiceChatManager->StartVoice();
     }
+
     if (LocalVoiceRecorder)
     {
         LocalVoiceRecorder->StartRecording();
@@ -202,10 +218,13 @@ void ARene_PlayerController::OnStopTalking()
 		return;
 	}
 
-    if (VoiceChatComponent)
+    // Get the VoiceChatManager from the GameState
+    ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>();
+    if (GameState && GameState->VoiceChatManager)
     {
-        VoiceChatComponent->StopVoice();
+        GameState->VoiceChatManager->StopVoice();
     }
+
     if (LocalVoiceRecorder)
     {
         LocalVoiceRecorder->StopAndUploadRecording();
@@ -214,9 +233,13 @@ void ARene_PlayerController::OnStopTalking()
 
 void ARene_PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (VoiceChatComponent)
-	{
-		VoiceChatComponent->StopVoice();
-	}
+	// Get the VoiceChatManager from the GameState to stop voice on EndPlay
+    if (ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>())
+    {
+        if (GameState->VoiceChatManager)
+        {
+            GameState->VoiceChatManager->StopVoice();
+        }
+    }
 	Super::EndPlay(EndPlayReason);
 }
