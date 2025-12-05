@@ -42,6 +42,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void OnSeekerUI();
 
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_SendUserData(struct FReneUserData data);
 
 private:
 	void EnableUIControll();

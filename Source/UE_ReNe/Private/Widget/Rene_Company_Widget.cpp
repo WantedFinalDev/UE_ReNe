@@ -23,7 +23,7 @@ void URene_Company_Widget::OnClickedClose()
 	APlayerController* pc = GetWorld()->GetFirstPlayerController();
 	if (!pc)
 	{
-		SHOWERROR()
+		LOGERROR()
 		return;
 	}
 	FInputModeGameOnly im;
@@ -33,8 +33,6 @@ void URene_Company_Widget::OnClickedClose()
 
 void URene_Company_Widget::OnClickedList()
 {
-	bIsVisibleList = !bIsVisibleList;
-	
 	if (bIsVisibleList)
 	{
 		scr_UserList->SetVisibility(ESlateVisibility::Collapsed);
@@ -45,6 +43,8 @@ void URene_Company_Widget::OnClickedList()
 		scr_UserList->SetVisibility(ESlateVisibility::Visible);
 		PopulateUserList();
 	}
+	
+	bIsVisibleList = !bIsVisibleList;
 }
 
 void URene_Company_Widget::PopulateUserList()
@@ -56,20 +56,20 @@ void URene_Company_Widget::PopulateUserList()
 	TObjectPtr<ARene_Booth_GameState> gs = GetWorld()->GetGameState<ARene_Booth_GameState>();
 	if (gs)
 	{
-		TArray<APlayerState*> players = gs->PlayerArray;
-		for (TObjectPtr<APlayerState> player : players)
+		TArray<TObjectPtr<ARene_PlayerState>> arr_players = gs->Rene_PlayerArray;
+		for (TObjectPtr<ARene_PlayerState> ps : arr_players)
 		{
-			if (!player) continue;
+			if (!ps) continue;
 			
 			// Host 제외
-			if (player == GetOwningPlayer()->PlayerState)
+			if (GetWorld()->GetFirstPlayerController()->HasAuthority())
 				continue;
 			
 			TObjectPtr<URene_UserListImplementWidget> imp_ui = CreateWidget<URene_UserListImplementWidget>(GetOwningPlayer(), ImplementWidget);
 			
 			if (imp_ui)
 			{
-				imp_ui->SetUserImplementInfo(player);
+				imp_ui->SetUserImplementInfo(ps);
 				imp_ui->SetTeleportLocation(TargetOfTeleport);
 				scr_UserList->AddChild(imp_ui);
 				
@@ -78,7 +78,7 @@ void URene_Company_Widget::PopulateUserList()
 			}
 			else
 			{
-				SHOWERRORF("implement UI OR TargetPoint MIA")
+				LOGERRORF(TEXT("implement UI OR TargetPoint MIA"))
 				return;
 			}
 		}

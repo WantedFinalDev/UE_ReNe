@@ -4,13 +4,14 @@
 #include "Components/TextBlock.h"
 #include "Engine/TargetPoint.h"
 #include "GameFramework/PlayerState.h"
+#include "Global/Rene_PlayerState.h"
 #include "Player/Rene_PlayerController.h"
 
-void URene_UserListImplementWidget::SetUserImplementInfo(APlayerState* ps)
+void URene_UserListImplementWidget::SetUserImplementInfo(ARene_PlayerState* ps)
 {
 	if (!ps || !txt_UserName) return;
-	txt_UserName->SetText(FText::FromString(ps->GetPlayerName()));
-	playerstate = ps;
+	txt_UserName->SetText(FText::FromString(ps->GetReneUserName()));
+	thisps = ps;
 }
 
 void URene_UserListImplementWidget::SetTeleportLocation(FVector v)
@@ -30,6 +31,6 @@ void URene_UserListImplementWidget::OnClickedP2P()
 	TObjectPtr<ARene_PlayerController> pc_host = Cast<ARene_PlayerController>(GetOwningPlayer());
 	
 	if (!pc_host) return;
-	pc_host->ServerRPC_TeleportWithTarget(playerstate, TeleportLocation);
+	pc_host->ServerRPC_TeleportWithTarget(thisps, TeleportLocation);
 }
 

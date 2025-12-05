@@ -4,6 +4,7 @@
 #include "GameFramework/GameStateBase.h"
 #include "Rene_Booth_GameState.generated.h"
 
+class ARene_PlayerState;
 class URene_VoiceChatManager;
 
 UCLASS()
@@ -31,6 +32,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Voice")
 	TObjectPtr<URene_VoiceChatManager> VoiceChatManager;
 	
+	TArray<TObjectPtr<ARene_PlayerState>> Rene_PlayerArray;
 	
 	
 	

@@ -13,10 +13,10 @@ struct FReneUserData
 	 *	Login Data 가상의 구조
 	 */
 	UPROPERTY(BlueprintReadWrite)
-	FString ID = TEXT("NeedInitName");
+	FString ID = TEXT("EmptyID");
 	
 	UPROPERTY(BlueprintReadWrite)
-	FString Name = TEXT("NeedInitName");
+	FString Name = TEXT("EmptyName");
 	
 	UPROPERTY(BlueprintReadWrite)
 	int32 Level = 1;

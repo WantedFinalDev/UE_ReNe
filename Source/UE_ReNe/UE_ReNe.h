@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 
 /** Main log category used across the project */
-DECLARE_LOG_CATEGORY_EXTERN(LogUE_ReNe, Log, All);
+DECLARE_LOG_CATEGORY_EXTERN(Rene, Log, All);
 
 /*
 - DECLARE_LOG_CATEGORY_EXTERN(Name, DefaultVerbosity, CompileTimeVerbosity):
@@ -32,96 +32,33 @@ DECLARE_LOG_CATEGORY_EXTERN(LogUE_ReNe, Log, All);
 주의: Shipping 빌드에서는 일부 로그가 무시되거나 제거됩니다. 민감정보 로그 금지.
 */
 
-// 파일명에서 경로와 확장자를 제거하는 헬퍼 함수
-namespace MYPLogHelper
-{
-    // 파일 경로에서 파일명만 추출 (경로 제거)
-    inline const char* ExtractFileName(const char* FilePath)
-    {
-        const char* FileName = FilePath;
-        // 윈도우/유닉스 경로 구분자 처리
-        const char* LastSlash = strrchr(FilePath, '/');
-        const char* LastBackslash = strrchr(FilePath, '\\');
-
-        if (LastSlash && LastBackslash)
-        {
-            FileName = (LastSlash > LastBackslash) ? LastSlash + 1 : LastBackslash + 1;
-        }
-        else if (LastSlash)
-        {
-            FileName = LastSlash + 1;
-        }
-        else if (LastBackslash)
-        {
-            FileName = LastBackslash + 1;
-        }
-
-        return FileName;
-    }
-
-    // 파일명에서 확장자를 제거한 문자열을 생성
-    inline FString GetFileNameWithoutExtension(const char* FilePath)
-    {
-        FString FileName = ANSI_TO_TCHAR(ExtractFileName(FilePath));
-        int32 DotIndex;
-        if (FileName.FindLastChar('.', DotIndex))
-        {
-            return FileName.Left(DotIndex);
-        }
-        return FileName;
-    }
-}
-
-#ifndef SHOWLOG
-#define SHOWLOG() \
-UE_LOG(LogUE_ReNe, Log, TEXT("%s::%s[%d]"), \
-*MYPLogHelper::GetFileNameWithoutExtension(__FILE__), \
-ANSI_TO_TCHAR(__FUNCTION__), \
-__LINE__)
-#endif
-
-// 메시지를 추가로 남기고 싶을 때 사용
-// 사용 예) SHOWLOGF(TEXT("Speed=%f"), Speed);
-#ifndef SHOWLOGF
-#define SHOWLOGF(Format, ...) \
-UE_LOG(LogUE_ReNe, Log, TEXT("%s::%s[%d] | \"" Format "\""), \
-*MYPLogHelper::GetFileNameWithoutExtension(__FILE__), \
-ANSI_TO_TCHAR(__FUNCTION__), \
-__LINE__, \
-##__VA_ARGS__)
-#endif
-
 // 경고 레벨 로그
-#ifndef SHOWWARN
-#define SHOWWARN() \
-UE_LOG(LogUE_ReNe, Warning, TEXT("%s::%s[%d]"), \
-*MYPLogHelper::GetFileNameWithoutExtension(__FILE__), \
+#ifndef LOGWARN
+#define LOGWARN() \
+UE_LOG(Rene, Warning, TEXT("%s[%d]"), \
 ANSI_TO_TCHAR(__FUNCTION__), \
 __LINE__)
 #endif
 
-#ifndef SHOWWARNF
-#define SHOWWARNF(Format, ...) \
-UE_LOG(LogUE_ReNe, Warning, TEXT("%s::%s[%d] | \"" Format "\""), \
-*MYPLogHelper::GetFileNameWithoutExtension(__FILE__), \
+#ifndef LOGWARNF
+#define LOGWARNF(Format, ...) \
+UE_LOG(Rene, Warning, TEXT("%s[%d] | " Format), \
 ANSI_TO_TCHAR(__FUNCTION__), \
 __LINE__, \
 ##__VA_ARGS__)
 #endif
 
 // 오류 레벨 로그
-#ifndef SHOWERROR
-#define SHOWERROR() \
-UE_LOG(LogUE_ReNe, Error, TEXT("%s::%s[%d]"), \
-*MYPLogHelper::GetFileNameWithoutExtension(__FILE__), \
+#ifndef LOGERROR
+#define LOGERROR() \
+UE_LOG(Rene, Error, TEXT("%s[%d]"), \
 ANSI_TO_TCHAR(__FUNCTION__), \
 __LINE__)
 #endif
 
-#ifndef SHOWERRORF
-#define SHOWERRORF(Format, ...) \
-UE_LOG(LogUE_ReNe, Error, TEXT("%s::%s[%d] | \"" Format "\""), \
-*MYPLogHelper::GetFileNameWithoutExtension(__FILE__), \
+#ifndef LOGERRORF
+#define LOGERRORF(Format, ...) \
+UE_LOG(Rene, Error, TEXT("%s[%d] | " Format), \
 ANSI_TO_TCHAR(__FUNCTION__), \
 __LINE__, \
 ##__VA_ARGS__)

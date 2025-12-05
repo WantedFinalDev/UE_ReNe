@@ -12,6 +12,8 @@
 #include "EnhancedInputSubsystems.h" // Required for Enhanced Input
 #include "EnhancedInputComponent.h"   // Required for Enhanced Input
 #include "Global/Rene_Booth_GameMode.h"
+#include "Global/Rene_PlayerState.h"
+#include "Global/Rene_GameInstance.h"
 #include "Network/Rene_LocalVoiceRecorder.h"  // New include for local voice recorder
 
 
@@ -34,7 +36,17 @@ void ARene_PlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	SHOWWARN()
+	LOGWARNF(TEXT("%s"), *GetPlayerState<ARene_PlayerState>()->GetPlayerName());
+	
+	if (IsLocalController())
+	{
+		URene_GameInstance* gi = Cast<URene_GameInstance>(GetGameInstance());
+		if (gi)
+		{
+			FReneUserData data = gi->GetUserData();
+			ServerRPC_SendUserData(data);
+		}
+	}
 }
 
 void ARene_PlayerController::SetupInputComponent()
@@ -68,7 +80,7 @@ void ARene_PlayerController::SetupInputComponent()
 
 void ARene_PlayerController::ClientRPC_CreateBoothUI_Implementation()
 {
-	// Dedic : User Info Check -> Co / Se
+	// Dedicated : User Info Check -> Co / Se
 	CreateSeekerUI();
 }
 
@@ -76,7 +88,7 @@ void ARene_PlayerController::CreateCompanyUI()
 {
 	if (!IsValid(companyui_class)) return;
 	
-	SHOWWARNF(TEXT("Company UI has Gen"))
+	LOGWARNF(TEXT("Company UI has Gen"))
 	company_ui = CreateWidget<URene_Company_Widget>(this, companyui_class);
 	company_ui->AddToViewport();
 	EnableUIControll();
@@ -86,7 +98,7 @@ void ARene_PlayerController::CreateSeekerUI()
 {
 	if (!IsValid(seekerui_class)) return;
 	
-	SHOWWARNF(TEXT("Seeker UI has Gen"))
+	LOGWARNF(TEXT("Seeker UI has Gen"))
 	seeker_ui = CreateWidget<URene_Seeker_Widget>(this, seekerui_class);
 	seeker_ui->AddToViewport();
 	EnableUIControll();
@@ -97,12 +109,11 @@ void ARene_PlayerController::OnPlayerListUpdated()
 	TObjectPtr<ARene_Booth_GameState> gs = GetWorld()->GetGameState<ARene_Booth_GameState>();
 	if (IsValid(gs))
 	{
-		TArray<TObjectPtr<APlayerState>> allplayers = gs->PlayerArray;
+		TArray<TObjectPtr<ARene_PlayerState>> allplayers = gs->Rene_PlayerArray;
 		
-		for (TObjectPtr<APlayerState> ps : allplayers)
+		for (TObjectPtr<ARene_PlayerState> ps : allplayers)
 		{
-			
-			SHOWWARNF(TEXT("Player %s"), *ps->GetPlayerName())
+			LOGWARNF(TEXT("Player Name : %s"), *ps->GetReneUserName())
 		}
 	}
 }
@@ -127,7 +138,7 @@ void ARene_PlayerController::ServerRPC_TeleportWithTarget_Implementation(APlayer
 	target->SetActorLocation(targetlocation);
 	host->SetActorLocation(targetlocation + FVector(100, 100, 0));
 	
-	SHOWWARNF(TEXT("\nTeleport Complete | %s"), *targetstate->GetPlayerName())
+	LOGWARNF(TEXT("\nTeleport Complete | %s"), *targetstate->GetPlayerName())
 
 	// +++ 여기에 1:1 보이스 채팅 시작 로직을 추가 +++
 	ARene_Booth_GameMode* GameMode = GetWorld()->GetAuthGameMode<ARene_Booth_GameMode>();
@@ -162,6 +173,16 @@ void ARene_PlayerController::OnSeekerUI()
 		FInputModeUIOnly im;
 		SetInputMode(im);
 		bShowMouseCursor = true;
+	}
+}
+
+void ARene_PlayerController::ServerRPC_SendUserData_Implementation(struct FReneUserData data)
+{
+	ARene_PlayerState* ps = GetPlayerState<ARene_PlayerState>();
+	if (ps)
+	{
+		ps->SetReneUserData(data);
+		ps->SetPlayerName(data.Name);
 	}
 }
 

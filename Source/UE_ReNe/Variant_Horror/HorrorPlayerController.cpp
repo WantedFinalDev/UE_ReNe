@@ -34,7 +34,7 @@ void AHorrorPlayerController::BeginPlay()
 
 		} else {
 
-			UE_LOG(LogUE_ReNe, Error, TEXT("Could not spawn mobile controls widget."));
+			UE_LOG(Rene, Error, TEXT("Could not spawn mobile controls widget."));
 
 		}
 

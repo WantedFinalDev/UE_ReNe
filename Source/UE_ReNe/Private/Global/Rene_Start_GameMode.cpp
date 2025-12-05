@@ -16,7 +16,7 @@ void ARene_Start_GameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 	
-	SHOWWARN();
+	LOGWARN();
 	
 	NewPlayer->bShowMouseCursor = true;
 	FInputModeUIOnly im;
