@@ -52,6 +52,7 @@ void URene_Company_Widget::PopulateUserList()
 	if (!scr_UserList || !ImplementWidget) return;
 	ClearUserList();
 	
+	
 	TObjectPtr<ARene_Booth_GameState> gs = GetWorld()->GetGameState<ARene_Booth_GameState>();
 	if (gs)
 	{
@@ -66,12 +67,10 @@ void URene_Company_Widget::PopulateUserList()
 			
 			TObjectPtr<URene_UserListImplementWidget> imp_ui = CreateWidget<URene_UserListImplementWidget>(GetOwningPlayer(), ImplementWidget);
 			
-			if (imp_ui && p_MeetingPoint)
+			if (imp_ui)
 			{
 				imp_ui->SetUserImplementInfo(player);
-				
-				imp_ui->targetpoint = p_MeetingPoint;
-				
+				imp_ui->SetTeleportLocation(TargetOfTeleport);
 				scr_UserList->AddChild(imp_ui);
 				
 				// 별도 배열 공간 필요시 이용
