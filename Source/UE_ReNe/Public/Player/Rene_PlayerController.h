@@ -45,9 +45,13 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_SendUserData(struct FReneUserData data);
 
-private:
 	void EnableUIControll();
 	void DisableUIControll();
+	
+	
+	
+	
+private:
 	TObjectPtr<class UUserWidget> GetUserWidget();
 
 

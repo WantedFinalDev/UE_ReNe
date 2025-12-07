@@ -21,8 +21,6 @@ void URene_Seeker_Widget::OnClickedClose()
 	TObjectPtr<ARene_PlayerController> pc = Cast<ARene_PlayerController>(GetWorld()->GetFirstPlayerController());
 	if (!pc) return;
 	
-	FInputModeGameOnly im;
-	pc->SetInputMode(im);
-	pc->SetShowMouseCursor(false);
+	pc->DisableUIControll();
 }
 

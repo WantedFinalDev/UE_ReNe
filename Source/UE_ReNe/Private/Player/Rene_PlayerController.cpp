@@ -174,7 +174,7 @@ void ARene_PlayerController::ServerRPC_TeleportWithTarget_Implementation(APlayer
 			GameMode->StartOneToOneVoiceChat(this, TargetPC);                    
 		}                                                                   
 	}
-}      
+}
 
 void ARene_PlayerController::OnCompanyUI()
 {
