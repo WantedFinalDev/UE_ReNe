@@ -17,12 +17,11 @@ public:
 	virtual void BeginPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
-	
-	UFUNCTION(BlueprintCallable, Category = "UI")
-	URene_LobbyWidget* GetLobbyUI() { return LobbyUI; }
+	UFUNCTION(blueprintCallable, Category = "UI")
+	void DisplayLobbyUI(APlayerController* pc);
 
-
-
+	UFUNCTION(blueprintCallable, Category = "UI")
+	void SwitchDisplayUI();
 
 private:
 	
@@ -34,11 +33,11 @@ public:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class URene_LobbyWidget> LobbyUIClass;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	class URene_LobbyWidget* LobbyUI;
 	
 	
 private:
-	UPROPERTY()
-	class URene_LobbyWidget* LobbyUI;
 	
 	
 	

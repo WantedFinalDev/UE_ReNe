@@ -218,7 +218,7 @@ void ARene_PlayerController::ServerRPC_SendUserData_Implementation(struct FReneU
 void ARene_PlayerController::EnableUIControll()
 {
 	bShowMouseCursor = true;
-	FInputModeUIOnly im;
+	FInputModeGameAndUI im;
 	SetInputMode(im);
 }
 

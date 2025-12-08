@@ -29,7 +29,6 @@ public:
 	void CreateCompanyUI();
 	void CreateSeekerUI();
 	
-	void OnPlayerListUpdated();
 	TArray<TObjectPtr<class APlayerState>> GetAllPlayerState();
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_TeleportWithTarget(APlayerState* targetstate, FVector targetlocation);
