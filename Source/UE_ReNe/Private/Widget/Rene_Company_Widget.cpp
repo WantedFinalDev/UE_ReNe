@@ -3,15 +3,20 @@
 #include "UE_ReNe.h"
 #include "Components/Button.h"
 #include "Components/ScrollBox.h"
+#include "Components/SizeBox.h"
+#include "Components/WidgetSwitcher.h"
 #include "Global/Rene_Booth_GameState.h"
+#include "Player/Rene_PlayerController.h"
 #include "Widget/Rene_UserListImplementWidget.h"
 
 void URene_Company_Widget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	
-	btn_Close->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedClose);
+	btn_MainClose->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedClose);
 	btn_UserList->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedList);
+	btn_MainToReport->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedMainToReport);
+	btn_ReportToMain->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedReportToMain);
 	
 	if (scr_UserList)
 		scr_UserList->SetVisibility(ESlateVisibility::Collapsed);
@@ -20,21 +25,17 @@ void URene_Company_Widget::NativeConstruct()
 void URene_Company_Widget::OnClickedClose()
 {
 	SetVisibility(ESlateVisibility::Collapsed);
-	APlayerController* pc = GetWorld()->GetFirstPlayerController();
+	ARene_PlayerController* pc = Cast<ARene_PlayerController>(GetWorld()->GetFirstPlayerController());
 	if (!pc)
 	{
-		SHOWERROR()
+		LOGERROR()
 		return;
 	}
-	FInputModeGameOnly im;
-	pc->SetInputMode(im);
-	pc->SetShowMouseCursor(false);
+	pc->DisableUIControll();
 }
 
 void URene_Company_Widget::OnClickedList()
 {
-	bIsVisibleList = !bIsVisibleList;
-	
 	if (bIsVisibleList)
 	{
 		scr_UserList->SetVisibility(ESlateVisibility::Collapsed);
@@ -45,6 +46,28 @@ void URene_Company_Widget::OnClickedList()
 		scr_UserList->SetVisibility(ESlateVisibility::Visible);
 		PopulateUserList();
 	}
+	
+	bIsVisibleList = !bIsVisibleList;
+}
+
+void URene_Company_Widget::OnClickedMainToReport()
+{
+	if (!IsValid(sw_Switcher)) return;
+	
+	sw_Switcher->SetActiveWidgetIndex(1);
+	
+	if (!IsValid(ResultWidget)) return;
+	
+	p_ResultUI = CreateWidget<UUserWidget>(GetOwningPlayer(), ResultWidget);
+	
+	if (!IsValid(p_ResultUI)) return;
+	
+	size_Result->AddChild(p_ResultUI);
+}
+
+void URene_Company_Widget::OnClickedReportToMain()
+{
+	sw_Switcher->SetActiveWidgetIndex(0);
 }
 
 void URene_Company_Widget::PopulateUserList()
@@ -56,20 +79,20 @@ void URene_Company_Widget::PopulateUserList()
 	TObjectPtr<ARene_Booth_GameState> gs = GetWorld()->GetGameState<ARene_Booth_GameState>();
 	if (gs)
 	{
-		TArray<APlayerState*> players = gs->PlayerArray;
-		for (TObjectPtr<APlayerState> player : players)
+		TArray<TObjectPtr<ARene_PlayerState>> arr_players = gs->Rene_PlayerArray;
+		for (TObjectPtr<ARene_PlayerState> ps : arr_players)
 		{
-			if (!player) continue;
+			if (!ps) continue;
 			
 			// Host 제외
-			if (player == GetOwningPlayer()->PlayerState)
+			if (GetWorld()->GetFirstPlayerController()->HasAuthority())
 				continue;
 			
 			TObjectPtr<URene_UserListImplementWidget> imp_ui = CreateWidget<URene_UserListImplementWidget>(GetOwningPlayer(), ImplementWidget);
 			
 			if (imp_ui)
 			{
-				imp_ui->SetUserImplementInfo(player);
+				imp_ui->SetUserImplementInfo(ps);
 				imp_ui->SetTeleportLocation(TargetOfTeleport);
 				scr_UserList->AddChild(imp_ui);
 				
@@ -78,7 +101,7 @@ void URene_Company_Widget::PopulateUserList()
 			}
 			else
 			{
-				SHOWERRORF("implement UI OR TargetPoint MIA")
+				LOGERRORF(TEXT("implement UI OR TargetPoint MIA"))
 				return;
 			}
 		}

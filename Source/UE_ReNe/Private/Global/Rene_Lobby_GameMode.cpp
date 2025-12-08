@@ -1,6 +1,8 @@
 #include "Global/Rene_Lobby_GameMode.h"
 #include "UE_ReNe.h"
+#include "UE_ReNePlayerController.h"
 #include "Blueprint/UserWidget.h"
+#include "Player/Rene_PlayerController.h"
 #include "Widget/Rene_LobbyWidget.h"
 
 void ARene_Lobby_GameMode::BeginPlay()
@@ -18,23 +20,11 @@ void ARene_Lobby_GameMode::PostLogin(APlayerController* NewPlayer)
 	LobbyUI = CreateWidget<URene_LobbyWidget>(NewPlayer, LobbyUIClass);
 	LobbyUI->AddToViewport();
 	
-	EnableUIControll();
+	NewPlayer->bShowMouseCursor = true;
+	FInputModeUIOnly im;
+	NewPlayer->SetInputMode(im);
 }
 
-void ARene_Lobby_GameMode::EnableUIControll()
-{
-	APlayerController* pc = GetWorld()->GetFirstPlayerController();
-	pc->bShowMouseCursor = true;
-	FInputModeGameAndUI InputMode;
-	pc->SetInputMode(InputMode);
-}
 
-void ARene_Lobby_GameMode::DisableUIControll()
-{
-	APlayerController* pc = GetWorld()->GetFirstPlayerController();
-	pc->bShowMouseCursor = false;
-	FInputModeGameOnly InputMode;
-	pc->SetInputMode(InputMode);
-}
 
 

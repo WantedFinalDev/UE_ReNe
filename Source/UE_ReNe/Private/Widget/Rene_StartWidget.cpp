@@ -35,7 +35,7 @@ void URene_StartWidget::OnClickedEnter()
 	}
 	else
 	{
-		SHOWERROR()
+		LOGERROR()
 	}
 	
 	/*APlayerController* pc = GetWorld()->GetFirstPlayerController();

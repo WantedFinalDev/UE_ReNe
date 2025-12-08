@@ -1,6 +1,6 @@
 #include "Global/Rene_Booth_GameMode.h"
 #include "UE_ReNe.h"
-#include "Global/Rene_Booth_PlayerState.h"
+#include "Global/Rene_PlayerState.h"
 #include "Global/Rene_GameInstance.h"
 #include "Player/Rene_PlayerController.h"
 #include "Global/Rene_Booth_GameMode.h"
@@ -18,18 +18,17 @@ void ARene_Booth_GameMode::PostLogin(APlayerController* NewPlayer)
      * Booth_GS로 가시오
      */
 	
-    TObjectPtr<URene_GameInstance> gi = Cast<URene_GameInstance>(NewPlayer->GetGameInstance());
+    /*TObjectPtr<URene_GameInstance> gi = Cast<URene_GameInstance>(NewPlayer->GetGameInstance());
     if (IsValid(gi))
     {
         FReneUserData data = gi->GetUserData();
-        if (TObjectPtr<ARene_Booth_PlayerState> ps = Cast<ARene_Booth_PlayerState>(NewPlayer->PlayerState))
+        if (TObjectPtr<ARene_PlayerState> ps = Cast<ARene_PlayerState>(NewPlayer->PlayerState))
         {
             ps->SetPlayerName(data.Name);
             ps->SetReneUserData(data);
-            SHOWWARNF(TEXT("User %s Saved"), *data.Name)
+            LOGWARNF(TEXT("User %s Saved"), *data.Name)
         }
-    }
-	
+    }*/
 	
     if (ARene_PlayerController* pc = Cast<ARene_PlayerController>(NewPlayer))
     {
@@ -38,7 +37,6 @@ void ARene_Booth_GameMode::PostLogin(APlayerController* NewPlayer)
         else
             pc->ClientRPC_CreateBoothUI();
     }
-    Super::PostLogin(NewPlayer);
 }
 
 void ARene_Booth_GameMode::StartOneToOneVoiceChat(APlayerController* PlayerA, APlayerController* PlayerB)
@@ -51,7 +49,7 @@ void ARene_Booth_GameMode::StartOneToOneVoiceChat(APlayerController* PlayerA, AP
 
     if (!PlayerA || !PlayerB)
     {
-        UE_LOG(LogTemp, Warning, TEXT("StartOneToOneVoiceChat failed: Player controllers are not valid."));
+        LOGWARNF(TEXT("StartOneToOneVoiceChat failed: Player controllers are not valid."));
         return;
         
     }
@@ -61,7 +59,7 @@ void ARene_Booth_GameMode::StartOneToOneVoiceChat(APlayerController* PlayerA, AP
 
     if (!PlayerStateA_Base || !PlayerStateB_Base)
     {
-        UE_LOG(LogTemp, Warning, TEXT("StartOneToOneVoiceChat failed: Player states are not valid."));
+        LOGERRORF(TEXT("StartOneToOneVoiceChat failed: Player states are not valid."));
         return;
     }
 
@@ -82,14 +80,14 @@ void ARene_Booth_GameMode::StartOneToOneVoiceChat(APlayerController* PlayerA, AP
     ARene_Booth_GameState* MyGameState = GetGameState<ARene_Booth_GameState>();
     if (!MyGameState)
     {
-        UE_LOG(LogTemp, Error, TEXT("StartOneToOneVoiceChat failed: GameState not found."));
+        LOGERRORF(TEXT("StartOneToOneVoiceChat failed: GameState not found."));
         return;
     }
 
     URene_VoiceChatManager* VoiceManager = MyGameState->VoiceChatManager;
     if (!VoiceManager)
     {
-        UE_LOG(LogTemp, Error, TEXT("StartOneToOneVoiceChat failed: VoiceChatManager not found on GameState."));
+        LOGERRORF(TEXT("StartOneToOneVoiceChat failed: VoiceChatManager not found on GameState."));
         return;
     }
 

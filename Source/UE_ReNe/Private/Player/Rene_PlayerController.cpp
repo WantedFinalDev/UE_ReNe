@@ -13,6 +13,8 @@
 #include "EnhancedInputComponent.h"   // Required for Enhanced Input
 #include "Global/Rene_Booth_GameMode.h"
 #include "Global/Rene_Booth_PlayerState.h"
+#include "Global/Rene_PlayerState.h"
+#include "Global/Rene_GameInstance.h"
 #include "Network/Rene_LocalVoiceRecorder.h"  // New include for local voice recorder
 
 
@@ -35,8 +37,34 @@ ARene_PlayerController::ARene_PlayerController()
 void ARene_PlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	SHOWWARN()
+
+	if (IsLocalController())
+	{
+		URene_GameInstance* gi = Cast<URene_GameInstance>(GetGameInstance());
+		if (gi)
+		{
+			FReneUserData data = gi->GetCachedUserData();
+
+			if (HasAuthority())
+			{
+				TObjectPtr<ARene_PlayerState> ps = GetPlayerState<ARene_PlayerState>();
+				if (ps)
+				{
+					ps->SetReneUserData(data);
+					ps->SetPlayerName(data.Name);
+					LOGWARNF(TEXT("Host: PlayerState Set Directly - %s"), *data.Name);
+				}
+			}
+			else
+			{
+				ServerRPC_SendUserData(data);
+				LOGWARNF(TEXT("Client: ServerRPC Called - %s"), *data.Name);
+			}
+		}
+	}
+
+	// 확인용 로그
+	LOGWARNF(TEXT("Final Name: %s"), *GetPlayerState<ARene_PlayerState>()->GetReneUserName());
 }
 
 void ARene_PlayerController::SetupInputComponent()
@@ -96,7 +124,7 @@ bool ARene_PlayerController::ShowFileDialog(const FString& DialogTitle, const FS
 
 void ARene_PlayerController::ClientRPC_CreateBoothUI_Implementation()
 {
-	// Dedic : User Info Check -> Co / Se
+	// Dedicated : User Info Check -> Co / Se
 	CreateSeekerUI();
 }
 
@@ -104,7 +132,7 @@ void ARene_PlayerController::CreateCompanyUI()
 {
 	if (!IsValid(companyui_class)) return;
 	
-	SHOWWARNF(TEXT("Company UI has Gen"))
+	LOGWARNF(TEXT("Company UI has Gen"))
 	company_ui = CreateWidget<URene_Company_Widget>(this, companyui_class);
 	company_ui->AddToViewport();
 	EnableUIControll();
@@ -114,26 +142,31 @@ void ARene_PlayerController::CreateSeekerUI()
 {
 	if (!IsValid(seekerui_class)) return;
 	
-	SHOWWARNF(TEXT("Seeker UI has Gen"))
+	LOGWARNF(TEXT("Seeker UI has Gen"))
 	seeker_ui = CreateWidget<URene_Seeker_Widget>(this, seekerui_class);
 	seeker_ui->AddToViewport();
 	EnableUIControll();
 }
 
+// 주석 처리 이유:
+// - AddPlayerState에서 호출 시 PlayerState 이름이 아직 설정되기 전이라 EmptyName이 출력됨
+// - PopulateUserList가 GameState의 Rene_PlayerArray를 직접 읽어서 UI 생성하므로 불필요
+// - 필요 시 수동으로 호출 가능하도록 코드는 남겨둠
+/*
 void ARene_PlayerController::OnPlayerListUpdated()
 {
 	TObjectPtr<ARene_Booth_GameState> gs = GetWorld()->GetGameState<ARene_Booth_GameState>();
 	if (IsValid(gs))
 	{
-		TArray<TObjectPtr<APlayerState>> allplayers = gs->PlayerArray;
-		
-		for (TObjectPtr<APlayerState> ps : allplayers)
+		TArray<TObjectPtr<ARene_PlayerState>> allplayers = gs->Rene_PlayerArray;
+
+		for (TObjectPtr<ARene_PlayerState> ps : allplayers)
 		{
-			
-			SHOWWARNF(TEXT("Player %s"), *ps->GetPlayerName())
+			LOGWARNF(TEXT("Player Name : %s"), *ps->GetReneUserName())
 		}
 	}
 }
+*/
 
 TArray<TObjectPtr<class APlayerState>> ARene_PlayerController::GetAllPlayerState()
 {
@@ -155,7 +188,7 @@ void ARene_PlayerController::ServerRPC_TeleportWithTarget_Implementation(APlayer
 	target->SetActorLocation(targetlocation);
 	host->SetActorLocation(targetlocation + FVector(100, 100, 0));
 	
-	SHOWWARNF(TEXT("\nTeleport Complete | %s"), *targetstate->GetPlayerName())
+	LOGWARNF(TEXT("\nTeleport Complete | %s"), *targetstate->GetPlayerName())
 
 	// Start the 1-on-1 voice chat. The GameMode will handle all setup logic.
 	ARene_Booth_GameMode* GameMode = GetWorld()->GetAuthGameMode<ARene_Booth_GameMode>();
@@ -167,7 +200,7 @@ void ARene_PlayerController::ServerRPC_TeleportWithTarget_Implementation(APlayer
 			GameMode->StartOneToOneVoiceChat(this, TargetPC);                    
 		}                                                                   
 	}
-}      
+}
 
 void ARene_PlayerController::OnCompanyUI()
 {
@@ -188,6 +221,23 @@ void ARene_PlayerController::OnSeekerUI()
 		FInputModeUIOnly im;
 		SetInputMode(im);
 		bShowMouseCursor = true;
+	}
+}
+
+void ARene_PlayerController::ServerRPC_SendUserData_Implementation(struct FReneUserData data)
+{
+	LOGWARNF(TEXT("ServerRPC Start. Setting Name: %s"), *data.Name);
+
+	ARene_PlayerState* ps = GetPlayerState<ARene_PlayerState>();
+	if (ps)
+	{
+		ps->SetReneUserData(data);
+		ps->SetPlayerName(data.Name);
+		LOGWARNF(TEXT("ServerRPC Complete. PlayerName: %s"), *ps->GetReneUserName());
+	}
+	else
+	{
+		LOGERRORF(TEXT("ServerRPC Failed. PlayerName is EmptyName"));
 	}
 }
 

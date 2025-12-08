@@ -5,6 +5,8 @@
 #include "Rene_Lobby_GameMode.generated.h"
 
 
+class URene_LobbyWidget;
+
 UCLASS()
 class UE_RENE_API ARene_Lobby_GameMode : public AGameModeBase
 {
@@ -15,14 +17,13 @@ public:
 	virtual void BeginPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
-	UFUNCTION(BlueprintCallable, Category = "UI")
-	void EnableUIControll();
-	
-	UFUNCTION(BlueprintCallable, Category = "UI")
-	void DisableUIControll();
 	
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	URene_LobbyWidget* GetLobbyUI() { return LobbyUI; }
+
+
+
+
 private:
 	
 	

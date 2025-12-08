@@ -4,6 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Rene_UserListImplementWidget.generated.h"
 
+class ARene_PlayerState;
 class UTextBlock;
 class UButton;
 
@@ -14,7 +15,7 @@ class UE_RENE_API URene_UserListImplementWidget : public UUserWidget
 	
 	/* Method */
 public:
-	void SetUserImplementInfo(APlayerState* ps);
+	void SetUserImplementInfo(ARene_PlayerState* ps);
 	void SetTeleportLocation(FVector v);
 	
 	
@@ -41,10 +42,8 @@ public:
 	
 	
 private:
-	//	CompanyWidget.PopulateUserList() 로부터 지정됨.
 	UPROPERTY()
-	TObjectPtr<APlayerState> playerstate;
-	
+	TObjectPtr<ARene_PlayerState> thisps;
 	
 	
 };

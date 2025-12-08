@@ -24,7 +24,7 @@ void URene_GameInstance::CreateReneSession(int32 n_maxplayer, FString s_sessionn
 {
 	FOnlineSessionSettings settings;
 	FName sysname = Online::GetSubsystem(GetWorld())->GetSubsystemName();
-	UE_LOG(LogTemp, Warning, TEXT("Subsystem : %s"), *sysname.ToString());
+	LOGWARNF(TEXT("Subsystem : %s"), *sysname.ToString());
 	
 	settings.bIsLANMatch = sysname.IsEqual(TEXT("NULL"));
 	settings.NumPublicConnections = n_maxplayer;
@@ -45,7 +45,7 @@ void URene_GameInstance::JoinReneSession(int32 idx)
 {
 	if (!p_ReneSessionSearch.IsValid() || !p_ReneSessionInterface.IsValid())
 	{
-		UE_LOG(LogTemp, Error, TEXT("Join FuckedUp"));
+		LOGERRORF(TEXT("Join FuckedUp"));
 		return;
 	}
 	FOnlineSessionSearchResult selected = p_ReneSessionSearch->SearchResults[idx];
@@ -54,7 +54,7 @@ void URene_GameInstance::JoinReneSession(int32 idx)
 	
 	FString str; 
 	selected.Session.SessionSettings.Get(FName(TEXT("ROOMNAME")), str);
-	SHOWWARNF(TEXT("Joining %s Room"), *str)
+	LOGWARNF(TEXT("Joining %s Room"), *str)
 	p_ReneSessionInterface->JoinSession(0, NAME_GameSession, selected);
 }
 
@@ -84,45 +84,45 @@ void URene_GameInstance::SetReneUserData(const FString& id, const FString& name,
 	f_userdata.Name = name;
 	f_userdata.Level = level;
 	
-	SHOWWARNF(TEXT("Login Complete : %s"), *name)
+	LOGWARNF(TEXT("UserData Cached : %s"), *f_userdata.Name);
 }
 
 void URene_GameInstance::OnCreateReneSession(FName sessionname, bool b_success)
 {
 	FName sysname = Online::GetSubsystem(GetWorld())->GetSubsystemName();
-	UE_LOG(LogTemp, Warning, TEXT("Online Sub System : %s"), *sysname.ToString());
-	
+	LOGWARNF(TEXT("Online Sub System : %s"), *sysname.ToString());
+
 	if (b_success)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s Session Created"), *sessionname.ToString());
+		LOGWARNF(TEXT("%s Session Created"), *sessionname.ToString());
 		 GetWorld()->ServerTravel(TEXT("/Game/Maps/BoothMap?listen"));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s Session Creation Failed"), *sessionname.ToString());
+		LOGWARNF(TEXT("%s Session Creation Failed"), *sessionname.ToString());
 	}
 }
 
 void URene_GameInstance::OnFindReneSession(bool b_success)
 {
-	UE_LOG(LogTemp, Warning, TEXT("End Find Session"));
-	
+	LOGWARNF(TEXT("End Find Session"));
+
 	if (!b_success)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Searching Session has Failed!"));
+		LOGERRORF(TEXT("Searching Session has Failed!"));
 		return;
 	}
-	
+
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Searching Session has Completed"));
+		LOGWARNF(TEXT("Searching Session has Completed"));
 		auto search_result = p_ReneSessionSearch->SearchResults;
 		for (int32 i = 0 ; i < search_result.Num() ; i++)
 		{
 			FString str;
 			search_result[i].Session.SessionSettings.Get(FName(TEXT("ROOMNAME")), str);
 			OnFindReneSessionComplete.Broadcast(i, str);
-			UE_LOG(LogTemp, Warning, TEXT("%d 번 세션 : %s"), i, *str);
+			LOGWARNF(TEXT("%d 번 세션 : %s"), i, *str);
 		}
 	}
 	
@@ -141,11 +141,11 @@ void URene_GameInstance::OnJoinReneSession(FName session_name, EOnJoinSessionCom
 				pc->SetInputMode(im);
 				pc->SetShowMouseCursor(false);
 				pc->ClientTravel(URL, TRAVEL_Absolute);
-				UE_LOG(LogTemp, Warning, TEXT("Joined URL : %s"), *URL)
+				LOGWARNF(TEXT("Joined URL : %s"), *URL);
 			}
 			else
-				UE_LOG(LogTemp, Error, TEXT("Player Controller MIA"))
+				LOGERRORF(TEXT("Player Controller MIA"))
 		else
-			UE_LOG(LogTemp, Error, TEXT("URL has FuckedUp"));
+			LOGERRORF(TEXT("URL has FuckedUp"))
 	}
 }

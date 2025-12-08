@@ -49,6 +49,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void OnSeekerUI();
 
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_SendUserData(struct FReneUserData data);
     /**
      * Opens a native file dialog for the player to select a file.
      * This is callable from Blueprints (e.g., the Lobby Widget).
@@ -62,9 +64,13 @@ public:
     bool ShowFileDialog(const FString& DialogTitle, const FString& DefaultPath, const FString& FileTypes, FString& OutFilePath);
 
 
-private:
 	void EnableUIControll();
 	void DisableUIControll();
+	
+	
+	
+	
+private:
 	TObjectPtr<class UUserWidget> GetUserWidget();
 
 

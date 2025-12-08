@@ -5,6 +5,7 @@ RiderLink/
 .claude/
 *.code-workspace
 *.DotSettings.user
+nul
 
 
 # Visual Studio 2015 user specific files
