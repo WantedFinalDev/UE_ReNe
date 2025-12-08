@@ -6,6 +6,9 @@
 #include "HAL/PlatformFileManager.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
+#include "GameFramework/PlayerController.h" // Required to get the owning player
+#include "GameFramework/PlayerState.h"     // Required to get the player's state and name
+#include "Misc/DateTime.h"                 // Required for the timestamp
 
 DEFINE_LOG_CATEGORY_STATIC(LogFileUploader, Log, All);
 
@@ -42,6 +45,25 @@ void URene_FileUploader::StartFileUpload(const FString& FilePath, EUploadUserTyp
         return;
     }
 
+    // Get Player Name to prepend to the filename
+    FString PlayerName = "UnknownPlayer";
+    if (APlayerController* OwningController = Cast<APlayerController>(GetOwner()))
+    {
+        if (APlayerState* PlayerState = OwningController->PlayerState)
+        {
+            PlayerName = PlayerState->GetPlayerName();
+        }
+    }
+    UE_LOG(LogFileUploader, Log, TEXT("Owner's player name resolved to: %s"), *PlayerName);
+
+    // Get current timestamp
+    FString Timestamp = FDateTime::Now().ToString(TEXT("%Y%m%d%H%M%S"));
+
+    // Construct the new filename with player name, timestamp, and original filename
+    FString OriginalFilename = FPaths::GetCleanFilename(FilePath);
+    FString NewFilename = FString::Printf(TEXT("%s_%s_%s"), *PlayerName, *Timestamp, *OriginalFilename);
+    UE_LOG(LogFileUploader, Log, TEXT("New filename for upload: %s"), *NewFilename);
+
     // 1. Read file data into a byte array (TArray<uint8>)
     TArray<uint8> FileData;
     if (!FFileHelper::LoadFileToArray(FileData, *FilePath))
@@ -69,7 +91,7 @@ void URene_FileUploader::StartFileUpload(const FString& FilePath, EUploadUserTyp
     
     RequestContent.Append((uint8*)TCHAR_TO_ANSI(*("--" + Boundary + "\r\n")), ("--" + Boundary + "\r\n").Len());
 
-    FString Header = "Content-Disposition: form-data; name=\"file\"; filename=\"" + FPaths::GetCleanFilename(FilePath) + "\"\r\n";
+    FString Header = "Content-Disposition: form-data; name=\"file\"; filename=\"" + NewFilename + "\"\r\n";
     Header += "Content-Type: application/octet-stream\r\n\r\n";
     RequestContent.Append((uint8*)TCHAR_TO_ANSI(*Header), Header.Len());
 
