@@ -47,12 +47,6 @@ class UE_RENE_API URene_ReportWidget : public UUserWidget
 	/* Method */
 public:
 	virtual void NativeConstruct() override;
-	
-	// TODO(human): 조회 버튼 클릭 시 호출되는 핸들러
-	// - 서버로부터 이미지 다운로드 시작
-	// - RequestImageFromServer() 호출
-	UFUNCTION()
-	void OnClickedSearch();
 
 	// TODO(human): HTTP 요청 시작 함수
 	// - FHttpModule::Get()으로 HTTP 모듈 획득
@@ -71,6 +65,15 @@ public:
 	// - img_Viewer->SetBrushFromTexture() 호출
 	void OnImageDownloadComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool bsuccess);
 	
+	UFUNCTION()
+	void OnClickEnterUpld();
+	UFUNCTION()
+	void OnClickEnterDownld();
+	UFUNCTION()
+	void OnClickUpload();
+	UFUNCTION()
+	void OnClickDownload();
+	
 private:
 	
 	
@@ -78,6 +81,7 @@ private:
 	
 	/* Field */
 public:
+	///////////////* UI *////////////////
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> btn_EnterDownload;
 	UPROPERTY(meta=(BindWidget))
@@ -94,7 +98,7 @@ public:
 	TObjectPtr<UCanvasPanel> cv_Up;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCanvasPanel> cv_Down;
-	
+	//////////////////////////////////////
 	
 	// TODO(human): 이미지를 표시할 위젯
 	// - UImage는 Brush 속성에 Texture2D를 설정할 수 있음
@@ -113,6 +117,7 @@ private:
 	UPROPERTY()
 	TObjectPtr<UTexture2D> CachedTexture;
 	
-	
+	/** The hardcoded URL for the PNG file. */
+	const FString PngUrl = TEXT("http://100.112.161.59:8000/api/v1/p2p/audio-chunk2");
 	
 };

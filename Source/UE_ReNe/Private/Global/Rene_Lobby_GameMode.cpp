@@ -9,20 +9,42 @@ void ARene_Lobby_GameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	checkf(IsValid(LobbyUIClass), TEXT("LobbyUIClass must be set in BP_Lobby_GameMode!"));
+	
 }
 
 void ARene_Lobby_GameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 	
-	checkf(IsValid(LobbyUIClass), TEXT("LobbyUIClass must be set in BP_Lobby_GameMode!"));
-	
-	LobbyUI = CreateWidget<URene_LobbyWidget>(NewPlayer, LobbyUIClass);
+	DisplayLobbyUI(NewPlayer);
+}
+
+void ARene_Lobby_GameMode::DisplayLobbyUI(APlayerController* pc)
+{
+	LobbyUI = CreateWidget<URene_LobbyWidget>(pc, LobbyUIClass);
 	LobbyUI->AddToViewport();
-	
-	NewPlayer->bShowMouseCursor = true;
-	FInputModeUIOnly im;
-	NewPlayer->SetInputMode(im);
+	Cast<ARene_PlayerController>(pc)->EnableUIControll();
+	//
+}
+
+void ARene_Lobby_GameMode::SwitchDisplayUI()
+{
+	LOGWARNF(TEXT("Visibility : %s"), *UEnum::GetValueAsString(LobbyUI->GetVisibility()))
+	if (!IsValid(LobbyUI)) return;
+	if(LobbyUI->GetVisibility() != ESlateVisibility::Collapsed)
+	{
+		LOGWARN()
+		LobbyUI->SetVisibility(ESlateVisibility::Collapsed);
+		Cast<ARene_PlayerController>(GetWorld()->GetFirstPlayerController())->DisableUIControll();
+	}
+	else
+	{
+		LOGWARN()
+		LobbyUI->SetVisibility(ESlateVisibility::Visible);
+		Cast<ARene_PlayerController>(GetWorld()->GetFirstPlayerController())->EnableUIControll();
+	}
+
 }
 
 
