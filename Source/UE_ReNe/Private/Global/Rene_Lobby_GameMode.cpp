@@ -9,7 +9,8 @@ void ARene_Lobby_GameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	checkf(IsValid(LobbyUIClass), TEXT("LobbyUIClass must be set in BP_Lobby_GameMode!"));
+	if(!IsValid(LobbyUIClass))
+		LOGERRORF(TEXT("LobbyUIClass must be set in BP_Lobby_GameMode!"));
 	
 }
 
