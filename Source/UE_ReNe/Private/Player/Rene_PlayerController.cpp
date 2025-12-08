@@ -61,9 +61,6 @@ void ARene_PlayerController::BeginPlay()
 			}
 		}
 	}
-
-	// 확인용 로그
-	LOGWARNF(TEXT("Final Name: %s"), *GetPlayerState<ARene_PlayerState>()->GetReneUserName());
 }
 
 void ARene_PlayerController::SetupInputComponent()

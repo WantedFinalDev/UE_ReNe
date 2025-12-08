@@ -7,6 +7,7 @@
 #include "Components/WidgetSwitcher.h"
 #include "Global/Rene_Booth_GameState.h"
 #include "Player/Rene_PlayerController.h"
+#include "Global/Rene_PlayerState.h"
 #include "Widget/Rene_UserListImplementWidget.h"
 
 void URene_Company_Widget::NativeConstruct()
@@ -17,9 +18,6 @@ void URene_Company_Widget::NativeConstruct()
 	btn_UserList->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedList);
 	btn_MainToReport->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedMainToReport);
 	btn_ReportToMain->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedReportToMain);
-	
-	if (scr_UserList)
-		scr_UserList->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void URene_Company_Widget::OnClickedClose()
@@ -36,18 +34,7 @@ void URene_Company_Widget::OnClickedClose()
 
 void URene_Company_Widget::OnClickedList()
 {
-	if (bIsVisibleList)
-	{
-		scr_UserList->SetVisibility(ESlateVisibility::Collapsed);
-		ClearUserList();
-	}
-	else
-	{
-		scr_UserList->SetVisibility(ESlateVisibility::Visible);
-		PopulateUserList();
-	}
-	
-	bIsVisibleList = !bIsVisibleList;
+	PopulateUserList();
 }
 
 void URene_Company_Widget::OnClickedMainToReport()
@@ -85,7 +72,8 @@ void URene_Company_Widget::PopulateUserList()
 			if (!ps) continue;
 			
 			// Host 제외
-			if (GetWorld()->GetFirstPlayerController()->HasAuthority())
+			APlayerController* localpc = GetOwningPlayer();		
+			if (localpc && (ps == localpc->GetPlayerState<ARene_PlayerState>()))
 				continue;
 			
 			TObjectPtr<URene_UserListImplementWidget> imp_ui = CreateWidget<URene_UserListImplementWidget>(GetOwningPlayer(), ImplementWidget);
