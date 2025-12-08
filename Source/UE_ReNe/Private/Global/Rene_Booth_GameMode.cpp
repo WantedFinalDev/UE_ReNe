@@ -63,8 +63,8 @@ void ARene_Booth_GameMode::StartOneToOneVoiceChat(APlayerController* PlayerA, AP
         return;
     }
 
-    ARene_Booth_PlayerState* PlayerStateA = Cast<ARene_Booth_PlayerState>(PlayerStateA_Base);
-    ARene_Booth_PlayerState* PlayerStateB = Cast<ARene_Booth_PlayerState>(PlayerStateB_Base);
+    ARene_PlayerState* PlayerStateA = Cast<ARene_PlayerState>(PlayerStateA_Base);
+    ARene_PlayerState* PlayerStateB = Cast<ARene_PlayerState>(PlayerStateB_Base);
 
     if (!PlayerStateA || !PlayerStateB)
     {
@@ -118,8 +118,8 @@ void ARene_Booth_GameMode::EndOneToOneVoiceChat(APlayerController* PlayerA, APla
         return;
     }
 
-    ARene_Booth_PlayerState* PlayerStateA = Cast<ARene_Booth_PlayerState>(PlayerStateA_Base);
-    ARene_Booth_PlayerState* PlayerStateB = Cast<ARene_Booth_PlayerState>(PlayerStateB_Base);
+    ARene_PlayerState* PlayerStateA = Cast<ARene_PlayerState>(PlayerStateA_Base);
+    ARene_PlayerState* PlayerStateB = Cast<ARene_PlayerState>(PlayerStateB_Base);
 
     if (!PlayerStateA || !PlayerStateB)
     {

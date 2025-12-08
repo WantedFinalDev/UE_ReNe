@@ -12,7 +12,6 @@
 #include "EnhancedInputSubsystems.h" // Required for Enhanced Input
 #include "EnhancedInputComponent.h"   // Required for Enhanced Input
 #include "Global/Rene_Booth_GameMode.h"
-#include "Global/Rene_Booth_PlayerState.h"
 #include "Global/Rene_PlayerState.h"
 #include "Global/Rene_GameInstance.h"
 #include "Network/Rene_LocalVoiceRecorder.h"  // New include for local voice recorder
@@ -275,7 +274,7 @@ void ARene_PlayerController::OnStartTalking()
 
     // Get the current GameState and our custom PlayerState
     ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>();
-    ARene_Booth_PlayerState* RenePlayerState = GetPlayerState<ARene_Booth_PlayerState>();
+    ARene_PlayerState* RenePlayerState = GetPlayerState<ARene_PlayerState>();
 
     // Only activate voice and recording if the player is in a private interview
     if (RenePlayerState && RenePlayerState->IsInPrivateInterview())

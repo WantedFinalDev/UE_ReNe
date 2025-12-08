@@ -12,7 +12,7 @@
 
 class URene_LocalVoiceRecorder; // Forward declaration for the new component
 class UInputAction;             // Forward declaration for Enhanced Input Action
-class ARene_Booth_PlayerState; // Forward declaration for our PlayerState
+class ARene_PlayerState; // Forward declaration for our PlayerState
 
 UCLASS()
 class UE_RENE_API ARene_PlayerController : public AUE_ReNePlayerController

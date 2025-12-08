@@ -15,7 +15,7 @@ class UE_RENE_API ARene_PlayerState : public APlayerState
 	
 	/* Method */
 public:
-	ARene_Booth_PlayerState(); // Constructor
+	ARene_PlayerState(); // Constructor
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
