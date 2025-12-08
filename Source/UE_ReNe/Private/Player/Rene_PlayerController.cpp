@@ -29,6 +29,7 @@ ARene_PlayerController::ARene_PlayerController()
 		seekerui_class = wbpseeker.Class;
 	
 	LocalVoiceRecorder = CreateDefaultSubobject<URene_LocalVoiceRecorder>(TEXT("LocalVoiceRecorder")); // Create the new component
+	FileUploader = CreateDefaultSubobject<URene_FileUploader>(TEXT("FileUploaderComponent"));
 }
 
 void ARene_PlayerController::BeginPlay()
@@ -65,6 +66,32 @@ void ARene_PlayerController::SetupInputComponent()
 	{
 		UE_LOG(LogVoicePC, Warning, TEXT("SetupInputComponent: InputComponent is null."));
 	}
+}
+
+bool ARene_PlayerController::ShowFileDialog(const FString& DialogTitle, const FString& DefaultPath, const FString& FileTypes, FString& OutFilePath)
+{
+    IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
+    if (DesktopPlatform)
+    {
+        TArray<FString> SelectedFiles;
+        const bool bFileSelected = DesktopPlatform->OpenFileDialog(
+            nullptr, // Parent window handle
+            DialogTitle,
+            DefaultPath,
+            TEXT(""), // Default file
+            FileTypes,
+            EFileDialogFlags::None, // Single file selection
+            SelectedFiles
+        );
+
+        if (bFileSelected && SelectedFiles.Num() > 0)
+        {
+            OutFilePath = SelectedFiles[0];
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void ARene_PlayerController::ClientRPC_CreateBoothUI_Implementation()

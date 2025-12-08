@@ -6,6 +6,8 @@
 #include "Interfaces/VoiceInterface.h"
 #include "Voice/Rene_VoiceChatManager.h"
 #include "Network/Rene_LocalVoiceRecorder.h" // New include for local voice recorder
+#include "DesktopPlatformModule.h" // Required for file dialog
+#include "Network/Rene_FileUploader.h" // Required for the new component
 #include "Rene_PlayerController.generated.h"
 
 class URene_LocalVoiceRecorder; // Forward declaration for the new component
@@ -47,6 +49,18 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void OnSeekerUI();
 
+    /**
+     * Opens a native file dialog for the player to select a file.
+     * This is callable from Blueprints (e.g., the Lobby Widget).
+     * @param DialogTitle The title to display on the file dialog window.
+     * @param DefaultPath The default path to open the dialog to.
+     * @param FileTypes A pipe-separated string of file types (e.g., "All Files (*.*)|*.*|PNG Files (*.png)|*.png").
+     * @param OutFilePath The absolute path of the file the user selected.
+     * @return True if the user selected a file, false otherwise.
+     */
+    UFUNCTION(BlueprintCallable, Category = "File Dialog")
+    bool ShowFileDialog(const FString& DialogTitle, const FString& DefaultPath, const FString& FileTypes, FString& OutFilePath);
+
 
 private:
 	void EnableUIControll();
@@ -69,6 +83,10 @@ public:
 	// GM : PostLogin에서 미리 생성함. 사라지지않음.
 	UPROPERTY()
 	TObjectPtr<URene_Seeker_Widget> seeker_ui;
+
+    /** The file uploader component for this player. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    TObjectPtr<URene_FileUploader> FileUploader;
 	
 //======voice======
 public:
