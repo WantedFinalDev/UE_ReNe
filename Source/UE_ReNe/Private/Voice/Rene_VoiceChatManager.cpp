@@ -102,8 +102,8 @@ void URene_VoiceChatManager::EstablishPrivateVoiceChannel_Implementation(APlayer
 
     if (bIsParticipant)
     {
-        // 1. As a participant, start transmitting voice data.
-        VoiceInterface->StartNetworkedVoice(LocalUserNum);
+        // 1. As a participant, find the partner and unmute them, while muting everyone else.
+        // NOTE: The automatic call to StartNetworkedVoice has been removed to allow for Push-To-Talk control.
 
         // 2. Find the partner and unmute them, while muting everyone else.
         const FUniqueNetIdRepl& PartnerId = (*LocalPlayerId == *PlayerA_Id) ? PlayerB_Id : PlayerA_Id;

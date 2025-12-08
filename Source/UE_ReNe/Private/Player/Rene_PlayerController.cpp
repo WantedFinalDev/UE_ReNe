@@ -12,6 +12,7 @@
 #include "EnhancedInputSubsystems.h" // Required for Enhanced Input
 #include "EnhancedInputComponent.h"   // Required for Enhanced Input
 #include "Global/Rene_Booth_GameMode.h"
+#include "Global/Rene_Booth_PlayerState.h"
 #include "Network/Rene_LocalVoiceRecorder.h"  // New include for local voice recorder
 
 
@@ -129,12 +130,10 @@ void ARene_PlayerController::ServerRPC_TeleportWithTarget_Implementation(APlayer
 	
 	SHOWWARNF(TEXT("\nTeleport Complete | %s"), *targetstate->GetPlayerName())
 
-	// +++ 여기에 1:1 보이스 채팅 시작 로직을 추가 +++
+	// Start the 1-on-1 voice chat. The GameMode will handle all setup logic.
 	ARene_Booth_GameMode* GameMode = GetWorld()->GetAuthGameMode<ARene_Booth_GameMode>();
 	if (GameMode)
 	{                                                                      
-		// 이 RPC를 호출한 '나 자신(호스트)'의 PlayerController와
-		// 텔레포트 대상인 'targetstate'의 PlayerController를 넘겨줍니다.       
 		APlayerController* TargetPC = Cast<APlayerController>(targetstate->GetOwner());
 		if (TargetPC)
 		{                                                                   
@@ -197,17 +196,24 @@ void ARene_PlayerController::OnStartTalking()
 		return;
 	}
 
-    // Get the VoiceChatManager from the GameState
+    // Get the current GameState and our custom PlayerState
     ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>();
-    if (GameState && GameState->VoiceChatManager)
-    {
-        GameState->VoiceChatManager->StartVoice();
-    }
+    ARene_Booth_PlayerState* RenePlayerState = GetPlayerState<ARene_Booth_PlayerState>();
 
-    if (LocalVoiceRecorder)
+    // Only activate voice and recording if the player is in a private interview
+    if (RenePlayerState && RenePlayerState->IsInPrivateInterview())
     {
-        LocalVoiceRecorder->StartRecording();
+        if (GameState && GameState->VoiceChatManager)
+        {
+            GameState->VoiceChatManager->StartVoice(); // Activate real-time P2P voice
+        }
+
+        if (LocalVoiceRecorder)
+        {
+            LocalVoiceRecorder->StartRecording(); // Activate local recording/sending
+        }
     }
+    // If not in a private interview, neither system will be activated by PTT.
 }
 
 void ARene_PlayerController::OnStopTalking()
@@ -228,6 +234,26 @@ void ARene_PlayerController::OnStopTalking()
     if (LocalVoiceRecorder)
     {
         LocalVoiceRecorder->StopAndUploadRecording();
+    }
+}
+
+void ARene_PlayerController::ServerRPC_EndInterview_Implementation(APlayerState* InterviewerState, APlayerState* CandidateState)
+{
+    if (!HasAuthority())
+    {
+        return;
+    }
+
+    ARene_Booth_GameMode* GameMode = GetWorld()->GetAuthGameMode<ARene_Booth_GameMode>();
+    if (GameMode)
+    {
+        APlayerController* InterviewerPC = InterviewerState ? Cast<APlayerController>(InterviewerState->GetOwner()) : nullptr;
+        APlayerController* CandidatePC = CandidateState ? Cast<APlayerController>(CandidateState->GetOwner()) : nullptr;
+        
+        if (InterviewerPC && CandidatePC)
+        {
+            GameMode->EndOneToOneVoiceChat(InterviewerPC, CandidatePC);
+        }
     }
 }
 

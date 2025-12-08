@@ -10,6 +10,7 @@
 
 class URene_LocalVoiceRecorder; // Forward declaration for the new component
 class UInputAction;             // Forward declaration for Enhanced Input Action
+class ARene_Booth_PlayerState; // Forward declaration for our PlayerState
 
 UCLASS()
 class UE_RENE_API ARene_PlayerController : public AUE_ReNePlayerController
@@ -33,6 +34,10 @@ public:
 	TArray<TObjectPtr<class APlayerState>> GetAllPlayerState();
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_TeleportWithTarget(APlayerState* targetstate, FVector targetlocation);
+
+	// New RPC to end the private interview
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_EndInterview(APlayerState* InterviewerState, APlayerState* CandidateState);
 	
 	/*	InputAction, InputMappingContext 바인드 필요
 	 *	@ key pressed -> On xx UI() 호출 : UI on/off
