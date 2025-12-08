@@ -8,9 +8,7 @@ void URene_Seeker_Widget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	btn_Close->OnClicked.AddDynamic(this, &URene_Seeker_Widget::OnClickedClose);
-
 	
-	btn_Close->OnClicked.AddDynamic(this, &URene_Seeker_Widget::OnClickedClose);
 }
 
 void URene_Seeker_Widget::OnClickedClose()
@@ -23,4 +21,7 @@ void URene_Seeker_Widget::OnClickedClose()
 	
 	pc->DisableUIControll();
 }
+
+
+
 
