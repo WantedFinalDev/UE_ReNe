@@ -5,6 +5,8 @@
 #include "Rene_StartWidget.generated.h"
 
 
+class UWidgetSwitcher;
+class URene_LobbyWidget;
 class UEditableTextBox;
 class UButton;
 
@@ -31,6 +33,9 @@ private:
 	/* Field */
 public:
 	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UWidgetSwitcher> sw_Switcher;
+	
+	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> btn_Enter;
 	
 	UPROPERTY(meta=(BindWidget))
@@ -38,9 +43,9 @@ public:
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UEditableTextBox> etxt_ID;
-
+	
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UEditableTextBox> etxt_PW;
+	TObjectPtr<URene_LobbyWidget> WBP_LobbyUI;
 	
 	
 	

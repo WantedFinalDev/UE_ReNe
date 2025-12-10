@@ -5,16 +5,16 @@
 #include "Player/Rene_PlayerController.h"
 #include "Widget/Rene_LobbyWidget.h"
 
-void ARene_Lobby_GameMode::BeginPlay()
+/*void ARene_Lobby_GameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	if(!IsValid(LobbyUIClass))
-		LOGERRORF(TEXT("LobbyUIClass must be set in BP_Lobby_GameMode!"));
+	/*if(!IsValid(LobbyUIClass))
+		LOGERRORF(TEXT("LobbyUIClass must be set in BP_Lobby_GameMode!"));#1#
 	
-}
+}*/
 
-void ARene_Lobby_GameMode::PostLogin(APlayerController* NewPlayer)
+/*void ARene_Lobby_GameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 	
@@ -46,7 +46,7 @@ void ARene_Lobby_GameMode::SwitchDisplayUI()
 		Cast<ARene_PlayerController>(GetWorld()->GetFirstPlayerController())->EnableUIControll();
 	}
 
-}
+}*/
 
 
 

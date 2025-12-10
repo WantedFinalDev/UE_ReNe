@@ -24,8 +24,10 @@ private:
 	UFUNCTION()
 	void OnFindComplete(int idx, FString str);
 	
-	UFUNCTION()
-	void OnClickedCloseList();
+	//	12.10 수 비둘기
+	//	Start+Lobby 통폐합
+	// UFUNCTION()
+	// void OnClickedCloseList();
 	
 	UFUNCTION()
 	void OnClickedFind();
@@ -49,8 +51,10 @@ public:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> btn_Find;
 	
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UButton> btn_CloseList;
+	//	12.10 수 비둘기
+	//	Start+Lobby 통폐합
+	// UPROPERTY(meta=(BindWidget))
+	// TObjectPtr<UButton> btn_CloseList;
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> btn_Create;
