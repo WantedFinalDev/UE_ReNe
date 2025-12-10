@@ -164,16 +164,6 @@ void ARene_PlayerController::OnPlayerListUpdated()
 }
 */
 
-TArray<TObjectPtr<class APlayerState>> ARene_PlayerController::GetAllPlayerState()
-{
-	TObjectPtr<ARene_Booth_GameState> gs = GetWorld()->GetGameState<ARene_Booth_GameState>();
-	if (IsValid(gs))
-	{
-		return gs->PlayerArray;
-	}
-	return TArray<TObjectPtr<APlayerState>>();
-}
-
 void ARene_PlayerController::ServerRPC_TeleportWithTarget_Implementation(APlayerState* targetstate, FVector targetlocation)
 {
 	if (!HasAuthority()) return;
