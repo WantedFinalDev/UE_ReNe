@@ -22,6 +22,7 @@ class UE_RENE_API ARene_PlayerController : public AUE_ReNePlayerController
 	/* Method */
 public:
 	ARene_PlayerController();
+	
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
@@ -32,7 +33,6 @@ public:
 	void CreateCompanyUI();
 	void CreateSeekerUI();
 	
-	TArray<TObjectPtr<class APlayerState>> GetAllPlayerState();
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_TeleportWithTarget(APlayerState* targetstate, FVector targetlocation);
 

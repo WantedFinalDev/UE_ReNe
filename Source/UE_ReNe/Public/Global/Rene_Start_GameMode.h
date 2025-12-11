@@ -25,6 +25,10 @@ private:
 	
 	/* Field */
 public:
+	/*
+	 *	TODO : LobbyWidget을 WidgetSwitcher로 전환&로드
+	 *	
+	 */
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class URene_StartWidget> StartUIClass;
 	

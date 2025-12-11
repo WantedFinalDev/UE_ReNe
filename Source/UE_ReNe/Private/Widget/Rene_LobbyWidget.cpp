@@ -12,7 +12,7 @@ void URene_LobbyWidget::NativeConstruct()
 	Super::NativeConstruct();
 	
 	btn_Find->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedFind);
-	btn_CloseList->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedCloseList);
+	//	btn_CloseList->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedCloseList);
 	btn_Create->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedCreate);
 	URene_GameInstance* GI = Cast<URene_GameInstance>(GetGameInstance());
 	GI->OnFindReneSessionComplete.AddUObject(this, &URene_LobbyWidget::OnFindComplete);
@@ -27,10 +27,8 @@ void URene_LobbyWidget::OnFindComplete(int idx, FString str)
 	scr_SessionList->AddChild(p_ui);
 }
 
-void URene_LobbyWidget::OnClickedCloseList()
+/*void URene_LobbyWidget::OnClickedCloseList()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Close List"))
-
 	// UI를 화면에서 숨기기
 	SetVisibility(ESlateVisibility::Collapsed);
 
@@ -42,7 +40,7 @@ void URene_LobbyWidget::OnClickedCloseList()
 		PC->SetInputMode(InputMode);
 		PC->SetShowMouseCursor(false);
 	}
-}
+}*/
 
 void URene_LobbyWidget::OnClickedFind()
 {

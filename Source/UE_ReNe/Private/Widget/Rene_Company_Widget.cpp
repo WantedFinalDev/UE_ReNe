@@ -62,7 +62,6 @@ void URene_Company_Widget::PopulateUserList()
 	if (!scr_UserList || !ImplementWidget) return;
 	ClearUserList();
 	
-	
 	TObjectPtr<ARene_Booth_GameState> gs = GetWorld()->GetGameState<ARene_Booth_GameState>();
 	if (gs)
 	{
@@ -98,8 +97,7 @@ void URene_Company_Widget::PopulateUserList()
 
 void URene_Company_Widget::ClearUserList()
 {
-	if (!scr_UserList)
-		return;
+	if (!scr_UserList) return;
 	scr_UserList->ClearChildren();
 	// arr_userlistwidget.Empty();
 }

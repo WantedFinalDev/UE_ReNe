@@ -95,7 +95,7 @@ void URene_GameInstance::OnCreateReneSession(FName sessionname, bool b_success)
 	if (b_success)
 	{
 		LOGWARNF(TEXT("%s Session Created"), *sessionname.ToString());
-		 GetWorld()->ServerTravel(TEXT("/Game/Maps/BoothMap?listen"));
+		 GetWorld()->ServerTravel(TEXT("/Game/Maps/OfficeMap?listen"));
 	}
 	else
 	{
