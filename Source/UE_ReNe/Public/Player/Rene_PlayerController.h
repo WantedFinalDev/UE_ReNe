@@ -33,8 +33,9 @@ public:
 	void CreateCompanyUI();
 	void CreateSeekerUI();
 	
-	UFUNCTION(Server, Reliable)
-	void ServerRPC_TeleportWithTarget(APlayerState* targetstate, FVector targetlocation);
+	//	12.11 UI 통폐합으로 해당 기능은 삭제됨.
+	// UFUNCTION(Server, Reliable)
+	// void ServerRPC_TeleportWithTarget(APlayerState* targetstate, FVector targetlocation);
 
 	// New RPC to end the private interview
 	UFUNCTION(Server, Reliable)
@@ -50,7 +51,9 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_SendUserData(struct FReneUserData data);
-    /**
+    
+	/**
+	 *	윈도우 파일 탐색기 열기. (파일 업로드)
      * Opens a native file dialog for the player to select a file.
      * This is callable from Blueprints (e.g., the Lobby Widget).
      * @param DialogTitle The title to display on the file dialog window.
