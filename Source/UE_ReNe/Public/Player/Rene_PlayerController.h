@@ -13,6 +13,7 @@
 class URene_LocalVoiceRecorder; // Forward declaration for the new component
 class UInputAction;             // Forward declaration for Enhanced Input Action
 class ARene_PlayerState; // Forward declaration for our PlayerState
+class URene_InterviewWidget; // 전방 선언 추가
 
 UCLASS()
 class UE_RENE_API ARene_PlayerController : public AUE_ReNePlayerController
@@ -39,6 +40,14 @@ public:
 	// New RPC to end the private interview
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_EndInterview(APlayerState* InterviewerState, APlayerState* CandidateState);
+
+	// 기존 텔레포트 RPC (AI 면접용)
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_TeleportToLocation(FVector TargetLocation);
+
+	// 새로 추가될 이동 및 착석 요청 RPC (Private 면접용)
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_RequestMoveAndSit(FTransform TargetTransform);
 	
 	/*	InputAction, InputMappingContext 바인드 필요
 	 *	@ key pressed -> On xx UI() 호출 : UI on/off
@@ -66,7 +75,22 @@ public:
 	void EnableUIControll();
 	void DisableUIControll();
 	
+	// =================================================================
+	//                 인터뷰 위젯 및 일어서기 관련 함수 (아래)
+	// =================================================================
 	
+	// 캐릭터로부터 호출될 함수
+	void ShowInterviewWidget();
+
+	// 인터뷰 위젯으로부터 호출될 함수
+	void EndInterview();
+
+private:
+	// '일어서기'를 서버에 요청하는 RPC
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_RequestStandUp();
+
+	// =================================================================
 	
 	
 private:
@@ -103,6 +127,21 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Actions")
 	TObjectPtr<UInputAction> PushToTalkAction;
+
+	// =================================================================
+	//                 인터뷰 위젯 관련 프로퍼티 (아래)
+	// =================================================================
+
+	// 블루프린트에서 인터뷰 위젯 클래스를 지정
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<URene_InterviewWidget> InterviewWidgetClass;
+
+private:
+	// 생성된 인터뷰 위젯 인스턴스를 저장
+	UPROPERTY()
+	TObjectPtr<URene_InterviewWidget> InterviewWidgetInstance;
+
+	// =================================================================
 
 private:
 	void OnStartTalking();

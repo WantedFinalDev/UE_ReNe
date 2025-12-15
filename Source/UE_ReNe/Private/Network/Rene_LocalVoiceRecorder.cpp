@@ -7,6 +7,7 @@
 #include "Interfaces/IHttpResponse.h"
 #include "GameFramework/PlayerState.h"
 #include "GameFramework/Controller.h"
+#include "Global/Rene_GameInstance.h" // GameInstance 헤더 추가
 
 
 URene_LocalVoiceRecorder::URene_LocalVoiceRecorder()
@@ -195,11 +196,28 @@ void URene_LocalVoiceRecorder::StopAndUploadRecording()
 
 void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, const FString& PlayerName)
 {
+    // --- GameInstance에서 네트워크 설정 가져오기 ---
+    URene_GameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance<URene_GameInstance>() : nullptr;
+    if (!GameInstance)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Voice upload failed: GameInstance is not valid."));
+        OnUploadFailure.Broadcast(TEXT("GameInstance is not valid."));
+        return;
+    }
+    const FString VoiceUploadURL = GameInstance->GetNetworkSettings().VoiceDataUploadURL;
+    if (VoiceUploadURL.IsEmpty())
+    {
+        UE_LOG(LogTemp, Error, TEXT("Voice upload failed: VoiceDataUploadURL is not set in DataTable."));
+        OnUploadFailure.Broadcast(TEXT("VoiceDataUploadURL is not set in DataTable."));
+        return;
+    }
+    // --- 설정 가져오기 끝 ---
+
     FHttpModule& HttpModule = FHttpModule::Get();
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
 
     Request->OnProcessRequestComplete().BindUObject(this, &URene_LocalVoiceRecorder::OnUploadComplete);
-    Request->SetURL(HttpUploadURL);
+    Request->SetURL(VoiceUploadURL); // 데이터 테이블에서 가져온 URL 사용
     Request->SetVerb(TEXT("POST"));
 
     // Determine speaker_role based on authority

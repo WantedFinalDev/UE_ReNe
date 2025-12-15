@@ -5,6 +5,7 @@
 #include "Engine/GameInstance.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Data/ReneUserData.h"
+#include "Data/Rene_NetworkSettings.h" // 데이터 테이블 구조체 헤더 포함
 #include "Rene_GameInstance.generated.h"
 
 
@@ -27,8 +28,12 @@ public:
 	void FindReneSession();
 	
 	// Login Process
-	void SetReneUserData(const FString& id, const FString& name, const int32 level);
+	void SetReneUserData(const FString& id, const FString& name, const int32 level, const FString& role);
 	FReneUserData GetCachedUserData() { return f_userdata; }
+
+	// 데이터 테이블에서 네트워크 설정을 가져오는 Getter 함수
+	UFUNCTION(BlueprintPure, Category = "Rene|Network")
+	const FRene_NetworkSettings& GetNetworkSettings() const;
 	
 private:
 	void OnCreateReneSession(FName sessionname, bool b_success);
@@ -44,12 +49,16 @@ public:
 	
 	FOnFindReneSessionCompleteDelegate OnFindReneSessionComplete;
 	
-	
+protected:
+	// 블루프린트에서 설정할 데이터 테이블 애셋을 가리키는 포인터
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Rene|Data")
+	TObjectPtr<UDataTable> NetworkSettingsTable;
 	
 private:
 	UPROPERTY()
 	FReneUserData f_userdata;
-	
-	
-	
+
+	// 로드된 네트워크 설정을 저장할 변수
+	UPROPERTY()
+	FRene_NetworkSettings CachedNetworkSettings;
 };

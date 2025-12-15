@@ -9,6 +9,7 @@
 #include "GameFramework/PlayerController.h" // Required to get the owning player
 #include "GameFramework/PlayerState.h"     // Required to get the player's state and name
 #include "Misc/DateTime.h"                 // Required for the timestamp
+#include "Global/Rene_GameInstance.h"      // GameInstance 헤더 추가
 
 DEFINE_LOG_CATEGORY_STATIC(LogFileUploader, Log, All);
 
@@ -31,10 +32,22 @@ void URene_FileUploader::StartFileUpload(const FString& FilePath, EUploadUserTyp
 {
     UE_LOG(LogFileUploader, Log, TEXT("StartFileUpload called. FilePath: %s"), *FilePath);
 
+    // --- GameInstance에서 네트워크 설정 가져오기 ---
+    URene_GameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance<URene_GameInstance>() : nullptr;
+    if (!GameInstance)
+    {
+        UE_LOG(LogFileUploader, Error, TEXT("GameInstance is not valid. Aborting upload."));
+        OnFailure.Broadcast(TEXT("GameInstance is not valid."));
+        return;
+    }
+    const FRene_NetworkSettings& NetworkSettings = GameInstance->GetNetworkSettings();
+    const FString ServerBaseURL = NetworkSettings.ServerBaseURL;
+    // --- 설정 가져오기 끝 ---
+
     if (ServerBaseURL.IsEmpty())
     {
-        UE_LOG(LogFileUploader, Error, TEXT("Server Base URL is not set. Aborting upload."));
-        OnFailure.Broadcast(TEXT("Server Base URL is not set."));
+        UE_LOG(LogFileUploader, Error, TEXT("Server Base URL is not set in DataTable. Aborting upload."));
+        OnFailure.Broadcast(TEXT("Server Base URL is not set in DataTable."));
         return;
     }
 
@@ -76,7 +89,7 @@ void URene_FileUploader::StartFileUpload(const FString& FilePath, EUploadUserTyp
 
     // 2. Determine the correct endpoint
     FString FinalURL = ServerBaseURL;
-    FinalURL += (UserType == EUploadUserType::Company) ? CompanyEndpoint : JobSeekerEndpoint;
+    FinalURL += (UserType == EUploadUserType::Company) ? NetworkSettings.CompanyDocsUploadEndpoint : NetworkSettings.JobSeekerDocsUploadEndpoint;
     UE_LOG(LogFileUploader, Log, TEXT("Target URL: %s"), *FinalURL);
 
     // 3. Create and configure the HTTP Request

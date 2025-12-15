@@ -30,13 +30,6 @@ public:
 	// Sets default values for this component's properties
 	URene_FileUploader();
 
-    /**
-     * The base URL for the upload server. The final endpoint will be appended to this.
-     * Example: "http://127.0.0.1:8000"
-     */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HTTP")
-    FString ServerBaseURL = "http://100.112.161.59:8000";
-
     /** Delegate broadcasted on successful upload. */
     UPROPERTY(BlueprintAssignable, Category = "HTTP")
     FOnFileUploadSuccess OnSuccess;
@@ -66,8 +59,4 @@ private:
      * @param bWasSuccessful True if the request was successfully processed at the transport layer.
      */
     void OnUploadRequestComplete(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
-
-    // Endpoint paths
-    const FString CompanyEndpoint = TEXT("/api/v1/upload/company-docs");
-    const FString JobSeekerEndpoint = TEXT("/api/v1/upload/jobseeker-docs");
 };

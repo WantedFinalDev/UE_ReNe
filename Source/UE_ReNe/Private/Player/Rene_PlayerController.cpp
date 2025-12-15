@@ -15,6 +15,10 @@
 #include "Global/Rene_PlayerState.h"
 #include "Global/Rene_GameInstance.h"
 #include "Network/Rene_LocalVoiceRecorder.h"  // New include for local voice recorder
+#include "UE_ReNeCharacter.h" // 헤더 변경
+#include "AIController.h" // AIController 사용을 위해 헤더 추가
+#include "Blueprint/AIBlueprintHelperLibrary.h" // AI 기능 사용을 위한 핵심 헤더
+#include "Widget/Rene_InterviewWidget.h" // 헤더 추가
 
 
 DEFINE_LOG_CATEGORY_STATIC(LogVoicePC, Log, All);
@@ -332,3 +336,98 @@ void ARene_PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
     }
 	Super::EndPlay(EndPlayReason);
 }
+
+void ARene_PlayerController::ServerRPC_RequestMoveAndSit_Implementation(FTransform TargetTransform)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	// 캐스팅 대상을 AUE_ReNeCharacter로 변경
+	if (AUE_ReNeCharacter* ControlledCharacter = Cast<AUE_ReNeCharacter>(GetPawn()))
+	{
+		ControlledCharacter->SetTargetSitTransform(TargetTransform);
+	}
+
+	UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, TargetTransform.GetLocation());
+}
+
+// 기존 텔레포트 RPC 구현 (변경 없음)
+void ARene_PlayerController::ServerRPC_TeleportToLocation_Implementation(FVector TargetLocation)
+{
+	// 서버에서만 실행되도록 보장
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	// 이 PlayerController가 조종하는 Pawn을 가져옵니다.
+	if (APawn* ControlledPawn = GetPawn())
+	{
+		// Pawn의 위치를 클라이언트가 요청한 위치로 설정합니다.
+		ControlledPawn->SetActorLocation(TargetLocation);
+		LOGWARNF(TEXT("Teleporting pawn to %s"), *TargetLocation.ToString());
+	}
+}
+
+// =================================================================
+//                 인터뷰 위젯 및 일어서기 관련 함수 (아래)
+// =================================================================
+
+void ARene_PlayerController::ShowInterviewWidget()
+{
+	// 로컬 플레이어 컨트롤러에서만 UI를 생성합니다.
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	// 위젯 클래스가 유효하고, 아직 위젯이 생성되지 않았다면
+	if (InterviewWidgetClass && !InterviewWidgetInstance)
+	{
+		InterviewWidgetInstance = CreateWidget<URene_InterviewWidget>(this, InterviewWidgetClass);
+		if (InterviewWidgetInstance)
+		{
+			InterviewWidgetInstance->AddToViewport();
+
+			// 입력 모드를 UI 전용으로 변경하고 마우스 커서를 표시합니다.
+			FInputModeUIOnly InputMode;
+			SetInputMode(InputMode);
+			bShowMouseCursor = true;
+		}
+	}
+}
+
+void ARene_PlayerController::EndInterview()
+{
+	// 로컬 플레이어 컨트롤러에서만 UI를 제거하고 입력 모드를 변경합니다.
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	if (InterviewWidgetInstance)
+	{
+		InterviewWidgetInstance->RemoveFromParent();
+		InterviewWidgetInstance = nullptr; // 포인터 정리
+
+		// 입력 모드를 게임 전용으로 되돌리고 마우스 커서를 숨깁니다.
+		FInputModeGameOnly InputMode;
+		SetInputMode(InputMode);
+		bShowMouseCursor = false;
+	}
+
+	// 서버에 '일어서기'를 요청합니다.
+	ServerRPC_RequestStandUp();
+}
+
+void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
+{
+	if (AUE_ReNeCharacter* ControlledCharacter = Cast<AUE_ReNeCharacter>(GetPawn()))
+	{
+		ControlledCharacter->StandUp();
+	}
+}
+
+// =================================================================

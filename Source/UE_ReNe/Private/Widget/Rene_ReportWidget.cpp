@@ -4,6 +4,7 @@
 #include "Network/Rene_FileFetcher.h"
 #include "Engine/Texture2D.h"
 #include "Logging/LogMacros.h"
+#include "Global/Rene_GameInstance.h" // GameInstance 헤더 추가
 
 void URene_ReportWidget::NativeConstruct()
 {
@@ -47,7 +48,20 @@ void URene_ReportWidget::OnClickDownload()
 {
 	if (FileFetcher)
 	{
-		FileFetcher->FetchFile(PngUrl);
+		// GameInstance에서 네트워크 설정 가져오기
+		URene_GameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance<URene_GameInstance>() : nullptr;
+		if (GameInstance)
+		{
+			const FString ReportURL = GameInstance->GetNetworkSettings().ReportImageDownloadURL;
+			if (!ReportURL.IsEmpty())
+			{
+				FileFetcher->FetchFile(ReportURL);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("ReportImageDownloadURL is not set in DataTable."));
+			}
+		}
 	}
 }
 

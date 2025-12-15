@@ -19,10 +19,6 @@ class UE_RENE_API URene_LocalVoiceRecorder : public UActorComponent
 public:
     URene_LocalVoiceRecorder();
 
-    // The URL of your server endpoint that accepts the voice data.
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HTTP")
-    FString HttpUploadURL = TEXT("http://100.112.161.59:8000/api/v1/p2p/audio-check");
-    
     /** 업로드 성공 시 호출되는 델리게이트 */
     UPROPERTY(BlueprintAssignable, Category = "Voice Recorder")
     FOnUploadSuccess OnUploadSuccess;
@@ -56,6 +52,7 @@ private:
     void SendHttpRequest(const TArray<uint8>& VoiceData, const FString& PlayerName);
 
     /**
+
      * Callback function for when the HTTP upload request completes.
      * @param Request The original request object.
      * @param Response The response object from the server.
