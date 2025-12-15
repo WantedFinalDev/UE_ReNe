@@ -5,10 +5,14 @@
 #include "Rene_LobbyWidget.generated.h"
 
 
+class URene_ReportWidget;
+class URene_DocumentWidget;
+class URene_ProfileWidget;
 class UEditableTextBox;
 class UWidgetSwitcher;
 class UScrollBox;
 class UButton;
+
 UCLASS()
 class UE_RENE_API URene_LobbyWidget : public UUserWidget
 {
@@ -40,6 +44,9 @@ private:
 	
 	UFUNCTION()
 	void OnClickedBack();
+	
+	UFUNCTION()
+	void OnClickedDoc();
 	
 	
 	
@@ -75,7 +82,15 @@ public:
 	
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class URene_SessionInfoWidget> session_info_widget;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<URene_ProfileWidget> WBP_ProfileWidget;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<URene_DocumentWidget> WBP_DocumentUI;
 
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<URene_ReportWidget> WBP_ReportUI;
 	
 	
 	
