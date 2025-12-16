@@ -65,6 +65,8 @@ void ARene_PlayerController::BeginPlay()
 			}
 		}
 	}
+	
+	
 }
 
 void ARene_PlayerController::SetupInputComponent()
@@ -168,7 +170,9 @@ void ARene_PlayerController::OnPlayerListUpdated()
 }
 */
 
-void ARene_PlayerController::ServerRPC_TeleportWithTarget_Implementation(APlayerState* targetstate, FVector targetlocation)
+//	12.11 UI 통폐합으로 텔레포트 기능 삭제됨.
+
+/*void ARene_PlayerController::ServerRPC_TeleportWithTarget_Implementation(APlayerState* targetstate, FVector targetlocation)
 {
 	if (!HasAuthority()) return;
 	APawn* host = GetPawn();
@@ -180,17 +184,8 @@ void ARene_PlayerController::ServerRPC_TeleportWithTarget_Implementation(APlayer
 	
 	LOGWARNF(TEXT("\nTeleport Complete | %s"), *targetstate->GetPlayerName())
 
-	// Start the 1-on-1 voice chat. The GameMode will handle all setup logic.
-	ARene_Booth_GameMode* GameMode = GetWorld()->GetAuthGameMode<ARene_Booth_GameMode>();
-	if (GameMode)
-	{                                                                      
-		APlayerController* TargetPC = Cast<APlayerController>(targetstate->GetOwner());
-		if (TargetPC)
-		{                                                                   
-			GameMode->StartOneToOneVoiceChat(this, TargetPC);                    
-		}                                                                   
-	}
-}
+	// 기존 Voice Start Code는 이동되었음.
+}*/
 
 void ARene_PlayerController::OnCompanyUI()
 {

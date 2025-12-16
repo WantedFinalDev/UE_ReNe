@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Voice/Rene_VoiceChatManager.h"
 #include "OnlineSubsystemUtils.h"
 #include "Interfaces/VoiceInterface.h"
@@ -9,18 +6,12 @@
 #include "Engine/World.h"
 
 
-// Sets default values for this component's properties
 URene_VoiceChatManager::URene_VoiceChatManager()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
 
-	// ...
 }
 
-
-// Called when the game starts
 void URene_VoiceChatManager::BeginPlay()
 {
 	Super::BeginPlay();
@@ -46,16 +37,6 @@ void URene_VoiceChatManager::BeginPlay()
 	{
 		UE_LOG(LogTemp, Error, TEXT("Online Subsystem Not Found."));
 	}
-}
-
-
-// Called every frame
-void URene_VoiceChatManager::TickComponent(float DeltaTime, ELevelTick TickType,
-                                           FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
 }
 
 void URene_VoiceChatManager::StartVoice()

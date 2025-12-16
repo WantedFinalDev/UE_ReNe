@@ -15,7 +15,7 @@ class UE_RENE_API ARene_PlayerState : public APlayerState
 	
 	/* Method */
 public:
-	ARene_PlayerState(); // Constructor
+	ARene_PlayerState();
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
@@ -29,7 +29,7 @@ public:
 	
 
 	// New getter for voice chat eligibility
-	bool IsInPrivateInterview() const { return bIsInPrivateInterview; }
+	bool IsInPrivateInterview() const { return bVoicable; }
 	
 	
 private:
@@ -43,7 +43,7 @@ private:
 public:
 	// Flag to indicate if this player is currently in a private interview and allowed to use P2P voice chat
 	UPROPERTY(Replicated)
-	bool bIsInPrivateInterview;
+	bool bVoicable;
 	
 	
 	

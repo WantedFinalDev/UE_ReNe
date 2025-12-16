@@ -80,7 +80,6 @@ void URene_Company_Widget::PopulateUserList()
 			if (imp_ui)
 			{
 				imp_ui->SetUserImplementInfo(ps);
-				imp_ui->SetTeleportLocation(TargetOfTeleport);
 				scr_UserList->AddChild(imp_ui);
 				
 				// 별도 배열 공간 필요시 이용
