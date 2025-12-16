@@ -28,6 +28,8 @@ private:
 	void OnClickedEnter();
 	UFUNCTION()
 	void OnClickedExit();
+	UFUNCTION()
+	void OnClickedReturn();
 	
 	
 	

@@ -10,6 +10,7 @@ class UImage;
 
 //	using FOnClickDocument = TMulticastDelegate<void()>;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnClickDashBoardDynamic);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnClickReturnDynamic);
 
 UCLASS()
 class UE_RENE_API URene_ProfileWidget : public UUserWidget
@@ -56,6 +57,9 @@ public:
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnClickDashBoardDynamic OnClickDashDynamic;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnClickReturnDynamic OnClickReturnDynamic;
 	
 	
 	

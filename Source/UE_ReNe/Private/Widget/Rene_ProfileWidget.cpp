@@ -57,5 +57,5 @@ void URene_ProfileWidget::OnClickDashBoard()
 
 void URene_ProfileWidget::OnClickReturn()
 {
-	
+	OnClickReturnDynamic.Broadcast();
 }
