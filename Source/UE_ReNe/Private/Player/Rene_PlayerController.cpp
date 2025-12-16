@@ -408,7 +408,7 @@ void ARene_PlayerController::EndInterview()
 		InterviewWidgetInstance = nullptr; // 포인터 정리
 
 		// 입력 모드를 게임 전용으로 되돌리고 마우스 커서를 숨깁니다.
-		FInputModeGameOnly InputMode;
+		FInputModeGameAndUI InputMode;
 		SetInputMode(InputMode);
 		bShowMouseCursor = false;
 	}
