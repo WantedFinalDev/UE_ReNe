@@ -21,7 +21,7 @@ void URene_LobbyWidget::NativeConstruct()
 	btn_BackToMain->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedBack);
 	
 	//	WBP_ProfileWidget->OnClickDelDoc.AddUObject(this, &URene_LobbyWidget::OnClickedDoc);
-	WBP_ProfileWidget->OnClickDocDelDynamic.AddDynamic(this, &URene_LobbyWidget::OnClickedDoc);
+	WBP_ProfileWidget->OnClickDashDynamic.AddDynamic(this, &URene_LobbyWidget::OnClickedDash);
 }
 
 void URene_LobbyWidget::OnFindComplete(int idx, FString str)
@@ -72,8 +72,8 @@ void URene_LobbyWidget::OnClickedBack()
 	Switcher->SetActiveWidgetIndex(0);
 }
 
-void URene_LobbyWidget::OnClickedDoc()
+void URene_LobbyWidget::OnClickedDash()
 {
-	Switcher->SetActiveWidgetIndex(3);
+	Switcher->SetActiveWidgetIndex(2);
 }
 

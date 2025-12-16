@@ -9,7 +9,7 @@ class UButton;
 class UImage;
 
 //	using FOnClickDocument = TMulticastDelegate<void()>;
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnClickDocumnetDynamic);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnClickDashBoardDynamic);
 
 UCLASS()
 class UE_RENE_API URene_ProfileWidget : public UUserWidget
@@ -21,9 +21,9 @@ public:
 	virtual void NativeConstruct() override;
 	
 	UFUNCTION()
-	void OnClickDocument();
+	void OnClickUpload();
 	UFUNCTION()
-	void OnClickReport();
+	void OnClickDashBoard();
 	UFUNCTION()
 	void OnClickReturn();
 	
@@ -43,9 +43,9 @@ public:
 	TObjectPtr<UImage> img_Face;
 	
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UButton> btn_Document;
+	TObjectPtr<UButton> btn_Upload;
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UButton> btn_Report;
+	TObjectPtr<UButton> btn_DashBoard;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> btn_Return;
 	
@@ -55,7 +55,7 @@ public:
 	//	FOnClickDocument OnClickDelDoc;
 	
 	UPROPERTY(BlueprintAssignable)
-	FOnClickDocumnetDynamic OnClickDocDelDynamic;
+	FOnClickDashBoardDynamic OnClickDashDynamic;
 	
 	
 	

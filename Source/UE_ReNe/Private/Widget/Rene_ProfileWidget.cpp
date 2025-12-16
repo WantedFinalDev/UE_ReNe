@@ -6,21 +6,21 @@ void URene_ProfileWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	
-	btn_Document->OnClicked.AddDynamic(this, &URene_ProfileWidget::OnClickDocument);
-	btn_Report->OnClicked.AddDynamic(this, &URene_ProfileWidget::OnClickReport);
+	btn_Upload->OnClicked.AddDynamic(this, &URene_ProfileWidget::OnClickUpload);
+	btn_DashBoard->OnClicked.AddDynamic(this, &URene_ProfileWidget::OnClickDashBoard);
 	btn_Return->OnClicked.AddDynamic(this, &URene_ProfileWidget::OnClickReturn);
 	
 }
 
-void URene_ProfileWidget::OnClickDocument()
-{
-	//	OnClickDelDoc.Broadcast();
-	OnClickDocDelDynamic.Broadcast();
-}
-
-void URene_ProfileWidget::OnClickReport()
+void URene_ProfileWidget::OnClickUpload()
 {
 	
+}
+
+void URene_ProfileWidget::OnClickDashBoard()
+{
+	//	OnClickDelDash.Broadcast();
+	OnClickDashDynamic.Broadcast();
 }
 
 void URene_ProfileWidget::OnClickReturn()

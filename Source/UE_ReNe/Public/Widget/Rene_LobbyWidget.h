@@ -6,7 +6,7 @@
 
 
 class URene_ReportWidget;
-class URene_DocumentWidget;
+class URene_DashBoardWidget;
 class URene_ProfileWidget;
 class UEditableTextBox;
 class UWidgetSwitcher;
@@ -46,7 +46,7 @@ private:
 	void OnClickedBack();
 	
 	UFUNCTION()
-	void OnClickedDoc();
+	void OnClickedDash();
 	
 	
 	
@@ -87,10 +87,7 @@ public:
 	TObjectPtr<URene_ProfileWidget> WBP_ProfileWidget;
 	
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<URene_DocumentWidget> WBP_DocumentUI;
-
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<URene_ReportWidget> WBP_ReportUI;
+	TObjectPtr<URene_DashBoardWidget> WBP_DashBoardUI;
 	
 	
 	
