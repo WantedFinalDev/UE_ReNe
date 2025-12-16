@@ -25,7 +25,8 @@ public class UE_ReNe : ModuleRules
 			"OnlineSubsystemSteam",
 			"Voice",
 			"HTTP",
-			"DesktopPlatform"
+			"DesktopPlatform",
+			"WebBrowser"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]
