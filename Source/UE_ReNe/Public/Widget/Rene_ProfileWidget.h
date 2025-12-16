@@ -8,7 +8,8 @@ class UTextBlock;
 class UButton;
 class UImage;
 
-using FOnClickDocument = TMulticastDelegate<void()>;
+//	using FOnClickDocument = TMulticastDelegate<void()>;
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnClickDocumnetDynamic);
 
 UCLASS()
 class UE_RENE_API URene_ProfileWidget : public UUserWidget
@@ -51,7 +52,10 @@ public:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UTextBlock> txt_UserName;
 	
-	FOnClickDocument OnClickDelDoc;
+	//	FOnClickDocument OnClickDelDoc;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnClickDocumnetDynamic OnClickDocDelDynamic;
 	
 	
 	

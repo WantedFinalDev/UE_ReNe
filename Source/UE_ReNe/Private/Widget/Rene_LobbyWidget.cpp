@@ -20,7 +20,8 @@ void URene_LobbyWidget::NativeConstruct()
 	btn_CreateSession->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedCreateSession);
 	btn_BackToMain->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedBack);
 	
-	WBP_ProfileWidget->OnClickDelDoc.AddUObject(this, &URene_LobbyWidget::OnClickedDoc);
+	//	WBP_ProfileWidget->OnClickDelDoc.AddUObject(this, &URene_LobbyWidget::OnClickedDoc);
+	WBP_ProfileWidget->OnClickDocDelDynamic.AddDynamic(this, &URene_LobbyWidget::OnClickedDoc);
 }
 
 void URene_LobbyWidget::OnFindComplete(int idx, FString str)

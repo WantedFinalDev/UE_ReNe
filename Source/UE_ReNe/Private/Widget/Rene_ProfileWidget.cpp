@@ -14,7 +14,8 @@ void URene_ProfileWidget::NativeConstruct()
 
 void URene_ProfileWidget::OnClickDocument()
 {
-	OnClickDelDoc.Broadcast();
+	//	OnClickDelDoc.Broadcast();
+	OnClickDocDelDynamic.Broadcast();
 }
 
 void URene_ProfileWidget::OnClickReport()
