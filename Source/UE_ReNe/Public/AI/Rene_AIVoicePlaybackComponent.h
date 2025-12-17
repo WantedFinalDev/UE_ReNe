@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/SceneComponent.h" // Changed from ActorComponent to SceneComponent
+#include "Components/SceneComponent.h"
 #include "Rene_AIVoicePlaybackComponent.generated.h"
 
 class UAudioComponent;
 class USoundWaveProcedural; // Forward declaration for USoundWaveProcedural
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class UE_RENE_API URene_AIVoicePlaybackComponent : public USceneComponent // Changed base class
+class UE_RENE_API URene_AIVoicePlaybackComponent : public USceneComponent
 {
 	GENERATED_BODY()
 

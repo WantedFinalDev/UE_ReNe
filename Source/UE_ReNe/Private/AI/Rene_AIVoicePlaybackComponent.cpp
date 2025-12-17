@@ -2,10 +2,10 @@
 
 #include "AI/Rene_AIVoicePlaybackComponent.h"
 #include "Components/AudioComponent.h"
-#include "Sound/SoundWaveProcedural.h" // Changed to SoundWaveProcedural
+#include "Sound/SoundWaveProcedural.h"
 #include "Async/Async.h"
 #include "Misc/Base64.h"
-#include "Sound/SoundGroups.h" // Added for ESoundGroup
+#include "Sound/SoundGroups.h"
 
 URene_AIVoicePlaybackComponent::URene_AIVoicePlaybackComponent()
 {
@@ -71,7 +71,7 @@ void URene_AIVoicePlaybackComponent::PlayAIVoiceFromWavData(const TArray<uint8>&
 		SoundWaveProcedural->SetSampleRate(SampleRate);
 		SoundWaveProcedural->NumChannels = NumChannels;
 		SoundWaveProcedural->Duration = INDEFINITELY_LOOPING_DURATION; // Or calculate based on PCMData size
-		SoundWaveProcedural->SoundGroup = ESoundGroup::SOUNDGROUP_Effects; // Corrected from SFX to SOUNDGROUP_Effects
+		SoundWaveProcedural->SoundGroup = ESoundGroup::SOUNDGROUP_Effects;
 		SoundWaveProcedural->bLooping = false;
 
 		// Pass the PCM data to the procedural sound wave
@@ -100,11 +100,23 @@ bool URene_AIVoicePlaybackComponent::ParseWavData(const TArray<uint8>& WavData, 
 	}
 
 	// Check RIFF header
-	if (!(WavData[0] == 'R' && WavData[1] == 'I' && WavData[2] == 'F' && WavData[3] == 'F')) return false;
+	if (!(WavData[0] == 'R' && WavData[1] == 'I' && WavData[2] == 'F' && WavData[3] == 'F'))
+	{
+		UE_LOG(LogTemp, Error, TEXT("WAV Parse Error: RIFF header not found."));
+		return false;
+	}
 	// Check WAVE header
-	if (!(WavData[8] == 'W' && WavData[9] == 'A' && WavData[10] == 'V' && WavData[11] == 'E')) return false;
+	if (!(WavData[8] == 'W' && WavData[9] == 'A' && WavData[10] == 'V' && WavData[11] == 'E'))
+	{
+		UE_LOG(LogTemp, Error, TEXT("WAV Parse Error: WAVE header not found."));
+		return false;
+	}
 	// Check fmt chunk
-	if (!(WavData[12] == 'f' && WavData[13] == 'm' && WavData[14] == 't' && WavData[15] == ' ')) return false;
+	if (!(WavData[12] == 'f' && WavData[13] == 'm' && WavData[14] == 't' && WavData[15] == ' '))
+	{
+		UE_LOG(LogTemp, Error, TEXT("WAV Parse Error: 'fmt ' chunk not found."));
+		return false;
+	}
 
 	// Sample Rate (bytes 24-27)
 	OutSampleRate = *reinterpret_cast<const int32*>(&(WavData[24]));
