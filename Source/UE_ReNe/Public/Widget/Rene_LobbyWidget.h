@@ -50,6 +50,7 @@ private:
 	
 	
 	
+	
 	/* Field */
 public:
 	UPROPERTY(meta=(BindWidget))

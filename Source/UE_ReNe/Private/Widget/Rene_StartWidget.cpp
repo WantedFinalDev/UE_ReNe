@@ -7,6 +7,8 @@
 #include "Global/Rene_GameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Widget/Rene_LobbyWidget.h"
+#include "Widget/Rene_ProfileWidget.h"
 
 void URene_StartWidget::NativeConstruct()
 {
@@ -14,6 +16,7 @@ void URene_StartWidget::NativeConstruct()
 	
 	btn_Enter->OnClicked.AddDynamic(this, &URene_StartWidget::OnClickedEnter);
 	btn_Exit->OnClicked.AddDynamic(this, &URene_StartWidget::OnClickedExit);
+	WBP_LobbyUI->WBP_ProfileWidget->OnClickReturnDynamic.AddDynamic(this, &URene_StartWidget::OnClickedReturn);
 }
 
 void URene_StartWidget::OnClickedEnter()
@@ -63,7 +66,6 @@ void URene_StartWidget::OnClickedEnter()
 		//	12.10 UI 병합으로 삭제됨.
 		//	UGameplayStatics::OpenLevel(GetWorld(), "LobbyMap");
 		
-		//	TODO : Switch LobbyUI
 		sw_Switcher->SetActiveWidgetIndex(1);
 		
 	}
@@ -76,4 +78,9 @@ void URene_StartWidget::OnClickedEnter()
 void URene_StartWidget::OnClickedExit()
 {
 	UKismetSystemLibrary::QuitGame(GetWorld(), GetWorld()->GetFirstPlayerController(), EQuitPreference::Quit, false);
+}
+
+void URene_StartWidget::OnClickedReturn()
+{
+	sw_Switcher->SetActiveWidgetIndex(0);
 }
