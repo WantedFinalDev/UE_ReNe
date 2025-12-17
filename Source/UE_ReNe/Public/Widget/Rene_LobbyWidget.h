@@ -48,6 +48,9 @@ private:
 	UFUNCTION()
 	void OnClickedDash();
 	
+	UFUNCTION()
+	void OnClickedReturnMain();
+	
 	
 	
 	
@@ -85,7 +88,10 @@ public:
 	TSubclassOf<class URene_SessionInfoWidget> session_info_widget;
 	
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<URene_ProfileWidget> WBP_ProfileWidget;
+	TObjectPtr<URene_ProfileWidget> WBP_ProfileUI_main;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<URene_ProfileWidget> WBP_ProfileUI_dash;
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<URene_DashBoardWidget> WBP_DashBoardUI;

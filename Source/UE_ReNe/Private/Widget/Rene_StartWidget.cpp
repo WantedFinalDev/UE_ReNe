@@ -16,7 +16,7 @@ void URene_StartWidget::NativeConstruct()
 	
 	btn_Enter->OnClicked.AddDynamic(this, &URene_StartWidget::OnClickedEnter);
 	btn_Exit->OnClicked.AddDynamic(this, &URene_StartWidget::OnClickedExit);
-	WBP_LobbyUI->WBP_ProfileWidget->OnClickReturnDynamic.AddDynamic(this, &URene_StartWidget::OnClickedReturn);
+	WBP_LobbyUI->WBP_ProfileUI_main->OnClickReturnDynamic.AddDynamic(this, &URene_StartWidget::OnClickedReturn);
 }
 
 void URene_StartWidget::OnClickedEnter()
