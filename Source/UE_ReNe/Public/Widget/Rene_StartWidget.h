@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/CheckBox.h"
+#include "Components/TextBlock.h"
 #include "Rene_StartWidget.generated.h"
 
 
@@ -26,6 +28,8 @@ private:
 	void OnClickedEnter();
 	UFUNCTION()
 	void OnClickedExit();
+	UFUNCTION()
+	void OnClickedReturn();
 	
 	
 	
@@ -47,7 +51,14 @@ public:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<URene_LobbyWidget> WBP_LobbyUI;
 	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UCheckBox> cbox_Company;
 	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UCheckBox> cbox_Seeker;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UTextBlock> txt_Error;
 	
 private:
 	

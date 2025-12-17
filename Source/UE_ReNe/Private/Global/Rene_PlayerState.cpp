@@ -6,7 +6,7 @@
 ARene_PlayerState::ARene_PlayerState()
 {
 	// Default to not being in an interview
-	bIsInPrivateInterview = false;
+	bVoicable = false;
 }
 
 void ARene_PlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -14,5 +14,5 @@ void ARene_PlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimePropert
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(ARene_PlayerState, userdata);
-	DOREPLIFETIME(ARene_PlayerState, bIsInPrivateInterview); // Replicate the new flag
+	DOREPLIFETIME(ARene_PlayerState, bVoicable); // Replicate the new flag
 }

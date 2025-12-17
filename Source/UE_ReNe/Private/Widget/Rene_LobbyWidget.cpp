@@ -5,6 +5,7 @@
 #include "Components/ScrollBox.h"
 #include "Components/WidgetSwitcher.h"
 #include "Global/Rene_GameInstance.h"
+#include "Widget/Rene_ProfileWidget.h"
 #include "Widget/Rene_SessionInfoWidget.h"
 
 void URene_LobbyWidget::NativeConstruct()
@@ -18,6 +19,9 @@ void URene_LobbyWidget::NativeConstruct()
 	GI->OnFindReneSessionComplete.AddUObject(this, &URene_LobbyWidget::OnFindComplete);
 	btn_CreateSession->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedCreateSession);
 	btn_BackToMain->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedBack);
+	
+	//	WBP_ProfileWidget->OnClickDelDoc.AddUObject(this, &URene_LobbyWidget::OnClickedDoc);
+	WBP_ProfileWidget->OnClickDashDynamic.AddDynamic(this, &URene_LobbyWidget::OnClickedDash);
 }
 
 void URene_LobbyWidget::OnFindComplete(int idx, FString str)
@@ -67,4 +71,11 @@ void URene_LobbyWidget::OnClickedBack()
 {
 	Switcher->SetActiveWidgetIndex(0);
 }
+
+void URene_LobbyWidget::OnClickedDash()
+{
+	Switcher->SetActiveWidgetIndex(2);
+}
+
+
 

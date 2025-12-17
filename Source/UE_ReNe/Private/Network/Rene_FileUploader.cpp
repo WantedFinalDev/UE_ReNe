@@ -9,6 +9,8 @@
 #include "GameFramework/PlayerController.h" // Required to get the owning player
 #include "GameFramework/PlayerState.h"     // Required to get the player's state and name
 #include "Misc/DateTime.h"                 // Required for the timestamp
+#include "Global/Rene_GameInstance.h"      // GameInstance 헤더 추가
+#include "Misc/CString.h"                  // TCHAR_TO_ANSI 매크로를 위한 헤더 추가
 
 DEFINE_LOG_CATEGORY_STATIC(LogFileUploader, Log, All);
 
@@ -27,14 +29,26 @@ void URene_FileUploader::BeginPlay()
 	Super::BeginPlay();
 }
 
-void URene_FileUploader::StartFileUpload(const FString& FilePath, EUploadUserType UserType)
+void URene_FileUploader::StartFileUpload(const FString& FilePath, EUploadUserType UserType, const FString& UserId)
 {
-    UE_LOG(LogFileUploader, Log, TEXT("StartFileUpload called. FilePath: %s"), *FilePath);
+    UE_LOG(LogFileUploader, Log, TEXT("StartFileUpload called. FilePath: %s, UserType: %d, UserId: %s"), *FilePath, static_cast<int32>(UserType), *UserId);
+
+    // --- GameInstance에서 네트워크 설정 가져오기 ---
+    URene_GameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance<URene_GameInstance>() : nullptr;
+    if (!GameInstance)
+    {
+        UE_LOG(LogFileUploader, Error, TEXT("GameInstance is not valid. Aborting upload."));
+        OnFailure.Broadcast(TEXT("GameInstance is not valid."));
+        return;
+    }
+    const FRene_NetworkSettings& NetworkSettings = GameInstance->GetNetworkSettings();
+    const FString ServerBaseURL = NetworkSettings.ServerBaseURL;
+    // --- 설정 가져오기 끝 ---
 
     if (ServerBaseURL.IsEmpty())
     {
-        UE_LOG(LogFileUploader, Error, TEXT("Server Base URL is not set. Aborting upload."));
-        OnFailure.Broadcast(TEXT("Server Base URL is not set."));
+        UE_LOG(LogFileUploader, Error, TEXT("Server Base URL is not set in DataTable. Aborting upload."));
+        OnFailure.Broadcast(TEXT("Server Base URL is not set in DataTable."));
         return;
     }
 
@@ -74,10 +88,21 @@ void URene_FileUploader::StartFileUpload(const FString& FilePath, EUploadUserTyp
     }
     UE_LOG(LogFileUploader, Log, TEXT("Successfully read %d bytes from file."), FileData.Num());
 
-    // 2. Determine the correct endpoint
+    // 2. Determine the correct endpoint and ID field name
     FString FinalURL = ServerBaseURL;
-    FinalURL += (UserType == EUploadUserType::Company) ? CompanyEndpoint : JobSeekerEndpoint;
+    FString IdFieldName;
+    if (UserType == EUploadUserType::Company)
+    {
+        FinalURL += NetworkSettings.CompanyDocsUploadEndpoint;
+        IdFieldName = TEXT("company_id");
+    }
+    else // JobSeeker
+    {
+        FinalURL += NetworkSettings.JobSeekerDocsUploadEndpoint;
+        IdFieldName = TEXT("jobseeker_id");
+    }
     UE_LOG(LogFileUploader, Log, TEXT("Target URL: %s"), *FinalURL);
+    UE_LOG(LogFileUploader, Log, TEXT("ID Field Name: %s"), *IdFieldName);
 
     // 3. Create and configure the HTTP Request
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
@@ -89,14 +114,21 @@ void URene_FileUploader::StartFileUpload(const FString& FilePath, EUploadUserTyp
 
     TArray<uint8> RequestContent;
     
+    // Add user ID field (company_id or jobseeker_id)
     RequestContent.Append((uint8*)TCHAR_TO_ANSI(*("--" + Boundary + "\r\n")), ("--" + Boundary + "\r\n").Len());
+    FString UserIdHeader = FString::Printf(TEXT("Content-Disposition: form-data; name=\"%s\"\r\n\r\n"), *IdFieldName);
+    RequestContent.Append((uint8*)TCHAR_TO_ANSI(*UserIdHeader), UserIdHeader.Len());
+    RequestContent.Append((uint8*)TCHAR_TO_ANSI(*UserId), UserId.Len());
+    RequestContent.Append((uint8*)TCHAR_TO_ANSI(TEXT("\r\n")), FCString::Strlen(TEXT("\r\n")));
 
-    FString Header = "Content-Disposition: form-data; name=\"file\"; filename=\"" + NewFilename + "\"\r\n";
-    Header += "Content-Type: application/octet-stream\r\n\r\n";
-    RequestContent.Append((uint8*)TCHAR_TO_ANSI(*Header), Header.Len());
-
+    // Add file field
+    RequestContent.Append((uint8*)TCHAR_TO_ANSI(*("--" + Boundary + "\r\n")), ("--" + Boundary + "\r\n").Len());
+    FString FileHeader = "Content-Disposition: form-data; name=\"file\"; filename=\"" + NewFilename + "\"\r\n";
+    FileHeader += "Content-Type: application/octet-stream\r\n\r\n";
+    RequestContent.Append((uint8*)TCHAR_TO_ANSI(*FileHeader), FileHeader.Len());
     RequestContent.Append(FileData);
 
+    // Footer
     FString Footer = "\r\n--" + Boundary + "--\r\n";
     RequestContent.Append((uint8*)TCHAR_TO_ANSI(*Footer), Footer.Len());
 

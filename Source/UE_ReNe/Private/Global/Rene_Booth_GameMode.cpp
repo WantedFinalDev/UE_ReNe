@@ -37,6 +37,13 @@ void ARene_Booth_GameMode::PostLogin(APlayerController* NewPlayer)
         else
             pc->ClientRPC_CreateBoothUI();
     }
+    
+    //	UI 통폐합
+    //	TODO : 클라이언트의 Voice 관련 함수를 GM에서 설정중이였음. 수정필요.
+    // Establish 는 P2P 면접시 면접관과 구직자만의 음성채널 분리목적, 별도 로직 구현 필요.
+    //  모든 입장Player에 대해 MIC 켜줘야하므로 PublicVoice() 호출.
+    StartPublicVoiceChat(Cast<ARene_PlayerController>(NewPlayer));                    
+    
 }
 
 void ARene_Booth_GameMode::StartOneToOneVoiceChat(APlayerController* PlayerA, APlayerController* PlayerB)
@@ -72,10 +79,6 @@ void ARene_Booth_GameMode::StartOneToOneVoiceChat(APlayerController* PlayerA, AP
         return;
     }
 
-    // Set the bIsInPrivateInterview flag for both participants
-    PlayerStateA->bIsInPrivateInterview = true;
-    PlayerStateB->bIsInPrivateInterview = true;
-
     // Get the GameState, which owns the VoiceChatManager
     ARene_Booth_GameState* MyGameState = GetGameState<ARene_Booth_GameState>();
     if (!MyGameState)
@@ -93,6 +96,12 @@ void ARene_Booth_GameMode::StartOneToOneVoiceChat(APlayerController* PlayerA, AP
 
     // Call the multicast RPC to start the private chat for all clients
     VoiceManager->EstablishPrivateVoiceChannel(PlayerStateA, PlayerStateB);
+}
+
+void ARene_Booth_GameMode::StartPublicVoiceChat(ARene_PlayerController* pc)
+{
+    TObjectPtr<ARene_PlayerState> ps = pc->GetPlayerState<ARene_PlayerState>();
+    ps->bVoicable = true;
 }
 
 void ARene_Booth_GameMode::EndOneToOneVoiceChat(APlayerController* PlayerA, APlayerController* PlayerB)
@@ -128,8 +137,8 @@ void ARene_Booth_GameMode::EndOneToOneVoiceChat(APlayerController* PlayerA, APla
     }
 
     // Reset the bIsInPrivateInterview flag for both participants
-    PlayerStateA->bIsInPrivateInterview = false;
-    PlayerStateB->bIsInPrivateInterview = false;
+    PlayerStateA->bVoicable = false;
+    PlayerStateB->bVoicable = false;
 
     // Get the GameState, which owns the VoiceChatManager
     ARene_Booth_GameState* MyGameState = GetGameState<ARene_Booth_GameState>();

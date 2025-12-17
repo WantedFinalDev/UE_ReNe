@@ -12,6 +12,7 @@ class UTexture2D;
 class UImage;
 class IHttpRequest;
 class IHttpResponse;
+class URene_FileFetcher;
 
 /*
  * [이미지 뷰어 기능 흐름 요약]
@@ -75,7 +76,7 @@ public:
 	void OnClickDownload();
 	
 private:
-	
+	void OnFileFetchCompleted(UTexture2D* FetchedTexture);
 	
 	
 	
@@ -116,8 +117,7 @@ private:
 	// - 같은 이미지 재요청 시 재사용
 	UPROPERTY()
 	TObjectPtr<UTexture2D> CachedTexture;
-	
-	/** The hardcoded URL for the PNG file. */
-	const FString PngUrl = TEXT("http://100.112.161.59:8000/api/v1/p2p/audio-chunk2");
-	
+
+	UPROPERTY()
+	TObjectPtr<URene_FileFetcher> FileFetcher;
 };

@@ -15,15 +15,15 @@ class UE_RENE_API URene_UserListImplementWidget : public UUserWidget
 	
 	/* Method */
 public:
+	virtual void NativeConstruct() override;
+	
 	void SetUserImplementInfo(ARene_PlayerState* ps);
-	void SetTeleportLocation(FVector v);
 	
 	
 private:
-	virtual void NativeConstruct() override;
 	
 	UFUNCTION()
-	void OnClickedP2P();
+	void OnClickedProfile();
 	
 	
 	
@@ -31,13 +31,11 @@ private:
 	/* Field */
 public:
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UButton> btn_P2P;
+	TObjectPtr<UButton> btn_Profile;
 
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UTextBlock> txt_UserName;
-	
-	UPROPERTY(EditAnywhere)
-	FVector TeleportLocation;
+
 
 	
 	

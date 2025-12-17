@@ -5,6 +5,8 @@
 #include "Rene_Booth_GameMode.generated.h"
 
 
+class ARene_PlayerController;
+
 UCLASS()
 class UE_RENE_API ARene_Booth_GameMode : public AGameModeBase
 {
@@ -21,6 +23,7 @@ public:
 	 * @param PlayerB The second player in the conversation (e.g., the selected client).
 	 */
 	void StartOneToOneVoiceChat(APlayerController* PlayerA, APlayerController* PlayerB);
+	void StartPublicVoiceChat(ARene_PlayerController* pc);
 
 	/**
 	 * Ends a private 1-on-1 voice chat between two players.

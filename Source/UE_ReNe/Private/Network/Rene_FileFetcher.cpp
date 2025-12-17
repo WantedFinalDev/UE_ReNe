@@ -11,15 +11,14 @@
 
 URene_FileFetcher::URene_FileFetcher()
 {
-	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void URene_FileFetcher::StartDownloadPng()
+void URene_FileFetcher::FetchFile(const FString& Url)
 {
 	FHttpModule& HttpModule = FHttpModule::Get();
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = HttpModule.CreateRequest();
 
-	HttpRequest->SetURL(PngUrl);
+	HttpRequest->SetURL(Url);
 	HttpRequest->SetVerb(TEXT("GET"));
 	
 	// Bind the callback function
@@ -28,11 +27,11 @@ void URene_FileFetcher::StartDownloadPng()
 	// Process the request
 	if (!HttpRequest->ProcessRequest())
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to start HTTP request to %s"), *PngUrl);
+		UE_LOG(LogTemp, Error, TEXT("Failed to start HTTP request to %s"), *Url);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("Started HTTP request to %s"), *PngUrl);
+		UE_LOG(LogTemp, Log, TEXT("Started HTTP request to %s"), *Url);
 	}
 }
 
@@ -41,12 +40,14 @@ void URene_FileFetcher::OnHttpRequestComplete(FHttpRequestPtr Request, FHttpResp
 	if (!bWasSuccessful || !Response.IsValid())
 	{
 		UE_LOG(LogTemp, Error, TEXT("HTTP request failed. Response was not valid."));
+		OnFileFetchSuccess.ExecuteIfBound(nullptr);
 		return;
 	}
 
 	if (!EHttpResponseCodes::IsOk(Response->GetResponseCode()))
 	{
 		UE_LOG(LogTemp, Error, TEXT("HTTP request returned error code: %d"), Response->GetResponseCode());
+		OnFileFetchSuccess.ExecuteIfBound(nullptr);
 		return;
 	}
 
@@ -56,6 +57,7 @@ void URene_FileFetcher::OnHttpRequestComplete(FHttpRequestPtr Request, FHttpResp
 	if (PngData.Num() == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("HTTP response was empty."));
+		OnFileFetchSuccess.ExecuteIfBound(nullptr);
 		return;
 	}
 
@@ -67,6 +69,7 @@ void URene_FileFetcher::OnHttpRequestComplete(FHttpRequestPtr Request, FHttpResp
 	if (ImageFormat != EImageFormat::PNG)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Downloaded file is not a PNG. Detected format: %d"), (int32)ImageFormat);
+		OnFileFetchSuccess.ExecuteIfBound(nullptr);
 		return;
 	}
 
@@ -74,6 +77,7 @@ void URene_FileFetcher::OnHttpRequestComplete(FHttpRequestPtr Request, FHttpResp
 	if (!ImageWrapper.IsValid() || !ImageWrapper->SetCompressed(PngData.GetData(), PngData.Num()))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to create image wrapper or set compressed data."));
+		OnFileFetchSuccess.ExecuteIfBound(nullptr);
 		return;
 	}
 
@@ -82,12 +86,14 @@ void URene_FileFetcher::OnHttpRequestComplete(FHttpRequestPtr Request, FHttpResp
 	if (!ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, RawData))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to decompress PNG to raw BGRA data."));
+		OnFileFetchSuccess.ExecuteIfBound(nullptr);
 		return;
 	}
 
 	if (RawData.Num() == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Decompressed PNG data is empty."));
+		OnFileFetchSuccess.ExecuteIfBound(nullptr);
 		return;
 	}
 
@@ -99,6 +105,7 @@ void URene_FileFetcher::OnHttpRequestComplete(FHttpRequestPtr Request, FHttpResp
 	if (!NewTexture)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to create transient UTexture2D."));
+		OnFileFetchSuccess.ExecuteIfBound(nullptr);
 		return;
 	}
 
@@ -121,10 +128,11 @@ void URene_FileFetcher::OnHttpRequestComplete(FHttpRequestPtr Request, FHttpResp
 		UE_LOG(LogTemp, Log, TEXT("Successfully created Texture2D from downloaded PNG."));
 		
 		// Broadcast the delegate with the new texture
-		OnPngDownloadSuccess.Broadcast(NewTexture);
+		OnFileFetchSuccess.ExecuteIfBound(NewTexture);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to lock texture memory for writing."));
+		OnFileFetchSuccess.ExecuteIfBound(nullptr);
 	}
 }

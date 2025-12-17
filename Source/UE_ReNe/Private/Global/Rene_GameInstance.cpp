@@ -3,10 +3,34 @@
 #include "OnlineSubsystemUtils.h"
 #include "UE_ReNe.h"
 #include "Online/OnlineSessionNames.h"
+#include "Engine/DataTable.h" // 데이터 테이블 사용을 위해 헤더 추가
 
 void URene_GameInstance::Init()
 {
 	Super::Init();
+
+	// --- 데이터 테이블 로드 로직 추가 ---
+	if (IsValid(NetworkSettingsTable))
+	{
+		// 데이터 테이블의 첫 번째 행을 찾습니다. 행 이름은 "Default"로 가정합니다.
+		static const FName RowName(TEXT("Default"));
+		const FRene_NetworkSettings* Row = NetworkSettingsTable->FindRow<FRene_NetworkSettings>(RowName, TEXT("URene_GameInstance::Init"));
+
+		if (Row)
+		{
+			CachedNetworkSettings = *Row;
+			LOGWARNF(TEXT("Network Settings loaded successfully from DataTable. Server URL: %s"), *CachedNetworkSettings.ServerBaseURL);
+		}
+		else
+		{
+			LOGERRORF(TEXT("Failed to find row 'Default' in NetworkSettingsTable. Please check the Data Table asset."));
+		}
+	}
+	else
+	{
+		LOGERRORF(TEXT("NetworkSettingsTable is not set in the GameInstance Blueprint. Please assign the Data Table asset."));
+	}
+	// --- 데이터 테이블 로드 로직 끝 ---
 	
 	IOnlineSubsystem* sys = Online::GetSubsystem(GetWorld());
 	if (sys == nullptr) return;
@@ -78,13 +102,19 @@ void URene_GameInstance::FindReneSession()
 	p_ReneSessionInterface->FindSessions(0, p_ReneSessionSearch.ToSharedRef());
 }
 
-void URene_GameInstance::SetReneUserData(const FString& id, const FString& name, const int32 level)
+void URene_GameInstance::SetReneUserData(const FString& id, const FString& name, const int32 level, const FString& role)
 {
 	f_userdata.ID = id;
 	f_userdata.Name = name;
 	f_userdata.Level = level;
+	f_userdata.Role = role; // Role 추가
 	
-	LOGWARNF(TEXT("UserData Cached : %s"), *f_userdata.Name);
+	LOGWARNF(TEXT("UserData Cached : %s, Role: %s"), *f_userdata.Name, *f_userdata.Role);
+}
+
+const FRene_NetworkSettings& URene_GameInstance::GetNetworkSettings() const
+{
+	return CachedNetworkSettings;
 }
 
 void URene_GameInstance::OnCreateReneSession(FName sessionname, bool b_success)

@@ -20,4 +20,7 @@ struct FReneUserData
 	
 	UPROPERTY(BlueprintReadWrite)
 	int32 Level = 1;
+	
+	UPROPERTY(BlueprintReadWrite)
+	FString Role = TEXT("CompanyOrSeeker");
 };

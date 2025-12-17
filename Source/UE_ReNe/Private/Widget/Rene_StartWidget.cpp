@@ -7,14 +7,16 @@
 #include "Global/Rene_GameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Widget/Rene_LobbyWidget.h"
+#include "Widget/Rene_ProfileWidget.h"
 
 void URene_StartWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	
-	
 	btn_Enter->OnClicked.AddDynamic(this, &URene_StartWidget::OnClickedEnter);
 	btn_Exit->OnClicked.AddDynamic(this, &URene_StartWidget::OnClickedExit);
+	WBP_LobbyUI->WBP_ProfileWidget->OnClickReturnDynamic.AddDynamic(this, &URene_StartWidget::OnClickedReturn);
 }
 
 void URene_StartWidget::OnClickedEnter()
@@ -32,17 +34,38 @@ void URene_StartWidget::OnClickedEnter()
 	 * 
 	 */
 	
+	//error messages
+	if (cbox_Company->IsChecked() && cbox_Seeker->IsChecked())
+	{		
+		txt_Error->SetText(FText::FromString(TEXT("Please select only one role.")));
+		return;
+	}
+	if (!cbox_Company->IsChecked() && !cbox_Seeker->IsChecked()) 
+	{
+		txt_Error->SetText(FText::FromString(TEXT("Please select your role.")));
+		return;
+	}
+	if (etxt_ID->GetText().IsEmpty())
+	{
+		txt_Error->SetText(FText::FromString(TEXT("Please enter your username.")));
+		return;
+	}
+
 	TObjectPtr<URene_GameInstance> gi = Cast<URene_GameInstance>(GetGameInstance());
 	if (IsValidChecked(gi))
 	{
+		FString userRole = "Seeker";
+		if (cbox_Company->IsChecked())
+		{
+			userRole = "Company";
+		}
 		// 아직 Login Data가 없어 가상의 코드로 대체함
 		//	GI에 유저정보 캐싱
-		gi->SetReneUserData(etxt_ID->GetText().ToString(), etxt_ID->GetText().ToString(), 1);
+		gi->SetReneUserData(etxt_ID->GetText().ToString(), etxt_ID->GetText().ToString(), 1, userRole);
 		
 		//	12.10 UI 병합으로 삭제됨.
 		//	UGameplayStatics::OpenLevel(GetWorld(), "LobbyMap");
 		
-		//	TODO : Switch LobbyUI
 		sw_Switcher->SetActiveWidgetIndex(1);
 		
 	}
@@ -50,11 +73,14 @@ void URene_StartWidget::OnClickedEnter()
 	{
 		LOGERROR()
 	}
-	
-	
 }
 
 void URene_StartWidget::OnClickedExit()
 {
 	UKismetSystemLibrary::QuitGame(GetWorld(), GetWorld()->GetFirstPlayerController(), EQuitPreference::Quit, false);
+}
+
+void URene_StartWidget::OnClickedReturn()
+{
+	sw_Switcher->SetActiveWidgetIndex(0);
 }
