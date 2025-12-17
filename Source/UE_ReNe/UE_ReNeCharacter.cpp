@@ -265,7 +265,7 @@ void AUE_ReNeCharacter::SetTargetSitTransform(const FTransform& NewTransform)
 			// 1. 현재 속도를 백업합니다.
 			OriginalMaxWalkSpeed = MoveComp->MaxWalkSpeed;
 			// 2. 걷는 속도(예: 150)로 변경합니다.
-			MoveComp->MaxWalkSpeed = 150.0f;
+			MoveComp->MaxWalkSpeed = 180.0f;
 		}
 		// =================================================================
 	}

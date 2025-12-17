@@ -387,7 +387,7 @@ void ARene_PlayerController::ShowInterviewWidget()
 			InterviewWidgetInstance->AddToViewport();
 
 			// 입력 모드를 UI 전용으로 변경하고 마우스 커서를 표시합니다.
-			FInputModeUIOnly InputMode;
+			FInputModeGameAndUI InputMode;
 			SetInputMode(InputMode);
 			bShowMouseCursor = true;
 		}
@@ -410,7 +410,7 @@ void ARene_PlayerController::EndInterview()
 		// 입력 모드를 게임 전용으로 되돌리고 마우스 커서를 숨깁니다.
 		FInputModeGameAndUI InputMode;
 		SetInputMode(InputMode);
-		bShowMouseCursor = false;
+		bShowMouseCursor = true;
 	}
 
 	// 서버에 '일어서기'를 요청합니다.
