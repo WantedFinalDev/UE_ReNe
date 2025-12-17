@@ -5,6 +5,8 @@
 #include "Rene_Company_Widget.generated.h"
 
 
+class URene_DashBoardWidget;
+class URene_ProfileWidget;
 class UWidgetSwitcher;
 class USizeBox;
 class UScrollBox;
@@ -29,9 +31,11 @@ private:
 	UFUNCTION()
 	void OnClickedList();
 	UFUNCTION()
-	void OnClickedMainToReport();
+	void OnClickedMainToDash();
 	UFUNCTION()
-	void OnClickedReportToMain();
+	void OnClickedDashToMain();
+	UFUNCTION()
+	void OnClickedReturn();
 	
 	void PopulateUserList();
 	void ClearUserList();
@@ -45,28 +49,26 @@ public:
 	TObjectPtr<UWidgetSwitcher> sw_Switcher;
 	
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UButton> btn_MainClose;
+	TObjectPtr<URene_ProfileWidget> WBP_ProfileUI;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<URene_DashBoardWidget> WBP_DashBoardUI;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UButton> btn_HostUIClose;
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> btn_UserList;
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UScrollBox> scr_UserList;
-
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UButton> btn_MainToReport;
 	
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UButton> btn_ReportToMain;
+	TObjectPtr<UButton> btn_DashToMain;
 	
 	UPROPERTY(EditAnywhere, Category=UI)
 	TSubclassOf<class URene_UserListImplementWidget> ImplementWidget;
 
-	UPROPERTY(EditAnywhere, Category=UI)
-	TSubclassOf<UUserWidget> ResultWidget;
-	
-	UPROPERTY()
-	TObjectPtr<UUserWidget> p_ResultUI;
 	
 	//	Private Room : Placed TargetPoint Actor
 	//	Vector 좌표 고정으로 대체

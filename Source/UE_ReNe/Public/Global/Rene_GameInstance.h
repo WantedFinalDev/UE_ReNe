@@ -26,6 +26,8 @@ public:
 	void JoinReneSession(int32 idx);
 	UFUNCTION(BlueprintCallable)
 	void FindReneSession();
+	UFUNCTION(BlueprintCallable)
+	void DestroyReneSession();
 	
 	// Login Process
 	void SetReneUserData(const FString& id, const FString& name, const int32 level, const FString& role);
