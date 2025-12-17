@@ -9,6 +9,7 @@
 #include "Voice/Rene_VoiceChatManager.h"
 #include "OnlineSubsystem.h"
 #include "Interfaces/VoiceInterface.h"
+#include "InputMappingContext.h"
 #include "EnhancedInputSubsystems.h" // Required for Enhanced Input
 #include "EnhancedInputComponent.h"   // Required for Enhanced Input
 #include "Global/Rene_Booth_GameMode.h"
@@ -33,6 +34,14 @@ ARene_PlayerController::ARene_PlayerController()
 	if (wbpseeker.Succeeded())
 		seekerui_class = wbpseeker.Class;
 	
+	static ConstructorHelpers::FObjectFinder<UInputAction> tmp_ia_menu(TEXT("/Game/Inputs/Actions/IA_Menu.IA_Menu"));
+	if (tmp_ia_menu.Succeeded())
+		ia_Menu = tmp_ia_menu.Object;
+	
+	static ConstructorHelpers::FObjectFinder<UInputMappingContext> tmp_imc(TEXT("/Game/Inputs/IMC_Common.IMC_Common"));
+	if (tmp_imc.Succeeded())
+		imc_Common = tmp_imc.Object;
+	
 	LocalVoiceRecorder = CreateDefaultSubobject<URene_LocalVoiceRecorder>(TEXT("LocalVoiceRecorder")); // Create the new component
 	FileUploader = CreateDefaultSubobject<URene_FileUploader>(TEXT("FileUploaderComponent"));
 
@@ -45,6 +54,15 @@ void ARene_PlayerController::BeginPlay()
 
 	if (IsLocalController())
 	{
+		// EnhancedInput Mapping Context 추가
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+		{
+			if (imc_Common)
+			{
+				Subsystem->AddMappingContext(imc_Common, 0);
+			}
+		}
+
 		URene_GameInstance* gi = Cast<URene_GameInstance>(GetGameInstance());
 		if (gi)
 		{
@@ -66,9 +84,8 @@ void ARene_PlayerController::BeginPlay()
 				LOGWARNF(TEXT("Client: ServerRPC Called - %s"), *data.Name);
 			}
 		}
+
 	}
-	
-	
 }
 
 void ARene_PlayerController::SetupInputComponent()
@@ -77,17 +94,24 @@ void ARene_PlayerController::SetupInputComponent()
 
 	if (InputComponent)
 	{
-		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
+		if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(InputComponent))
 		{
-			if (PushToTalkAction)
+			if (!PushToTalkAction)
 			{
-				EnhancedInputComponent->BindAction(PushToTalkAction, ETriggerEvent::Started, this, &ARene_PlayerController::OnStartTalking);
-				EnhancedInputComponent->BindAction(PushToTalkAction, ETriggerEvent::Completed, this, &ARene_PlayerController::OnStopTalking);
+				LOGERRORF(TEXT("PushToTalkAction is not set in ARene_PlayerController. Push-to-talk will not work."));
+				return;
 			}
-			else
+			if (!IsValid(ia_Menu))
 			{
-				UE_LOG(LogVoicePC, Warning, TEXT("PushToTalkAction is not set in ARene_PlayerController. Push-to-talk will not work."));
+				LOGERRORF(TEXT("ia_Menu has Fucked"))
+				return;
 			}
+			
+			EIC->BindAction(PushToTalkAction, ETriggerEvent::Started, this, &ARene_PlayerController::OnStartTalking);
+			EIC->BindAction(PushToTalkAction, ETriggerEvent::Completed, this, &ARene_PlayerController::OnStopTalking);
+			EIC->BindAction(ia_Menu, ETriggerEvent::Triggered, this, &ARene_PlayerController::OnToggleMenu);
+			
+			
 		}
 		else
 		{
@@ -129,12 +153,36 @@ bool ARene_PlayerController::ShowFileDialog(const FString& DialogTitle, const FS
 void ARene_PlayerController::ClientRPC_CreateBoothUI_Implementation()
 {
 	// Dedicated : User Info Check -> Co / Se
+	//	Company/Sekker -> Host/Guest
 	CreateSeekerUI();
+}
+
+void ARene_PlayerController::OnToggleMenu()
+{
+	if (HasAuthority())
+	{
+		if (!IsValid(company_ui))
+		{
+			LOGERRORF(TEXT("NULL Host UI"))
+			return;
+		}
+		OnCompanyUI();
+	}
+	else
+	{
+		if (!IsValid(seeker_ui))
+		{
+			LOGERRORF(TEXT("NULL Client UI"))
+			return;
+		}
+		OnSeekerUI();
+	}
 }
 
 void ARene_PlayerController::CreateCompanyUI()
 {
 	if (!IsValid(companyui_class)) return;
+	if (!IsLocalPlayerController() || !HasAuthority()) return;
 	
 	LOGWARNF(TEXT("Company UI has Gen"))
 	company_ui = CreateWidget<URene_Company_Widget>(this, companyui_class);
@@ -191,6 +239,7 @@ void ARene_PlayerController::OnPlayerListUpdated()
 
 void ARene_PlayerController::OnCompanyUI()
 {
+	if (!HasAuthority() || !IsLocalPlayerController()) return;
 	if (IsValid(company_ui))
 	{
 		company_ui->SetVisibility(ESlateVisibility::Visible);
@@ -202,6 +251,7 @@ void ARene_PlayerController::OnCompanyUI()
 
 void ARene_PlayerController::OnSeekerUI()
 {
+	if (!IsLocalPlayerController() || HasAuthority()) return;
 	if (IsValid(seeker_ui))
 	{
 		seeker_ui->SetVisibility(ESlateVisibility::Visible);

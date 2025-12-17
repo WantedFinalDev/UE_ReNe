@@ -27,9 +27,12 @@ public:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
-
+	
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_CreateBoothUI();
+	
+	//	ESC Toggle Menu
+	void OnToggleMenu();
 	
 	void CreateCompanyUI();
 	void CreateSeekerUI();
@@ -74,8 +77,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "File Dialog")
     bool ShowFileDialog(const FString& DialogTitle, const FString& DefaultPath, const FString& FileTypes, FString& OutFilePath);
 
-
+	UFUNCTION(BlueprintCallable)
 	void EnableUIControll();
+	UFUNCTION(BlueprintCallable)
 	void DisableUIControll();
 	
 	// =================================================================
@@ -95,10 +99,13 @@ private:
 
 	// =================================================================
 	
-	
-private:
 	TObjectPtr<class UUserWidget> GetUserWidget();
+	
+	void OnStartTalking();
+	void OnStopTalking();
 
+	
+	
 
 	/* Field */
 public:
@@ -120,17 +127,19 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<URene_FileUploader> FileUploader;
 	
-//======voice======
-public:
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Voice")
-	//URene_VoiceChatManager* VoiceChatComponent;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Voice")
 	TObjectPtr<URene_LocalVoiceRecorder> LocalVoiceRecorder;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Actions")
 	TObjectPtr<UInputAction> PushToTalkAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	TObjectPtr<UInputAction> ia_Menu;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	TObjectPtr<UInputMappingContext> imc_Common;
+	
+	
 	// Flag to indicate if the player is currently in an AI interview
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI Interview")
 	bool bIsInAIInterview;
@@ -168,8 +177,5 @@ private:
 
 	// =================================================================
 
-private:
-	void OnStartTalking();
-	void OnStopTalking();
 
 };
