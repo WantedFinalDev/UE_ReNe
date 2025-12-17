@@ -35,6 +35,8 @@ ARene_PlayerController::ARene_PlayerController()
 	
 	LocalVoiceRecorder = CreateDefaultSubobject<URene_LocalVoiceRecorder>(TEXT("LocalVoiceRecorder")); // Create the new component
 	FileUploader = CreateDefaultSubobject<URene_FileUploader>(TEXT("FileUploaderComponent"));
+
+	bIsInAIInterview = false; // Initialize the flag
 }
 
 void ARene_PlayerController::BeginPlay()
@@ -258,13 +260,20 @@ void ARene_PlayerController::OnStartTalking()
 		return;
 	}
 
-    // Get the current GameState and our custom PlayerState
     ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>();
     ARene_PlayerState* RenePlayerState = GetPlayerState<ARene_PlayerState>();
 
-    // Only activate voice and recording if the player is in a private interview
-    if (RenePlayerState && RenePlayerState->IsInPrivateInterview())
+	if (bIsInAIInterview)
+	{
+		UE_LOG(LogVoicePC, Log, TEXT("Starting AI interview recording."));
+		if (LocalVoiceRecorder)
+		{
+			LocalVoiceRecorder->StartRecording();
+		}
+	}
+    else if (RenePlayerState && RenePlayerState->IsInPrivateInterview())
     {
+		UE_LOG(LogVoicePC, Log, TEXT("Starting Human-to-Human voice chat and recording."));
         if (GameState && GameState->VoiceChatManager)
         {
             GameState->VoiceChatManager->StartVoice(); // Activate real-time P2P voice
@@ -275,7 +284,10 @@ void ARene_PlayerController::OnStartTalking()
             LocalVoiceRecorder->StartRecording(); // Activate local recording/sending
         }
     }
-    // If not in a private interview, neither system will be activated by PTT.
+    else
+    {
+        UE_LOG(LogVoicePC, Log, TEXT("Not in AI or Private interview. Voice capture not started."));
+    }
 }
 
 void ARene_PlayerController::OnStopTalking()
@@ -286,16 +298,31 @@ void ARene_PlayerController::OnStopTalking()
 		return;
 	}
 
-    // Get the VoiceChatManager from the GameState
     ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>();
-    if (GameState && GameState->VoiceChatManager)
-    {
-        GameState->VoiceChatManager->StopVoice();
-    }
 
-    if (LocalVoiceRecorder)
+	if (bIsInAIInterview)
+	{
+		UE_LOG(LogVoicePC, Log, TEXT("Stopping AI interview recording and uploading."));
+		if (LocalVoiceRecorder)
+		{
+			// Pass the AI Session ID for the upload
+			LocalVoiceRecorder->StopAndUploadRecording(AISessionID);
+		}
+	}
+    else // Assume Human-to-Human if not AI interview
     {
-        LocalVoiceRecorder->StopAndUploadRecording();
+		UE_LOG(LogVoicePC, Log, TEXT("Stopping Human-to-Human voice chat and recording."));
+        if (GameState && GameState->VoiceChatManager)
+        {
+            GameState->VoiceChatManager->StopVoice();
+        }
+
+        if (LocalVoiceRecorder)
+        {
+            // For human-to-human, we might not need to pass a session ID to the recorder for upload,
+            // or it might be handled differently. For now, pass an empty string.
+            LocalVoiceRecorder->StopAndUploadRecording(FString());
+        }
     }
 }
 
@@ -364,6 +391,18 @@ void ARene_PlayerController::ServerRPC_TeleportToLocation_Implementation(FVector
 		ControlledPawn->SetActorLocation(TargetLocation);
 		LOGWARNF(TEXT("Teleporting pawn to %s"), *TargetLocation.ToString());
 	}
+}
+
+void ARene_PlayerController::SetIsInAIInterview(bool bNewState)
+{
+	bIsInAIInterview = bNewState;
+	UE_LOG(LogVoicePC, Log, TEXT("SetIsInAIInterview: %s"), bNewState ? TEXT("True") : TEXT("False"));
+}
+
+void ARene_PlayerController::SetAISessionID(const FString& NewSessionID)
+{
+	AISessionID = NewSessionID;
+	UE_LOG(LogVoicePC, Log, TEXT("SetAISessionID: %s"), *NewSessionID);
 }
 
 // =================================================================

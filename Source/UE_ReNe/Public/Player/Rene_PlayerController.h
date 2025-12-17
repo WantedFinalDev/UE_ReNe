@@ -131,6 +131,28 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input|Actions")
 	TObjectPtr<UInputAction> PushToTalkAction;
 
+	// Flag to indicate if the player is currently in an AI interview
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI Interview")
+	bool bIsInAIInterview;
+
+	// The session ID for the current AI interview, received from the server.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI Interview")
+	FString AISessionID;
+
+	/**
+	 * Sets whether the player is currently in an AI interview.
+	 * @param bNewState The new state for bIsInAIInterview.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "AI Interview")
+	void SetIsInAIInterview(bool bNewState);
+
+	/**
+	 * Sets the session ID for the current AI interview.
+	 * @param NewSessionID The new session ID.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "AI Interview")
+	void SetAISessionID(const FString& NewSessionID);
+
 	// =================================================================
 	//                 인터뷰 위젯 관련 프로퍼티 (아래)
 	// =================================================================

@@ -30,8 +30,11 @@ public:
     /** Starts capturing local microphone data. */
     void StartRecording();
 
-    /** Stops capturing and initiates the upload of the recorded data. */
-    void StopAndUploadRecording();
+    /**
+     * Stops capturing and initiates the upload of the recorded data.
+     * @param AISessionID The session ID for the AI interview, if applicable.
+     */
+    void StopAndUploadRecording(const FString& AISessionID);
 
 protected:
     virtual void BeginPlay() override;
@@ -48,11 +51,11 @@ private:
      * Sends the recorded voice data as a multipart/form-data POST request.
      * @param VoiceData The raw PCM data to upload.
      * @param PlayerName The name of the player who recorded the audio.
+     * @param AISessionID The session ID for the AI interview, if applicable.
      */
-    void SendHttpRequest(const TArray<uint8>& VoiceData, const FString& PlayerName);
+    void SendHttpRequest(const TArray<uint8>& VoiceData, const FString& PlayerName, const FString& AISessionID);
 
     /**
-
      * Callback function for when the HTTP upload request completes.
      * @param Request The original request object.
      * @param Response The response object from the server.

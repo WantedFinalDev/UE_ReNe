@@ -1,0 +1,51 @@
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Components/SceneComponent.h" // Changed from ActorComponent to SceneComponent
+#include "Rene_AIVoicePlaybackComponent.generated.h"
+
+class UAudioComponent;
+class USoundWaveProcedural; // Forward declaration for USoundWaveProcedural
+
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+class UE_RENE_API URene_AIVoicePlaybackComponent : public USceneComponent // Changed base class
+{
+	GENERATED_BODY()
+
+public:
+	URene_AIVoicePlaybackComponent();
+
+	/**
+	 * Decodes a Base64 encoded string into a TArray of bytes.
+	 * @param Base64String The Base64 string to decode.
+	 * @param WavData The output array of bytes.
+	 * @return True if decoding was successful, false otherwise.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "AI Voice")
+	bool DecodeBase64(const FString& Base64String, TArray<uint8>& WavData);
+
+	/**
+	 * Plays audio from a Base64 encoded WAV file string.
+	 * @param Base64String The Base64 encoded string representing the WAV file.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "AI Voice")
+	void PlayAIVoiceFromBase64(const FString& Base64String);
+
+	/**
+	 * Plays audio from raw WAV data.
+	 * @param WavData The raw byte array of the WAV file.
+	 */
+	void PlayAIVoiceFromWavData(const TArray<uint8>& WavData);
+
+protected:
+	virtual void BeginPlay() override;
+
+private:
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> AudioComponent;
+
+	// Helper function to parse WAV header and extract PCM data
+	bool ParseWavData(const TArray<uint8>& WavData, TArray<uint8>& OutPCMData, int32& OutSampleRate, int32& OutNumChannels);
+};

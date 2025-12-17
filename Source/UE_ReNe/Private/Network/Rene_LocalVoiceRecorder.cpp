@@ -8,6 +8,12 @@
 #include "GameFramework/PlayerState.h"
 #include "GameFramework/Controller.h"
 #include "Global/Rene_GameInstance.h" // GameInstance 헤더 추가
+#include "Player/Rene_PlayerController.h" // For ARene_PlayerController
+#include "AI/Rene_AI_Interviewer.h" // For ARene_AI_Interviewer
+#include "Dom/JsonObject.h"         // For JSON parsing
+#include "Serialization/JsonReader.h" // For JSON parsing
+#include "Serialization/JsonSerializer.h" // For JSON parsing
+#include "EngineUtils.h" // For TActorIterator
 
 
 URene_LocalVoiceRecorder::URene_LocalVoiceRecorder()
@@ -123,7 +129,7 @@ void URene_LocalVoiceRecorder::CaptureVoiceData()
     }
 }
 
-void URene_LocalVoiceRecorder::StopAndUploadRecording()
+void URene_LocalVoiceRecorder::StopAndUploadRecording(const FString& AISessionID)
 {
     if (!bIsRecording)
     {
@@ -174,27 +180,15 @@ void URene_LocalVoiceRecorder::StopAndUploadRecording()
         {
             UE_LOG(LogTemp, Warning, TEXT("Could not find Local Player from PlayerController."));
         }
-        /*
-        // 컨트롤러에서 PlayerState를 가져옵니다. PlayerState는 모든 클라이언트에 복제됩니다.
-        if (APlayerState* PlayerState = LocalPC->GetPlayerState<APlayerState>())
-        {
-            PlayerName = PlayerState->GetPlayerName();
-            UE_LOG(LogTemp, Log, TEXT("Player Name Retrieved: %s (Successful)"), *PlayerName);
-        }
-        else
-        {
-            UE_LOG(LogTemp, Warning, TEXT("Could not find Local PlayerState."));
-        }
-        */
     }
     else
     {
         UE_LOG(LogTemp, Error, TEXT("Could not find Local PlayerController (Index 0)."));
     }
-    SendHttpRequest(VoiceDataToUpload, PlayerName);
+    SendHttpRequest(VoiceDataToUpload, PlayerName, AISessionID);
 }
 
-void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, const FString& PlayerName)
+void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, const FString& PlayerName, const FString& AISessionID)
 {
     // --- GameInstance에서 네트워크 설정 가져오기 ---
     URene_GameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance<URene_GameInstance>() : nullptr;
@@ -204,12 +198,27 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
         OnUploadFailure.Broadcast(TEXT("GameInstance is not valid."));
         return;
     }
-    const FString VoiceUploadURL = GameInstance->GetNetworkSettings().VoiceDataUploadURL;
-    if (VoiceUploadURL.IsEmpty())
+    
+    FString TargetURL;
+    if (!AISessionID.IsEmpty())
     {
-        UE_LOG(LogTemp, Error, TEXT("Voice upload failed: VoiceDataUploadURL is not set in DataTable."));
-        OnUploadFailure.Broadcast(TEXT("VoiceDataUploadURL is not set in DataTable."));
-        return;
+        TargetURL = GameInstance->GetNetworkSettings().AIInterviewChatURL;
+        if (TargetURL.IsEmpty())
+        {
+            UE_LOG(LogTemp, Error, TEXT("AI Voice Chat upload failed: AIInterviewChatURL is not set in DataTable."));
+            OnUploadFailure.Broadcast(TEXT("AIInterviewChatURL is not set in DataTable."));
+            return;
+        }
+    }
+    else
+    {
+        TargetURL = GameInstance->GetNetworkSettings().VoiceDataUploadURL;
+        if (TargetURL.IsEmpty())
+        {
+            UE_LOG(LogTemp, Error, TEXT("Voice upload failed: VoiceDataUploadURL is not set in DataTable."));
+            OnUploadFailure.Broadcast(TEXT("VoiceDataUploadURL is not set in DataTable."));
+            return;
+        }
     }
     // --- 설정 가져오기 끝 ---
 
@@ -217,7 +226,7 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
 
     Request->OnProcessRequestComplete().BindUObject(this, &URene_LocalVoiceRecorder::OnUploadComplete);
-    Request->SetURL(VoiceUploadURL); // 데이터 테이블에서 가져온 URL 사용
+    Request->SetURL(TargetURL); // Use the determined URL
     Request->SetVerb(TEXT("POST"));
 
     // Determine speaker_role based on authority
@@ -254,9 +263,19 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
     FString SpeakerRoleHeader = FString::Printf(TEXT("Content-Disposition: form-data; name=\"speaker_role\"\r\n\r\n"));
     AddStringField(SpeakerRoleHeader);
     AddStringField(SpeakerRole);
-    AddStringField(TEXT("\r\n")); // [수정됨] 여기서 *("\r\n")을 사용하여 크래시가 났었음
+    AddStringField(TEXT("\r\n"));
 
-    // 2. Append file part (VoiceData)
+    // 2. Append session_id part if provided
+    if (!AISessionID.IsEmpty())
+    {
+        AddStringField(BoundaryLine);
+        FString SessionIDHeader = FString::Printf(TEXT("Content-Disposition: form-data; name=\"session_id\"\r\n\r\n"));
+        AddStringField(SessionIDHeader);
+        AddStringField(AISessionID);
+        AddStringField(TEXT("\r\n"));
+    }
+
+    // 3. Append file part (VoiceData)
     // Generate a unique filename using PlayerName and a timestamp
     FString Timestamp = FDateTime::UtcNow().ToString(TEXT("%Y%m%d_%H%M%S"));
     FString UniqueFileName = FString::Printf(TEXT("%s_%s_%s.pcm"), *SpeakerRole, *PlayerName, *Timestamp);
@@ -285,6 +304,101 @@ void URene_LocalVoiceRecorder::OnUploadComplete(FHttpRequestPtr Request, FHttpRe
         FString ResponseBody = Response->GetContentAsString();
         UE_LOG(LogTemp, Log, TEXT("Voice data uploaded successfully. Server response: %s"), *ResponseBody);
         OnUploadSuccess.Broadcast(ResponseBody);
+
+        // --- AI Response Handling ---
+        TSharedPtr<FJsonObject> JsonObject;
+        TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
+
+        if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+        {
+            // Check for interview status first
+            FString InterviewStatus;
+            if (JsonObject->TryGetStringField(TEXT("status"), InterviewStatus))
+            {
+                if (InterviewStatus.Equals(TEXT("done"), ESearchCase::IgnoreCase))
+                {
+                    UE_LOG(LogTemp, Log, TEXT("AI Interview Status: DONE. Ending AI Interview Session."));
+                    // Get the owning PlayerController and set bIsInAIInterview to false
+                    if (APlayerController* OwningPC = Cast<APlayerController>(GetOwner()))
+                    {
+                        if (ARene_PlayerController* RenePC = Cast<ARene_PlayerController>(OwningPC))
+                        {
+                            RenePC->SetIsInAIInterview(false);
+                            RenePC->SetAISessionID(FString()); // Clear session ID as well
+                        }
+                    }
+                    // If the interview is done, we might not want to process further AI audio or session updates
+                    return; 
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Log, TEXT("AI Interview Status: %s"), *InterviewStatus);
+                }
+            }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("Server response does not contain 'status' field."));
+            }
+
+
+            FString AIAudioBase64;
+            if (JsonObject->TryGetStringField(TEXT("ai_audio_base64"), AIAudioBase64))
+            {
+                if (!AIAudioBase64.IsEmpty())
+                {
+                    UE_LOG(LogTemp, Log, TEXT("Received AI audio (Base64). Attempting to play."));
+
+                    // Find the ARene_AI_Interviewer in the world
+                    // Assuming there's only one ARene_AI_Interviewer in the scene for now.
+                    ARene_AI_Interviewer* AIInterviewer = nullptr;
+                    for (TActorIterator<ARene_AI_Interviewer> It(GetWorld()); It; ++It)
+                    {
+                        AIInterviewer = *It;
+                        break; // Found the first one
+                    }
+
+                    if (AIInterviewer)
+                    {
+                        AIInterviewer->PlayAIVoiceResponse(AIAudioBase64);
+                    }
+                    else
+                    {
+                        UE_LOG(LogTemp, Error, TEXT("Could not find ARene_AI_Interviewer in the world to play AI voice."));
+                    }
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Warning, TEXT("AI audio (Base64) field is empty in server response."));
+                }
+            }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("Server response does not contain 'ai_audio_base64' field."));
+            }
+
+            // Also extract and update the session_id if it's present in the response
+            FString NewSessionID;
+            if (JsonObject->TryGetStringField(TEXT("session_id"), NewSessionID))
+            {
+                if (!NewSessionID.IsEmpty())
+                {
+                    // Get the owning PlayerController and update its AISessionID
+                    if (APlayerController* OwningPC = Cast<APlayerController>(GetOwner()))
+                    {
+                        if (ARene_PlayerController* RenePC = Cast<ARene_PlayerController>(OwningPC))
+                        {
+                            RenePC->SetAISessionID(NewSessionID);
+                            UE_LOG(LogTemp, Log, TEXT("Updated AI Session ID to: %s"), *NewSessionID);
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("Failed to deserialize server response JSON for AI voice. Response: %s"), *ResponseBody);
+        }
+        // --- End AI Response Handling ---
     }
     else
     {

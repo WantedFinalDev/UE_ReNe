@@ -33,4 +33,12 @@ public:
 	/** The full URL for uploading recorded voice data (e.g., "http://.../audio-check") */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Network Settings")
 	FString VoiceDataUploadURL;
+
+	/** The full URL for starting an AI interview (e.g., "/api/v1/company/ai-interview/start") */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Network Settings")
+	FString AIInterviewStartURL;
+
+	/** The full URL for AI interview chat voice responses (e.g., "/api/v1/company/ai-interview/chat/voice") */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Network Settings")
+	FString AIInterviewChatURL;
 };
