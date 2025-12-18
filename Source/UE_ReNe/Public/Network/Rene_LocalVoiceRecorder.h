@@ -11,6 +11,12 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUploadSuccess, const FString&, ResponseBody);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUploadFailure, const FString&, ErrorMessage);
 
+// AI의 응답 메시지(자막)를 전달하기 위한 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAIMessageReceived, const FString&, AIMessage);
+// "AI 생각 중" 상태 표시를 제어하기 위한 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAIResponseStateChanged, bool, bIsWaitingForResponse);
+
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UE_RENE_API URene_LocalVoiceRecorder : public UActorComponent
 {
@@ -26,6 +32,14 @@ public:
     /** 업로드 실패 시 호출되는 델리게이트 */
     UPROPERTY(BlueprintAssignable, Category = "Voice Recorder")
     FOnUploadFailure OnUploadFailure;
+
+    /** AI로부터 자막 메시지를 수신했을 때 호출됩니다. */
+    UPROPERTY(BlueprintAssignable, Category = "AI Interview|Events")
+    FOnAIMessageReceived OnAIMessageReceived;
+
+    /** AI의 응답을 기다리는 상태가 변경될 때 호출됩니다. (true: 대기 시작, false: 대기 종료) */
+    UPROPERTY(BlueprintAssignable, Category = "AI Interview|Events")
+    FOnAIResponseStateChanged OnAIResponseStateChanged;
 
     /** Starts capturing local microphone data. */
     void StartRecording();

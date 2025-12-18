@@ -104,7 +104,13 @@ private:
 	void OnStartTalking();
 	void OnStopTalking();
 
-	
+protected:
+	// AI Interview Event Handlers
+	UFUNCTION()
+	void OnAIMessageReceived(const FString& AIMessage);
+
+	UFUNCTION()
+	void OnAIResponseStateChanged(bool bIsWaiting);
 	
 
 	/* Field */
@@ -161,6 +167,14 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "AI Interview")
 	void SetAISessionID(const FString& NewSessionID);
+
+	/**
+	 * Displays the initial message from the AI at the beginning of the interview.
+	 * This can be called from Blueprint when the interview starts.
+	 * @param InitialMessage The first message from the AI.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "AI Interview")
+	void DisplayInitialAIMessage(const FString& InitialMessage);
 
 	// =================================================================
 	//                 인터뷰 위젯 관련 프로퍼티 (아래)

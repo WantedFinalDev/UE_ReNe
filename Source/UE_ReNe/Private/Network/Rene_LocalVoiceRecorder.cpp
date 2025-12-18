@@ -1,4 +1,5 @@
 // Rene_LocalVoiceRecorder.cpp
+// Rene_LocalVoiceRecorder.cpp
 
 #include "Network/Rene_LocalVoiceRecorder.h"
 #include "Modules/ModuleManager.h"
@@ -185,6 +186,9 @@ void URene_LocalVoiceRecorder::StopAndUploadRecording(const FString& AISessionID
     {
         UE_LOG(LogTemp, Error, TEXT("Could not find Local PlayerController (Index 0)."));
     }
+
+    // UI에 "AI 생각 중" 상태 표시를 요청
+    OnAIResponseStateChanged.Broadcast(true);
     SendHttpRequest(VoiceDataToUpload, PlayerName, AISessionID);
 }
 
@@ -299,6 +303,9 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
 
 void URene_LocalVoiceRecorder::OnUploadComplete(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
+    // Always turn off the "thinking" indicator as soon as we get a response.
+    OnAIResponseStateChanged.Broadcast(false);
+
     if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
     {
         FString ResponseBody = Response->GetContentAsString();
@@ -311,36 +318,14 @@ void URene_LocalVoiceRecorder::OnUploadComplete(FHttpRequestPtr Request, FHttpRe
 
         if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
         {
-            // Check for interview status first
-            FString InterviewStatus;
-            if (JsonObject->TryGetStringField(TEXT("status"), InterviewStatus))
+            // 자막 텍스트 추출 및 이벤트 발생
+            FString AIMessage;
+            if (JsonObject->TryGetStringField(TEXT("ai_message"), AIMessage) && !AIMessage.IsEmpty())
             {
-                if (InterviewStatus.Equals(TEXT("done"), ESearchCase::IgnoreCase))
-                {
-                    UE_LOG(LogTemp, Log, TEXT("AI Interview Status: DONE. Ending AI Interview Session."));
-                    // Get the owning PlayerController and set bIsInAIInterview to false
-                    if (APlayerController* OwningPC = Cast<APlayerController>(GetOwner()))
-                    {
-                        if (ARene_PlayerController* RenePC = Cast<ARene_PlayerController>(OwningPC))
-                        {
-                            RenePC->SetIsInAIInterview(false);
-                            RenePC->SetAISessionID(FString()); // Clear session ID as well
-                        }
-                    }
-                    // If the interview is done, we might not want to process further AI audio or session updates
-                    return; 
-                }
-                else
-                {
-                    UE_LOG(LogTemp, Log, TEXT("AI Interview Status: %s"), *InterviewStatus);
-                }
-            }
-            else
-            {
-                UE_LOG(LogTemp, Warning, TEXT("Server response does not contain 'status' field."));
+                OnAIMessageReceived.Broadcast(AIMessage);
             }
 
-
+            // Play audio first, in case the response also contains a "done" status.
             FString AIAudioBase64;
             if (JsonObject->TryGetStringField(TEXT("ai_audio_base64"), AIAudioBase64))
             {
@@ -349,7 +334,6 @@ void URene_LocalVoiceRecorder::OnUploadComplete(FHttpRequestPtr Request, FHttpRe
                     UE_LOG(LogTemp, Log, TEXT("Received AI audio (Base64). Attempting to play."));
 
                     // Find the ARene_AI_Interviewer in the world
-                    // Assuming there's only one ARene_AI_Interviewer in the scene for now.
                     ARene_AI_Interviewer* AIInterviewer = nullptr;
                     for (TActorIterator<ARene_AI_Interviewer> It(GetWorld()); It; ++It)
                     {
@@ -376,13 +360,39 @@ void URene_LocalVoiceRecorder::OnUploadComplete(FHttpRequestPtr Request, FHttpRe
                 UE_LOG(LogTemp, Warning, TEXT("Server response does not contain 'ai_audio_base64' field."));
             }
 
+            // Now, check for interview status.
+            FString InterviewStatus;
+            if (JsonObject->TryGetStringField(TEXT("status"), InterviewStatus))
+            {
+                if (InterviewStatus.Equals(TEXT("done"), ESearchCase::IgnoreCase))
+                {
+                    UE_LOG(LogTemp, Log, TEXT("AI Interview Status: DONE. Ending AI Interview Session."));
+                    if (APlayerController* OwningPC = Cast<APlayerController>(GetOwner()))
+                    {
+                        if (ARene_PlayerController* RenePC = Cast<ARene_PlayerController>(OwningPC))
+                        {
+                            RenePC->SetIsInAIInterview(false);
+                            RenePC->SetAISessionID(FString());
+                        }
+                    }
+                    return; 
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Log, TEXT("AI Interview Status: %s"), *InterviewStatus);
+                }
+            }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("Server response does not contain 'status' field."));
+            }
+
             // Also extract and update the session_id if it's present in the response
             FString NewSessionID;
             if (JsonObject->TryGetStringField(TEXT("session_id"), NewSessionID))
             {
                 if (!NewSessionID.IsEmpty())
                 {
-                    // Get the owning PlayerController and update its AISessionID
                     if (APlayerController* OwningPC = Cast<APlayerController>(GetOwner()))
                     {
                         if (ARene_PlayerController* RenePC = Cast<ARene_PlayerController>(OwningPC))
@@ -402,16 +412,35 @@ void URene_LocalVoiceRecorder::OnUploadComplete(FHttpRequestPtr Request, FHttpRe
     }
     else
     {
-        FString ErrorMessage = TEXT("Unknown error");
+        FString ErrorMessageForLog = TEXT("Unknown error");
+        FString ErrorMessageForUI = TEXT("오류가 발생했습니다. 다시 시도해주세요."); // Default UI message
+
         if (Response.IsValid())
         {
-            ErrorMessage = FString::Printf(TEXT("HTTP %d: %s"), Response->GetResponseCode(), *Response->GetContentAsString());
+            FString ResponseBody = Response->GetContentAsString();
+            ErrorMessageForLog = FString::Printf(TEXT("HTTP %d: %s"), Response->GetResponseCode(), *ResponseBody);
+
+            // Try to parse the detail message from the JSON error response
+            TSharedPtr<FJsonObject> JsonObject;
+            TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
+            if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+            {
+                FString DetailMessage;
+                if (JsonObject->TryGetStringField(TEXT("detail"), DetailMessage) && !DetailMessage.IsEmpty())
+                {
+                    ErrorMessageForUI = DetailMessage;
+                }
+            }
         }
         else
         {
-            ErrorMessage = TEXT("HTTP request failed or no response received.");
+            ErrorMessageForLog = TEXT("HTTP request failed or no response received.");
         }
-        UE_LOG(LogTemp, Error, TEXT("Voice data upload failed. Reason: %s"), *ErrorMessage);
-        OnUploadFailure.Broadcast(ErrorMessage);
+
+        // Display the detailed error message on the UI
+        OnAIMessageReceived.Broadcast(ErrorMessageForUI);
+
+        UE_LOG(LogTemp, Error, TEXT("Voice data upload failed. Reason: %s"), *ErrorMessageForLog);
+        OnUploadFailure.Broadcast(ErrorMessageForLog);
     }
 }

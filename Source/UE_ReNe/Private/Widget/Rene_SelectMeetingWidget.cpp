@@ -160,6 +160,9 @@ void URene_SelectMeetingWidget::OnAIInterviewStartResponse(FHttpRequestPtr Reque
 				
 				UE_LOG(LogTemp, Log, TEXT("AI Interview started. SessionID: %s, AI Message: %s"), *SessionID, *AIMessage);
 
+				// Display the initial subtitle message
+				PlayerController->DisplayInitialAIMessage(AIMessage);
+
 				if (!AIAudioBase64.IsEmpty())
 				{
 					ActualAIInterviewer->PlayAIVoiceResponse(AIAudioBase64);

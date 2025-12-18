@@ -85,6 +85,12 @@ void ARene_PlayerController::BeginPlay()
 			}
 		}
 
+		// Bind to the local voice recorder delegates
+		if (LocalVoiceRecorder)
+		{
+			LocalVoiceRecorder->OnAIMessageReceived.AddDynamic(this, &ARene_PlayerController::OnAIMessageReceived);
+			LocalVoiceRecorder->OnAIResponseStateChanged.AddDynamic(this, &ARene_PlayerController::OnAIResponseStateChanged);
+		}
 	}
 }
 
@@ -497,13 +503,15 @@ void ARene_PlayerController::EndInterview()
 		InterviewWidgetInstance = nullptr; // 포인터 정리
 
 		// 입력 모드를 게임 전용으로 되돌리고 마우스 커서를 숨깁니다.
-		FInputModeGameAndUI InputMode;
+		FInputModeGameOnly InputMode;
 		SetInputMode(InputMode);
 		bShowMouseCursor = true;
 	}
 
 	// 서버에 '일어서기'를 요청합니다.
 	ServerRPC_RequestStandUp();
+	ServerRPC_TeleportToLocation(FVector(-559.999985,69.999981,112.000021));
+	
 }
 
 void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
@@ -514,4 +522,28 @@ void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
 	}
 }
 
+void ARene_PlayerController::OnAIMessageReceived(const FString& AIMessage)
+{
+	if (bIsInAIInterview && InterviewWidgetInstance)
+	{
+		InterviewWidgetInstance->UpdateSubtitle(AIMessage);
+	}
+}
+
+void ARene_PlayerController::OnAIResponseStateChanged(bool bIsWaiting)
+{
+	if (bIsInAIInterview && InterviewWidgetInstance)
+	{
+		InterviewWidgetInstance->SetLoadingState(bIsWaiting);
+	}
+}
+
+void ARene_PlayerController::DisplayInitialAIMessage(const FString& InitialMessage)
+{
+	// Ensure the widget is valid and we are in an AI interview
+	if (bIsInAIInterview && InterviewWidgetInstance)
+	{
+		InterviewWidgetInstance->UpdateSubtitle(InitialMessage);
+	}
+}
 // =================================================================
