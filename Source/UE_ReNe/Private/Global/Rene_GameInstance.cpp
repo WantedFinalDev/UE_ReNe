@@ -102,6 +102,14 @@ void URene_GameInstance::FindReneSession()
 	p_ReneSessionInterface->FindSessions(0, p_ReneSessionSearch.ToSharedRef());
 }
 
+void URene_GameInstance::DestroyReneSession()
+{
+	if (p_ReneSessionInterface.IsValid())
+	{
+		p_ReneSessionInterface->DestroySession(NAME_GameSession);
+	}
+}
+
 void URene_GameInstance::SetReneUserData(const FString& id, const FString& name, const int32 level, const FString& role)
 {
 	f_userdata.ID = id;

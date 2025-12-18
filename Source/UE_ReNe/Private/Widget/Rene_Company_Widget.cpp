@@ -6,18 +6,21 @@
 #include "Components/SizeBox.h"
 #include "Components/WidgetSwitcher.h"
 #include "Global/Rene_Booth_GameState.h"
+#include "Global/Rene_GameInstance.h"
 #include "Player/Rene_PlayerController.h"
 #include "Global/Rene_PlayerState.h"
+#include "Widget/Rene_ProfileWidget.h"
 #include "Widget/Rene_UserListImplementWidget.h"
 
 void URene_Company_Widget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	
-	btn_MainClose->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedClose);
+	btn_HostUIClose->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedClose);
 	btn_UserList->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedList);
-	btn_MainToReport->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedMainToReport);
-	btn_ReportToMain->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedReportToMain);
+	btn_DashToMain->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedDashToMain);
+	WBP_ProfileUI->OnClickReturnDynamic.AddDynamic(this, &URene_Company_Widget::OnClickedReturn);
+	WBP_ProfileUI->OnClickDashDynamic.AddDynamic(this, &URene_Company_Widget::OnClickedMainToDash);
 }
 
 void URene_Company_Widget::OnClickedClose()
@@ -37,24 +40,30 @@ void URene_Company_Widget::OnClickedList()
 	PopulateUserList();
 }
 
-void URene_Company_Widget::OnClickedMainToReport()
+void URene_Company_Widget::OnClickedMainToDash()
 {
 	if (!IsValid(sw_Switcher)) return;
 	
 	sw_Switcher->SetActiveWidgetIndex(1);
 	
-	if (!IsValid(ResultWidget)) return;
-	
-	p_ResultUI = CreateWidget<UUserWidget>(GetOwningPlayer(), ResultWidget);
-	
-	if (!IsValid(p_ResultUI)) return;
-	
-	size_Result->AddChild(p_ResultUI);
 }
 
-void URene_Company_Widget::OnClickedReportToMain()
+void URene_Company_Widget::OnClickedDashToMain()
 {
 	sw_Switcher->SetActiveWidgetIndex(0);
+}
+
+void URene_Company_Widget::OnClickedReturn()
+{
+	TObjectPtr<ARene_PlayerController> pc = Cast<ARene_PlayerController>(GetOwningPlayer());
+	TObjectPtr<URene_GameInstance> gi = Cast<URene_GameInstance>(GetWorld()->GetGameInstance());
+	if (pc && pc->HasAuthority())
+	{
+		if (gi)
+			gi->DestroyReneSession();
+		
+		GetWorld()->ServerTravel(TEXT("/Game/Maps/StartMap"));
+	}
 }
 
 void URene_Company_Widget::PopulateUserList()
