@@ -20,6 +20,8 @@
 #include "AIController.h" // AIController 사용을 위해 헤더 추가
 #include "Blueprint/AIBlueprintHelperLibrary.h" // AI 기능 사용을 위한 핵심 헤더
 #include "Widget/Rene_InterviewWidget.h" // 헤더 추가
+#include "Widget/Rene_InterviewResultPopupWidget.h" // 헤더 추가
+#include "Widget/Rene_WebViewWidget.h"
 
 
 DEFINE_LOG_CATEGORY_STATIC(LogVoicePC, Log, All);
@@ -159,8 +161,6 @@ bool ARene_PlayerController::ShowFileDialog(const FString& DialogTitle, const FS
 
 void ARene_PlayerController::ClientRPC_CreateBoothUI_Implementation()
 {
-	// Dedicated : User Info Check -> Co / Se
-	//	Company/Sekker -> Host/Guest
 	CreateSeekerUI();
 }
 
@@ -191,7 +191,6 @@ void ARene_PlayerController::CreateCompanyUI()
 	if (!IsValid(companyui_class)) return;
 	if (!IsLocalPlayerController() || !HasAuthority()) return;
 	
-	LOGWARNF(TEXT("Company UI has Gen"))
 	company_ui = CreateWidget<URene_Company_Widget>(this, companyui_class);
 	company_ui->AddToViewport();
 	EnableUIControll();
@@ -201,48 +200,10 @@ void ARene_PlayerController::CreateSeekerUI()
 {
 	if (!IsValid(seekerui_class)) return;
 	
-	LOGWARNF(TEXT("Seeker UI has Gen"))
 	seeker_ui = CreateWidget<URene_Seeker_Widget>(this, seekerui_class);
 	seeker_ui->AddToViewport();
 	EnableUIControll();
 }
-
-// 주석 처리 이유:
-// - AddPlayerState에서 호출 시 PlayerState 이름이 아직 설정되기 전이라 EmptyName이 출력됨
-// - PopulateUserList가 GameState의 Rene_PlayerArray를 직접 읽어서 UI 생성하므로 불필요
-// - 필요 시 수동으로 호출 가능하도록 코드는 남겨둠
-/*
-void ARene_PlayerController::OnPlayerListUpdated()
-{
-	TObjectPtr<ARene_Booth_GameState> gs = GetWorld()->GetGameState<ARene_Booth_GameState>();
-	if (IsValid(gs))
-	{
-		TArray<TObjectPtr<ARene_PlayerState>> allplayers = gs->Rene_PlayerArray;
-
-		for (TObjectPtr<ARene_PlayerState> ps : allplayers)
-		{
-			LOGWARNF(TEXT("Player Name : %s"), *ps->GetReneUserName())
-		}
-	}
-}
-*/
-
-//	12.11 UI 통폐합으로 텔레포트 기능 삭제됨.
-
-/*void ARene_PlayerController::ServerRPC_TeleportWithTarget_Implementation(APlayerState* targetstate, FVector targetlocation)
-{
-	if (!HasAuthority()) return;
-	APawn* host = GetPawn();
-	APawn* target = targetstate ? targetstate->GetPawn() : nullptr;
-	
-	if (!host || !target) return;
-	target->SetActorLocation(targetlocation);
-	host->SetActorLocation(targetlocation + FVector(100, 100, 0));
-	
-	LOGWARNF(TEXT("\nTeleport Complete | %s"), *targetstate->GetPlayerName())
-
-	// 기존 Voice Start Code는 이동되었음.
-}*/
 
 void ARene_PlayerController::OnCompanyUI()
 {
@@ -270,18 +231,11 @@ void ARene_PlayerController::OnSeekerUI()
 
 void ARene_PlayerController::ServerRPC_SendUserData_Implementation(struct FReneUserData data)
 {
-	LOGWARNF(TEXT("ServerRPC Start. Setting Name: %s"), *data.Name);
-
 	ARene_PlayerState* ps = GetPlayerState<ARene_PlayerState>();
 	if (ps)
 	{
 		ps->SetReneUserData(data);
 		ps->SetPlayerName(data.Name);
-		LOGWARNF(TEXT("ServerRPC Complete. PlayerName: %s"), *ps->GetReneUserName());
-	}
-	else
-	{
-		LOGERRORF(TEXT("ServerRPC Failed. PlayerName is EmptyName"));
 	}
 }
 
@@ -311,157 +265,98 @@ TObjectPtr<class UUserWidget> ARene_PlayerController::GetUserWidget()
 
 void ARene_PlayerController::OnStartTalking()
 {
-	if (!IsLocalController())
-	{
-		UE_LOG(LogVoicePC, Warning, TEXT("OnStartTalking ignored: not local controller"));
-		return;
-	}
+	if (!IsLocalController()) return;
 
-    ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>();
     ARene_PlayerState* RenePlayerState = GetPlayerState<ARene_PlayerState>();
 
 	if (bIsInAIInterview)
 	{
-		UE_LOG(LogVoicePC, Log, TEXT("Starting AI interview recording."));
-		if (LocalVoiceRecorder)
-		{
-			LocalVoiceRecorder->StartRecording();
-		}
+		if (LocalVoiceRecorder) LocalVoiceRecorder->StartRecording();
 	}
     else if (RenePlayerState && RenePlayerState->IsInPrivateInterview())
     {
-		UE_LOG(LogVoicePC, Log, TEXT("Starting Human-to-Human voice chat and recording."));
-        if (GameState && GameState->VoiceChatManager)
+        if (ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>())
         {
-            GameState->VoiceChatManager->StartVoice(); // Activate real-time P2P voice
+            if (GameState->VoiceChatManager) GameState->VoiceChatManager->StartVoice();
         }
-
-        if (LocalVoiceRecorder)
-        {
-            LocalVoiceRecorder->StartRecording(); // Activate local recording/sending
-        }
-    }
-    else
-    {
-        UE_LOG(LogVoicePC, Log, TEXT("Not in AI or Private interview. Voice capture not started."));
+        if (LocalVoiceRecorder) LocalVoiceRecorder->StartRecording();
     }
 }
 
 void ARene_PlayerController::OnStopTalking()
 {
-	if (!IsLocalController())
-	{
-		UE_LOG(LogVoicePC, Warning, TEXT("OnStopTalking ignored: not local controller"));
-		return;
-	}
-
-    ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>();
+	if (!IsLocalController()) return;
 
 	if (bIsInAIInterview)
 	{
-		UE_LOG(LogVoicePC, Log, TEXT("Stopping AI interview recording and uploading."));
-		if (LocalVoiceRecorder)
-		{
-			// Pass the AI Session ID for the upload
-			LocalVoiceRecorder->StopAndUploadRecording(AISessionID);
-		}
+		if (LocalVoiceRecorder) LocalVoiceRecorder->StopAndUploadRecording(AISessionID);
 	}
-    else // Assume Human-to-Human if not AI interview
+    else
     {
-		UE_LOG(LogVoicePC, Log, TEXT("Stopping Human-to-Human voice chat and recording."));
-        if (GameState && GameState->VoiceChatManager)
+        if (ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>())
         {
-            GameState->VoiceChatManager->StopVoice();
+            if (GameState->VoiceChatManager) GameState->VoiceChatManager->StopVoice();
         }
-
-        if (LocalVoiceRecorder)
-        {
-            // For human-to-human, we might not need to pass a session ID to the recorder for upload,
-            // or it might be handled differently. For now, pass an empty string.
-            LocalVoiceRecorder->StopAndUploadRecording(FString());
-        }
+        if (LocalVoiceRecorder) LocalVoiceRecorder->StopAndUploadRecording(FString());
     }
 }
 
 void ARene_PlayerController::ServerRPC_EndInterview_Implementation(APlayerState* InterviewerState, APlayerState* CandidateState)
 {
-    if (!HasAuthority())
-    {
-        return;
-    }
+    if (!HasAuthority()) return;
 
-    ARene_Booth_GameMode* GameMode = GetWorld()->GetAuthGameMode<ARene_Booth_GameMode>();
-    if (GameMode)
-    {
-        APlayerController* InterviewerPC = InterviewerState ? Cast<APlayerController>(InterviewerState->GetOwner()) : nullptr;
-        APlayerController* CandidatePC = CandidateState ? Cast<APlayerController>(CandidateState->GetOwner()) : nullptr;
-        
-        if (InterviewerPC && CandidatePC)
-        {
-            GameMode->EndOneToOneVoiceChat(InterviewerPC, CandidatePC);
-        }
-    }
+	if (ARene_Booth_GameMode* GameMode = GetWorld()->GetAuthGameMode<ARene_Booth_GameMode>())
+	{
+		APlayerController* InterviewerPC =
+			InterviewerState ? Cast<APlayerController>(InterviewerState->GetOwner()) : nullptr;
+
+		APlayerController* CandidatePC =
+			CandidateState ? Cast<APlayerController>(CandidateState->GetOwner()) : nullptr;
+
+		if (InterviewerPC && CandidatePC)
+		{
+			GameMode->EndOneToOneVoiceChat(InterviewerPC, CandidatePC);
+		}
+	}
 }
 
 void ARene_PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// Get the VoiceChatManager from the GameState to stop voice on EndPlay
     if (ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>())
     {
-        if (GameState->VoiceChatManager)
-        {
-            GameState->VoiceChatManager->StopVoice();
-        }
+        if (GameState->VoiceChatManager) GameState->VoiceChatManager->StopVoice();
     }
 	Super::EndPlay(EndPlayReason);
 }
 
 void ARene_PlayerController::ServerRPC_RequestMoveAndSit_Implementation(FTransform TargetTransform)
 {
-	if (!HasAuthority())
-	{
-		return;
-	}
+	if (!HasAuthority()) return;
 
-	// 캐스팅 대상을 AUE_ReNeCharacter로 변경
 	if (AUE_ReNeCharacter* ControlledCharacter = Cast<AUE_ReNeCharacter>(GetPawn()))
 	{
 		ControlledCharacter->SetTargetSitTransform(TargetTransform);
 	}
-
 	UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, TargetTransform.GetLocation());
 }
 
-// 기존 텔레포트 RPC 구현 (변경 없음)
 void ARene_PlayerController::ServerRPC_TeleportToLocation_Implementation(FVector TargetLocation)
 {
-	// 서버에서만 실행되도록 보장
-	if (!HasAuthority())
-	{
-		return;
-	}
+	if (!HasAuthority()) return;
 
-	// 이 PlayerController가 조종하는 Pawn을 가져옵니다.
 	if (APawn* ControlledPawn = GetPawn())
 	{
-		// Pawn의 위치를 클라이언트가 요청한 위치로 설정합니다.
 		ControlledPawn->SetActorLocation(TargetLocation);
-		LOGWARNF(TEXT("Teleporting pawn to %s"), *TargetLocation.ToString());
 	}
 }
 
 void ARene_PlayerController::SetIsInAIInterview(bool bNewState)
 {
-	// Only proceed if the state is actually changing
-	if (bIsInAIInterview == bNewState)
-	{
-		return;
-	}
+	if (bIsInAIInterview == bNewState) return;
 
 	bIsInAIInterview = bNewState;
 	UE_LOG(LogVoicePC, Log, TEXT("SetIsInAIInterview: %s"), bNewState ? TEXT("True") : TEXT("False"));
 
-	// If the interview is ending, switch the camera back to the player's pawn
 	if (!bNewState)
 	{
 		if (APawn* PlayerPawn = GetPawn())
@@ -474,30 +369,18 @@ void ARene_PlayerController::SetIsInAIInterview(bool bNewState)
 void ARene_PlayerController::SetAISessionID(const FString& NewSessionID)
 {
 	AISessionID = NewSessionID;
-	UE_LOG(LogVoicePC, Log, TEXT("SetAISessionID: %s"), *NewSessionID);
 }
-
-// =================================================================
-//                 인터뷰 위젯 및 일어서기 관련 함수 (아래)
-// =================================================================
 
 void ARene_PlayerController::ShowInterviewWidget()
 {
-	// 로컬 플레이어 컨트롤러에서만 UI를 생성합니다.
-	if (!IsLocalController())
-	{
-		return;
-	}
+	if (!IsLocalController()) return;
 
-	// 위젯 클래스가 유효하고, 아직 위젯이 생성되지 않았다면
 	if (InterviewWidgetClass && !InterviewWidgetInstance)
 	{
 		InterviewWidgetInstance = CreateWidget<URene_InterviewWidget>(this, InterviewWidgetClass);
 		if (InterviewWidgetInstance)
 		{
 			InterviewWidgetInstance->AddToViewport();
-
-			// 입력 모드를 UI 전용으로 변경하고 마우스 커서를 표시합니다.
 			FInputModeGameAndUI InputMode;
 			SetInputMode(InputMode);
 			bShowMouseCursor = true;
@@ -507,28 +390,16 @@ void ARene_PlayerController::ShowInterviewWidget()
 
 void ARene_PlayerController::EndInterview()
 {
-	// 로컬 플레이어 컨트롤러에서만 UI를 제거하고 입력 모드를 변경합니다.
-	if (!IsLocalController())
-	{
-		return;
-	}
+	if (!IsLocalController()) return;
 
 	if (InterviewWidgetInstance)
 	{
 		InterviewWidgetInstance->RemoveFromParent();
-		InterviewWidgetInstance = nullptr; // 포인터 정리
-
-		// 입력 모드를 게임 전용으로 되돌리고 마우스 커서를 숨깁니다.
-		FInputModeGameOnly InputMode;
-		SetInputMode(InputMode);
-		bShowMouseCursor = true;
+		InterviewWidgetInstance = nullptr;
 	}
 	SetIsInAIInterview(false);
-
-	// 서버에 '일어서기'를 요청합니다.
 	ServerRPC_RequestStandUp();
 	ServerRPC_TeleportToLocation(FVector(-559.999985,69.999981,112.000021));
-	
 }
 
 void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
@@ -557,7 +428,6 @@ void ARene_PlayerController::OnAIResponseStateChanged(bool bIsWaiting)
 
 void ARene_PlayerController::DisplayInitialAIMessage(const FString& InitialMessage)
 {
-	// Ensure the widget is valid and we are in an AI interview
 	if (bIsInAIInterview && InterviewWidgetInstance)
 	{
 		InterviewWidgetInstance->UpdateSubtitle(InitialMessage);
@@ -568,7 +438,7 @@ void ARene_PlayerController::OnAIInterviewFinished(int32 InterviewResultID)
 {
 	UE_LOG(LogVoicePC, Log, TEXT("AI Interview Finished on Client. Received Result ID: %d. Requesting server to store it."), InterviewResultID);
 	Server_SetInterviewResultID(InterviewResultID);
-	// 나중에 이 곳에 웹 뷰어를 띄우는 로직을 추가할 것입니다.
+    ShowAIReportPage();
 }
 
 void ARene_PlayerController::Server_SetInterviewResultID_Implementation(int32 ResultID)
@@ -580,4 +450,66 @@ void ARene_PlayerController::Server_SetInterviewResultID_Implementation(int32 Re
 		UE_LOG(LogVoicePC, Log, TEXT("Server stored InterviewResultID %d for player %s"), ResultID, *RenePlayerState->GetPlayerName());
 	}
 }
-// =================================================================
+
+void ARene_PlayerController::ShowAIReportPage()
+{
+    if (!IsLocalController()) return;
+
+    ARene_PlayerState* RenePlayerState = GetPlayerState<ARene_PlayerState>();
+    if (!RenePlayerState) return;
+
+    int32 ResultID = RenePlayerState->GetInterviewResultID();
+    if (ResultID <= 0) return;
+
+    if (InterviewResultPopupWidgetClass && !InterviewResultPopupInstance)
+    {
+        InterviewResultPopupInstance = CreateWidget<URene_InterviewResultPopupWidget>(this, InterviewResultPopupWidgetClass);
+        if (InterviewResultPopupInstance)
+        {
+            InterviewResultPopupInstance->SetResultID(ResultID);
+            InterviewResultPopupInstance->OnShowReportClicked.AddDynamic(this, &ARene_PlayerController::HandleShowReportClicked);
+            InterviewResultPopupInstance->AddToViewport();
+            
+            FInputModeUIOnly InputMode;
+			SetInputMode(InputMode);
+			bShowMouseCursor = true;
+        }
+    }
+}
+
+void ARene_PlayerController::HandleShowReportClicked()
+{
+    if (WebViewWidgetClass && !WebViewInstance)
+    {
+        URene_GameInstance* GameInstance = GetGameInstance<URene_GameInstance>();
+        if (!GameInstance) return;
+
+        const FString ReportURL = GameInstance->GetNetworkSettings().AIReportURL;
+        if (ReportURL.IsEmpty())
+        {
+            UE_LOG(LogVoicePC, Error, TEXT("AIReportURL is not set in NetworkSettings."));
+            return;
+        }
+
+        WebViewInstance = CreateWidget<URene_WebViewWidget>(this, WebViewWidgetClass);
+        if (WebViewInstance)
+        {
+            WebViewInstance->LoadURL(ReportURL);
+            WebViewInstance->AddToViewport();
+        }
+    }
+}
+
+void ARene_PlayerController::CloseReportAndWebView()
+{
+    if (InterviewResultPopupInstance)
+    {
+        InterviewResultPopupInstance->RemoveFromParent();
+        InterviewResultPopupInstance = nullptr;
+    }
+    if (WebViewInstance)
+    {
+        WebViewInstance->RemoveFromParent();
+        WebViewInstance = nullptr;
+    }
+}
