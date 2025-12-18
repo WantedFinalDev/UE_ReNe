@@ -15,6 +15,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUploadFailure, const FString&, Er
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAIMessageReceived, const FString&, AIMessage);
 // "AI 생각 중" 상태 표시를 제어하기 위한 델리게이트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAIResponseStateChanged, bool, bIsWaitingForResponse);
+// AI 면접이 최종적으로 종료되고 결과 ID를 받았을 때 호출되는 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAIInterviewFinished, int32, InterviewResultID);
 
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -40,6 +42,10 @@ public:
     /** AI의 응답을 기다리는 상태가 변경될 때 호출됩니다. (true: 대기 시작, false: 대기 종료) */
     UPROPERTY(BlueprintAssignable, Category = "AI Interview|Events")
     FOnAIResponseStateChanged OnAIResponseStateChanged;
+
+    /** AI 면접이 최종 종료되었을 때 호출됩니다. */
+    UPROPERTY(BlueprintAssignable, Category = "AI Interview|Events")
+    FOnAIInterviewFinished OnAIInterviewFinished;
 
     /** Starts capturing local microphone data. */
     void StartRecording();

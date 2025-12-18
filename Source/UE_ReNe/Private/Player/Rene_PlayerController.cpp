@@ -90,6 +90,7 @@ void ARene_PlayerController::BeginPlay()
 		{
 			LocalVoiceRecorder->OnAIMessageReceived.AddDynamic(this, &ARene_PlayerController::OnAIMessageReceived);
 			LocalVoiceRecorder->OnAIResponseStateChanged.AddDynamic(this, &ARene_PlayerController::OnAIResponseStateChanged);
+			LocalVoiceRecorder->OnAIInterviewFinished.AddDynamic(this, &ARene_PlayerController::OnAIInterviewFinished);
 		}
 	}
 }
@@ -451,8 +452,23 @@ void ARene_PlayerController::ServerRPC_TeleportToLocation_Implementation(FVector
 
 void ARene_PlayerController::SetIsInAIInterview(bool bNewState)
 {
+	// Only proceed if the state is actually changing
+	if (bIsInAIInterview == bNewState)
+	{
+		return;
+	}
+
 	bIsInAIInterview = bNewState;
 	UE_LOG(LogVoicePC, Log, TEXT("SetIsInAIInterview: %s"), bNewState ? TEXT("True") : TEXT("False"));
+
+	// If the interview is ending, switch the camera back to the player's pawn
+	if (!bNewState)
+	{
+		if (APawn* PlayerPawn = GetPawn())
+		{
+			SetViewTargetWithBlend(PlayerPawn, 0.0f);
+		}
+	}
 }
 
 void ARene_PlayerController::SetAISessionID(const FString& NewSessionID)
@@ -507,6 +523,7 @@ void ARene_PlayerController::EndInterview()
 		SetInputMode(InputMode);
 		bShowMouseCursor = true;
 	}
+	SetIsInAIInterview(false);
 
 	// 서버에 '일어서기'를 요청합니다.
 	ServerRPC_RequestStandUp();
@@ -544,6 +561,23 @@ void ARene_PlayerController::DisplayInitialAIMessage(const FString& InitialMessa
 	if (bIsInAIInterview && InterviewWidgetInstance)
 	{
 		InterviewWidgetInstance->UpdateSubtitle(InitialMessage);
+	}
+}
+
+void ARene_PlayerController::OnAIInterviewFinished(int32 InterviewResultID)
+{
+	UE_LOG(LogVoicePC, Log, TEXT("AI Interview Finished on Client. Received Result ID: %d. Requesting server to store it."), InterviewResultID);
+	Server_SetInterviewResultID(InterviewResultID);
+	// 나중에 이 곳에 웹 뷰어를 띄우는 로직을 추가할 것입니다.
+}
+
+void ARene_PlayerController::Server_SetInterviewResultID_Implementation(int32 ResultID)
+{
+	ARene_PlayerState* RenePlayerState = GetPlayerState<ARene_PlayerState>();
+	if (RenePlayerState)
+	{
+		RenePlayerState->SetInterviewResultID(ResultID);
+		UE_LOG(LogVoicePC, Log, TEXT("Server stored InterviewResultID %d for player %s"), ResultID, *RenePlayerState->GetPlayerName());
 	}
 }
 // =================================================================

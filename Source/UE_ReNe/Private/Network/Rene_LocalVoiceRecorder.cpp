@@ -366,7 +366,17 @@ void URene_LocalVoiceRecorder::OnUploadComplete(FHttpRequestPtr Request, FHttpRe
             {
                 if (InterviewStatus.Equals(TEXT("done"), ESearchCase::IgnoreCase))
                 {
-                    UE_LOG(LogTemp, Log, TEXT("AI Interview Status: DONE. Ending AI Interview Session."));
+                    int32 InterviewResultID = -1;
+                    if (JsonObject->TryGetNumberField(TEXT("interview_result_id"), InterviewResultID))
+                    {
+                        UE_LOG(LogTemp, Log, TEXT("AI Interview is DONE. Result ID: %d"), InterviewResultID);
+                        OnAIInterviewFinished.Broadcast(InterviewResultID);
+                    }
+                    else
+                    {
+                        UE_LOG(LogTemp, Warning, TEXT("AI Interview is DONE, but 'interview_result_id' was not found in the response."));
+                    }
+
                     if (APlayerController* OwningPC = Cast<APlayerController>(GetOwner()))
                     {
                         if (ARene_PlayerController* RenePC = Cast<ARene_PlayerController>(OwningPC))

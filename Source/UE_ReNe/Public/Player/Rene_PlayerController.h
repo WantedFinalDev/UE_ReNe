@@ -97,6 +97,10 @@ private:
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_RequestStandUp();
 
+	// 서버에 AI 면접 결과 ID 저장을 요청하는 RPC
+	UFUNCTION(Server, Reliable)
+	void Server_SetInterviewResultID(int32 ResultID);
+
 	// =================================================================
 	
 	TObjectPtr<class UUserWidget> GetUserWidget();
@@ -111,6 +115,9 @@ protected:
 
 	UFUNCTION()
 	void OnAIResponseStateChanged(bool bIsWaiting);
+
+	UFUNCTION()
+	void OnAIInterviewFinished(int32 InterviewResultID);
 	
 
 	/* Field */
