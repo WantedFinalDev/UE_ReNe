@@ -2,13 +2,14 @@
 #include "UE_ReNe.h"
 #include "Components/Button.h"
 #include "Player/Rene_PlayerController.h"
+#include "Widget/Rene_ProfileWidget.h"
 
 
 void URene_Seeker_Widget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	btn_Close->OnClicked.AddDynamic(this, &URene_Seeker_Widget::OnClickedClose);
-	
+	WBP_ProfileUI->OnClickReturnDynamic.AddDynamic(this, &URene_Seeker_Widget::OnClickReturn);
 }
 
 void URene_Seeker_Widget::OnClickedClose()
@@ -20,6 +21,11 @@ void URene_Seeker_Widget::OnClickedClose()
 	if (!pc) return;
 	
 	pc->DisableUIControll();
+}
+
+void URene_Seeker_Widget::OnClickReturn()
+{
+	
 }
 
 

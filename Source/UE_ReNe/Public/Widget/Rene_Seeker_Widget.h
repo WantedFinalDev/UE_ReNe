@@ -5,6 +5,7 @@
 #include "Interfaces/IHttpRequest.h"
 #include "Rene_Seeker_Widget.generated.h"
 
+class URene_ProfileWidget;
 class URene_ReportWidget;
 class UCanvasPanel;
 class UWidgetSwitcher;
@@ -24,6 +25,9 @@ public:
 private:
 	UFUNCTION()
 	void OnClickedClose();
+	
+	UFUNCTION()
+	void OnClickReturn();
 
 
 	/* Field */
@@ -44,7 +48,8 @@ public:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<URene_ReportWidget> WBP_ReportWidget;
 	
-	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<URene_ProfileWidget> WBP_ProfileUI;
 	
 private:
 
