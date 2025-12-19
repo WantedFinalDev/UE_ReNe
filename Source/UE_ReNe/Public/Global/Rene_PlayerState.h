@@ -27,9 +27,12 @@ public:
 	void SetReneUserData(const FReneUserData& data) { userdata = data; }
 	void SetReneUserName(const FString& name) { userdata.Name = name; }
 	
-
 	// New getter for voice chat eligibility
 	bool IsInPrivateInterview() const { return bVoicable; }
+
+	// Getter and Setter for the AI Interview Result ID
+	void SetInterviewResultID(int32 ResultID);
+	int32 GetInterviewResultID() const;
 	
 	
 private:
@@ -51,7 +54,9 @@ public:
 private:
 	UPROPERTY(Replicated)
 	FReneUserData userdata;
-	
+
+	// The result ID of the completed AI interview. Not replicated to other clients.
+	int32 InterviewResultID;
 	
 	
 	

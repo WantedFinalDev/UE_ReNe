@@ -26,7 +26,9 @@ public class UE_ReNe : ModuleRules
 			"Voice",
 			"HTTP",
 			"DesktopPlatform",
-			"WebBrowser"
+			"WebBrowser",
+			"Json",
+			"JsonUtilities"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]
