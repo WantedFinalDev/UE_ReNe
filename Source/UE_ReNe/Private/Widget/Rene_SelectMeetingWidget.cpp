@@ -9,6 +9,8 @@
 #include "Dom/JsonObject.h" // For JSON objects
 #include "AI/Rene_AI_Interviewer.h" // For ARene_AI_Interviewer
 #include "Global/Rene_GameInstance.h" // For network settings
+#include "EngineUtils.h" // For TActorIterator
+#include "Camera/CameraActor.h" // For ACameraActor
 
 void URene_SelectMeetingWidget::NativeConstruct()
 {
@@ -159,6 +161,29 @@ void URene_SelectMeetingWidget::OnAIInterviewStartResponse(FHttpRequestPtr Reque
 				PlayerController->SetAISessionID(SessionID);
 				
 				UE_LOG(LogTemp, Log, TEXT("AI Interview started. SessionID: %s, AI Message: %s"), *SessionID, *AIMessage);
+
+				// Display the initial subtitle message
+				PlayerController->DisplayInitialAIMessage(AIMessage);
+
+				// Switch to the interview camera
+				ACameraActor* InterviewCamera = nullptr;
+				for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
+				{
+					if (It->ActorHasTag(FName("AIInterviewCamera")))
+					{
+						InterviewCamera = *It;
+						break;
+					}
+				}
+
+				if (InterviewCamera)
+				{
+					PlayerController->SetViewTargetWithBlend(InterviewCamera, 0.8f);
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Could not find ACameraActor with tag 'AIInterviewCamera' in the level."));
+				}
 
 				if (!AIAudioBase64.IsEmpty())
 				{
