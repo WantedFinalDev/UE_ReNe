@@ -27,7 +27,11 @@ void URene_Seeker_Widget::OnClickedReturn()
 {
 	if (!pc) return;
 	if (pc->IsLocalPlayerController())
-		pc->ClientTravel(TEXT("/Game/Maps/StartMap"), TRAVEL_Absolute);
+	{
+		// pc->ClientReturnToMainMenuWithTextReason(FText::GetEmpty());
+		// pc->ClientTravel(TEXT("/Game/Maps/StartMap"), TRAVEL_Absolute);
+		pc->ConsoleCommand(TEXT("disconnect"));
+	}
 }
 
 void URene_Seeker_Widget::OnClickedDash()

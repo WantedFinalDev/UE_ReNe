@@ -403,6 +403,7 @@ void ARene_PlayerController::EndInterview()
 	SetIsInAIInterview(false);
 	ServerRPC_RequestStandUp();
 	ServerRPC_TeleportToLocation(FVector(-559.999985,69.999981,112.000021));
+	DisableUIControll();
 }
 
 void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
