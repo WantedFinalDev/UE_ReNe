@@ -5,6 +5,8 @@
 #include "Interfaces/IHttpRequest.h"
 #include "Rene_Seeker_Widget.generated.h"
 
+class URene_WebViewWidget;
+class ARene_PlayerController;
 class URene_ProfileWidget;
 class URene_ReportWidget;
 class UCanvasPanel;
@@ -27,15 +29,14 @@ private:
 	void OnClickedClose();
 	
 	UFUNCTION()
-	void OnClickReturn();
+	void OnClickedReturn();
+	
+	UFUNCTION()
+	void OnClickedDash();
 
 
 	/* Field */
 public:
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UButton> btn_Close;		//	UI Close
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UButton> btn_EnterReport;	//	Open Report UI
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UWidgetSwitcher> sw_Main;
@@ -43,16 +44,20 @@ public:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCanvasPanel> cv_Main;
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UCanvasPanel> cv_Report;
+	TObjectPtr<UCanvasPanel> cv_WebView;
 	
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<URene_ReportWidget> WBP_ReportWidget;
+	TObjectPtr<UButton> btn_Close;		//	UI Close
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<URene_ProfileWidget> WBP_ProfileUI;
 	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<URene_WebViewWidget> WBP_WebViewUI;
+	
 private:
-
+	UPROPERTY()
+	TObjectPtr<ARene_PlayerController> pc;
 
 
 };
