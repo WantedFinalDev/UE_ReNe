@@ -26,7 +26,6 @@ void AUE_ReNePlayerController::BeginPlay()
 	{
 		// spawn the mobile controls widget
 		MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
-
 		if (MobileControlsWidget)
 		{
 			// add the controls to the player screen
@@ -34,7 +33,7 @@ void AUE_ReNePlayerController::BeginPlay()
 
 		} else {
 
-			UE_LOG(LogUE_ReNe, Error, TEXT("Could not spawn mobile controls widget."));
+			UE_LOG(Rene, Error, TEXT("Could not spawn mobile controls widget."));
 
 		}
 
