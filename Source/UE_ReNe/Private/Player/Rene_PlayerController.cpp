@@ -271,15 +271,18 @@ void ARene_PlayerController::OnStartTalking()
 
 	if (bIsInAIInterview)
 	{
-		if (LocalVoiceRecorder) LocalVoiceRecorder->StartRecording();
+		if (LocalVoiceRecorder) 
+			LocalVoiceRecorder->StartRecording();
 	}
     else if (RenePlayerState && RenePlayerState->IsInPrivateInterview())
     {
         if (ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>())
         {
-            if (GameState->VoiceChatManager) GameState->VoiceChatManager->StartVoice();
+            if (GameState->VoiceChatManager) 
+            	GameState->VoiceChatManager->StartVoice();
         }
-        if (LocalVoiceRecorder) LocalVoiceRecorder->StartRecording();
+        if (LocalVoiceRecorder) 
+        	LocalVoiceRecorder->StartRecording();
     }
 }
 
@@ -289,15 +292,18 @@ void ARene_PlayerController::OnStopTalking()
 
 	if (bIsInAIInterview)
 	{
-		if (LocalVoiceRecorder) LocalVoiceRecorder->StopAndUploadRecording(AISessionID);
+		if (LocalVoiceRecorder) 
+			LocalVoiceRecorder->StopAndUploadRecording(AISessionID);
 	}
     else
     {
         if (ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>())
         {
-            if (GameState->VoiceChatManager) GameState->VoiceChatManager->StopVoice();
+            if (GameState->VoiceChatManager) 
+            	GameState->VoiceChatManager->StopVoice();
         }
-        if (LocalVoiceRecorder) LocalVoiceRecorder->StopAndUploadRecording(FString());
+        if (LocalVoiceRecorder) 
+        	LocalVoiceRecorder->StopAndUploadRecording(FString());
     }
 }
 
@@ -324,7 +330,8 @@ void ARene_PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     if (ARene_Booth_GameState* GameState = GetWorld()->GetGameState<ARene_Booth_GameState>())
     {
-        if (GameState->VoiceChatManager) GameState->VoiceChatManager->StopVoice();
+        if (GameState->VoiceChatManager) 
+        	GameState->VoiceChatManager->StopVoice();
     }
 	Super::EndPlay(EndPlayReason);
 }
@@ -345,9 +352,7 @@ void ARene_PlayerController::ServerRPC_TeleportToLocation_Implementation(FVector
 	if (!HasAuthority()) return;
 
 	if (APawn* ControlledPawn = GetPawn())
-	{
 		ControlledPawn->SetActorLocation(TargetLocation);
-	}
 }
 
 void ARene_PlayerController::SetIsInAIInterview(bool bNewState)
@@ -360,9 +365,7 @@ void ARene_PlayerController::SetIsInAIInterview(bool bNewState)
 	if (!bNewState)
 	{
 		if (APawn* PlayerPawn = GetPawn())
-		{
 			SetViewTargetWithBlend(PlayerPawn, 0.0f);
-		}
 	}
 }
 
@@ -400,38 +403,31 @@ void ARene_PlayerController::EndInterview()
 	SetIsInAIInterview(false);
 	ServerRPC_RequestStandUp();
 	ServerRPC_TeleportToLocation(FVector(-559.999985,69.999981,112.000021));
+	DisableUIControll();
 }
 
 void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
 {
 	if (AUE_ReNeCharacter* ControlledCharacter = Cast<AUE_ReNeCharacter>(GetPawn()))
-	{
 		ControlledCharacter->StandUp();
-	}
 }
 
 void ARene_PlayerController::OnAIMessageReceived(const FString& AIMessage)
 {
 	if (bIsInAIInterview && InterviewWidgetInstance)
-	{
 		InterviewWidgetInstance->UpdateSubtitle(AIMessage);
-	}
 }
 
 void ARene_PlayerController::OnAIResponseStateChanged(bool bIsWaiting)
 {
 	if (bIsInAIInterview && InterviewWidgetInstance)
-	{
 		InterviewWidgetInstance->SetLoadingState(bIsWaiting);
-	}
 }
 
 void ARene_PlayerController::DisplayInitialAIMessage(const FString& InitialMessage)
 {
 	if (bIsInAIInterview && InterviewWidgetInstance)
-	{
 		InterviewWidgetInstance->UpdateSubtitle(InitialMessage);
-	}
 }
 
 void ARene_PlayerController::OnAIInterviewFinished(int32 InterviewResultID)
