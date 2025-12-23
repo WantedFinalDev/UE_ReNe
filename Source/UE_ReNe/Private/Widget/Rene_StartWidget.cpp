@@ -17,24 +17,16 @@ void URene_StartWidget::NativeConstruct()
 	btn_Enter->OnClicked.AddDynamic(this, &URene_StartWidget::OnClickedEnter);
 	btn_Exit->OnClicked.AddDynamic(this, &URene_StartWidget::OnClickedExit);
 	WBP_LobbyUI->WBP_ProfileUI_main->OnClickReturnDynamic.AddDynamic(this, &URene_StartWidget::OnClickedReturn);
+
+	// Bind to GameInstance login delegate
+	if (URene_GameInstance* gi = Cast<URene_GameInstance>(GetGameInstance()))
+	{
+		gi->OnLoginComplete.AddDynamic(this, &URene_StartWidget::OnLoginResponse);
+	}
 }
 
 void URene_StartWidget::OnClickedEnter()
 {
-	/* TODO : Autho Login
-	 * 
-	 * 11.28.금 20:29 비둘기
-	 * GameInstance 에 로그인 데이터 저장
-	 * Booth_GameMode 시작시, PostLogin 에서 UserData 활용
-	 * Booth_GM으로 가시오
-	 * 
-	 * 12.10 수 16:46 비둘기
-	 * 화면구성 변경으로 StartUI 와 LobbyUI 를 병합
-	 * Enter->LobbyWidget 팝업으로 변경됨.
-	 * 
-	 */
-	
-	//error messages
 	if (cbox_Company->IsChecked() && cbox_Seeker->IsChecked())
 	{		
 		txt_Error->SetText(FText::FromString(TEXT("Please select only one role.")));
@@ -47,31 +39,53 @@ void URene_StartWidget::OnClickedEnter()
 	}
 	if (etxt_ID->GetText().IsEmpty())
 	{
-		txt_Error->SetText(FText::FromString(TEXT("Please enter your username.")));
+		txt_Error->SetText(FText::FromString(TEXT("Please enter your ID.")));
+		return;
+	}
+	
+	if (etxt_PW->GetText().IsEmpty())
+	{
+		txt_Error->SetText(FText::FromString(TEXT("Please enter your password.")));
 		return;
 	}
 
 	TObjectPtr<URene_GameInstance> gi = Cast<URene_GameInstance>(GetGameInstance());
 	if (IsValidChecked(gi))
 	{
-		FString userRole = "Seeker";
+		FString userRole = "jobseeker";
 		if (cbox_Company->IsChecked())
 		{
-			userRole = "Company";
+			userRole = "company";
 		}
-		// 아직 Login Data가 없어 가상의 코드로 대체함
-		//	GI에 유저정보 캐싱
-		gi->SetReneUserData(etxt_ID->GetText().ToString(), etxt_ID->GetText().ToString(), 1, userRole);
 		
-		//	12.10 UI 병합으로 삭제됨.
-		//	UGameplayStatics::OpenLevel(GetWorld(), "LobbyMap");
-		
-		sw_Switcher->SetActiveWidgetIndex(1);
-		
+		// Disable button to prevent multiple clicks
+		btn_Enter->SetIsEnabled(false);
+		txt_Error->SetText(FText::FromString(TEXT("Logging in...")));
+
+		// Request Login via GameInstance
+		gi->RequestLogin(etxt_ID->GetText().ToString(), etxt_PW->GetText().ToString(), userRole);
 	}
 	else
 	{
 		LOGERROR()
+	}
+}
+
+void URene_StartWidget::OnLoginResponse(bool bSuccess, const FReneUserData& UserData, FString ErrorMessage)
+{
+	// Re-enable button
+	btn_Enter->SetIsEnabled(true);
+
+	if (bSuccess)
+	{
+		// Login Successful
+		txt_Error->SetText(FText::GetEmpty());
+		sw_Switcher->SetActiveWidgetIndex(1);
+	}
+	else
+	{
+		// Login Failed
+		txt_Error->SetText(FText::FromString(ErrorMessage));
 	}
 }
 

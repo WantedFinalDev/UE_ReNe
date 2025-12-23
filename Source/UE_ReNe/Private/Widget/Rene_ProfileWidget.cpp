@@ -34,11 +34,11 @@ void URene_ProfileWidget::OnClickUpload()
 
 
 					// UserData.Role 값에 따라 업로드 타입을 결정합니다.
-					if (UserData.Role == TEXT("Company"))
+					if (UserData.Role == TEXT("company"))
 					{
 						PC->FileUploader->StartFileUpload(FilePath, EUploadUserType::Company, UserId);
 					}
-					if (UserData.Role == TEXT("Seeker"))
+					if (UserData.Role == TEXT("jobseeker"))
 					{
 						PC->FileUploader->StartFileUpload(FilePath, EUploadUserType::JobSeeker, UserId);
 					}

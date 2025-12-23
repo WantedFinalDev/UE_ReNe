@@ -40,4 +40,12 @@ struct FRene_NetworkSettings : public FTableRowBase
     // URL for downloading report images.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Network")
     FString ReportImageDownloadURL;
+
+    // Endpoint for job seeker login.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Network")
+    FString JobSeekerLoginEndpoint;
+
+    // Endpoint for company login.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Network")
+    FString CompanyLoginEndpoint;
 };
