@@ -18,6 +18,8 @@
 #include "Network/Rene_LocalVoiceRecorder.h"  // New include for local voice recorder
 #include "UE_ReNeCharacter.h" // 헤더 변경
 #include "AIController.h" // AIController 사용을 위해 헤더 추가
+#include "EngineUtils.h"
+#include "AI/Rene_AI_Interviewer.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h" // AI 기능 사용을 위한 핵심 헤더
 #include "Widget/Rene_InterviewWidget.h" // 헤더 추가
 #include "Widget/Rene_InterviewResultPopupWidget.h" // 헤더 추가
@@ -48,6 +50,7 @@ ARene_PlayerController::ARene_PlayerController()
 	FileUploader = CreateDefaultSubobject<URene_FileUploader>(TEXT("FileUploaderComponent"));
 
 	bIsInAIInterview = false; // Initialize the flag
+	bIsAISpeaking = false;
 }
 
 void ARene_PlayerController::BeginPlay()
@@ -93,6 +96,17 @@ void ARene_PlayerController::BeginPlay()
 			LocalVoiceRecorder->OnAIMessageReceived.AddDynamic(this, &ARene_PlayerController::OnAIMessageReceived);
 			LocalVoiceRecorder->OnAIResponseStateChanged.AddDynamic(this, &ARene_PlayerController::OnAIResponseStateChanged);
 			LocalVoiceRecorder->OnAIInterviewFinished.AddDynamic(this, &ARene_PlayerController::OnAIInterviewFinished);
+		}
+		
+		for (TActorIterator<ARene_AI_Interviewer> It(GetWorld()); It; ++It)
+		{
+			ARene_AI_Interviewer* AIInterviewer = *It;
+			if (AIInterviewer && AIInterviewer->AIVoicePlaybackComponent)
+			{
+				AIInterviewer->AIVoicePlaybackComponent->OnAIVoiceStateChanged.AddDynamic(this, &ARene_PlayerController::OnAIVoiceStateChanged);
+				UE_LOG(LogVoicePC, Log, TEXT("Bound to AI Voice Playback Component."));
+				break; // 하나만 있다고 가정하고 첫 번째 것만 바인딩
+			}
 		}
 	}
 }
@@ -266,9 +280,15 @@ TObjectPtr<class UUserWidget> ARene_PlayerController::GetUserWidget()
 void ARene_PlayerController::OnStartTalking()
 {
 	if (!IsLocalController()) return;
+	
+	if (bIsAISpeaking)
+	{
+		UE_LOG(LogVoicePC, Warning, TEXT("Cannot start recording while AI is speaking."));
+		return;
+	}
 
     ARene_PlayerState* RenePlayerState = GetPlayerState<ARene_PlayerState>();
-
+	
 	if (bIsInAIInterview)
 	{
 		if (LocalVoiceRecorder) 
@@ -284,12 +304,15 @@ void ARene_PlayerController::OnStartTalking()
         if (LocalVoiceRecorder) 
         	LocalVoiceRecorder->StartRecording();
     }
+	if (InterviewWidgetInstance) InterviewWidgetInstance->ShowPlayerSpeaking(true);
 }
 
 void ARene_PlayerController::OnStopTalking()
 {
 	if (!IsLocalController()) return;
-
+	
+	if (InterviewWidgetInstance) InterviewWidgetInstance->ShowPlayerSpeaking(false);
+	
 	if (bIsInAIInterview)
 	{
 		if (LocalVoiceRecorder) 
@@ -494,6 +517,18 @@ void ARene_PlayerController::HandleShowReportClicked()
             WebViewInstance->AddToViewport();
         }
     }
+}
+
+void ARene_PlayerController::OnAIVoiceStateChanged(bool bIsPlaying)
+{
+	bIsAISpeaking = bIsPlaying;
+	UE_LOG(LogVoicePC, Log, TEXT("AI Speaking State Changed: %s"), bIsPlaying ? TEXT("True") : TEXT("False"));
+	
+	if (InterviewWidgetInstance)
+	{
+		InterviewWidgetInstance->SetInteractivity(!bIsPlaying);
+		InterviewWidgetInstance->ShowAISpeaking(bIsPlaying);
+	}
 }
 
 void ARene_PlayerController::CloseReportAndWebView()

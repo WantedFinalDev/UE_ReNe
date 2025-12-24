@@ -16,11 +16,17 @@ URene_AIVoicePlaybackComponent::URene_AIVoicePlaybackComponent()
 	AudioComponent->SetupAttachment(this); // Attach to this component (now valid as this is a USceneComponent)
 	AudioComponent->bAutoActivate = false; // Don't play automatically
 	AudioComponent->SetIsReplicated(false); // Audio playback is client-side
+	AudioComponent->OnAudioFinished.AddDynamic(this, &URene_AIVoicePlaybackComponent::OnAudioFinished);
 }
 
 void URene_AIVoicePlaybackComponent::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void URene_AIVoicePlaybackComponent::OnAudioFinished()
+{
+	OnAIVoiceStateChanged.Broadcast(false);
 }
 
 bool URene_AIVoicePlaybackComponent::DecodeBase64(const FString& Base64String, TArray<uint8>& WavData)
@@ -80,6 +86,10 @@ void URene_AIVoicePlaybackComponent::PlayAIVoiceFromWavData(const TArray<uint8>&
 		// Set the sound wave on the audio component and play
 		AudioComponent->SetSound(SoundWaveProcedural);
 		AudioComponent->Play();
+		
+		//재생 시작 이벤트 발생
+		OnAIVoiceStateChanged.Broadcast(true);
+		
 		UE_LOG(LogTemp, Log, TEXT("Playing AI voice from WAV data. SampleRate: %d, Channels: %d, PCM Size: %d"), SampleRate, NumChannels, PCMData.Num());
 	}
 	else

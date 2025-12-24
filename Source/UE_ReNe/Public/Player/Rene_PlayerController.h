@@ -109,7 +109,12 @@ protected:
 	UFUNCTION()
 	void HandleShowReportClicked();
 	
-
+	//ai 음성 재생 상태 변경
+	UFUNCTION()
+	void OnAIVoiceStateChanged(bool bIsPlaying);
+	
+	bool bIsAISpeaking;
+	
 	/* Field */
 public:
 	UPROPERTY(EditAnywhere)

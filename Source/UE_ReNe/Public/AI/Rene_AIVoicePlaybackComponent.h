@@ -6,6 +6,9 @@
 #include "Components/SceneComponent.h"
 #include "Rene_AIVoicePlaybackComponent.generated.h"
 
+// "AI 음성 재생 중" 상태 표시를 제어하기 위한 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAIVoiceStateChanged, bool, bIsPlaying);
+
 class UAudioComponent;
 class USoundWaveProcedural; // Forward declaration for USoundWaveProcedural
 
@@ -16,7 +19,13 @@ class UE_RENE_API URene_AIVoicePlaybackComponent : public USceneComponent
 
 public:
 	URene_AIVoicePlaybackComponent();
-
+	
+	UPROPERTY(BlueprintAssignable, Category = "AI Voice")
+	FOnAIVoiceStateChanged OnAIVoiceStateChanged;
+	
+	UFUNCTION()
+	void OnAudioFinished();
+	
 	/**
 	 * Decodes a Base64 encoded string into a TArray of bytes.
 	 * @param Base64String The Base64 string to decode.
