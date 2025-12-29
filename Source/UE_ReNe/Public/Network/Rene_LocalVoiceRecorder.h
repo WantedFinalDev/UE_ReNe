@@ -56,6 +56,12 @@ public:
      */
     void StopAndUploadRecording(const FString& AISessionID);
 
+    /**
+     * Sends a request to force-end the interview.
+     * @param AISessionID The session ID to end.
+     */
+    void RequestForceEndInterview(const FString& AISessionID);
+
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -82,6 +88,16 @@ private:
      * @param bWasSuccessful True if the request was successfully processed.
      */
     void OnUploadComplete(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+
+    /**
+     * Processes the JSON response from the AI server (shared by Voice Upload and Force End).
+     */
+    void ProcessAIResponse(const FString& ResponseBody);
+
+    /**
+     * Callback function for when the Force End request completes.
+     */
+    void OnForceEndComplete(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 
     // The UE Voice Capture interface.
     TSharedPtr<IVoiceCapture> VoiceCapture;

@@ -6,6 +6,7 @@
 #include "Async/Async.h"
 #include "Misc/Base64.h"
 #include "Sound/SoundGroups.h"
+#include "TimerManager.h" // Required for FTimerHandle and GetWorldTimerManager
 
 URene_AIVoicePlaybackComponent::URene_AIVoicePlaybackComponent()
 {
@@ -16,7 +17,16 @@ URene_AIVoicePlaybackComponent::URene_AIVoicePlaybackComponent()
 	AudioComponent->SetupAttachment(this); // Attach to this component (now valid as this is a USceneComponent)
 	AudioComponent->bAutoActivate = false; // Don't play automatically
 	AudioComponent->SetIsReplicated(false); // Audio playback is client-side
-	AudioComponent->OnAudioFinished.AddDynamic(this, &URene_AIVoicePlaybackComponent::OnAudioFinished);
+	
+	// Note: We are now using a manual timer for OnAudioFinished because USoundWaveProcedural's OnAudioFinished is unreliable.
+	// AudioComponent->OnAudioFinished.AddDynamic(this, &URene_AIVoicePlaybackComponent::OnAudioFinished);
+	
+	// setting EnvelopeFollowerAttackTime and ReleaseTime, and binding the delegate with the correct signature.
+	
+	AudioComponent->EnvelopeFollowerAttackTime = 10;
+	AudioComponent->EnvelopeFollowerReleaseTime = 10;
+	
+	AudioComponent->OnAudioSingleEnvelopeValue.AddDynamic(this, &URene_AIVoicePlaybackComponent::OnAudioEnvelopeValue);
 }
 
 void URene_AIVoicePlaybackComponent::BeginPlay()
@@ -26,7 +36,21 @@ void URene_AIVoicePlaybackComponent::BeginPlay()
 
 void URene_AIVoicePlaybackComponent::OnAudioFinished()
 {
+	UE_LOG(LogTemp, Log, TEXT("AI Voice Playback Finished (Timer/Event)."));
 	OnAIVoiceStateChanged.Broadcast(false);
+	
+	// Clear the timer if it's still active (safety)
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(AudioFinishTimerHandle);
+	}
+}
+
+// Fixed signature to match FOnAudioSingleEnvelopeValue: (const USoundWave* PlayingSoundWave, const float EnvelopeValue)
+void URene_AIVoicePlaybackComponent::OnAudioEnvelopeValue(const USoundWave* PlayingSoundWave, const float EnvelopeValue)
+{
+	// Broadcast the current volume level to the Character
+	OnAIVoiceAmplitudeChanged.Broadcast(EnvelopeValue);
 }
 
 bool URene_AIVoicePlaybackComponent::DecodeBase64(const FString& Base64String, TArray<uint8>& WavData)
@@ -76,7 +100,14 @@ void URene_AIVoicePlaybackComponent::PlayAIVoiceFromWavData(const TArray<uint8>&
 	{
 		SoundWaveProcedural->SetSampleRate(SampleRate);
 		SoundWaveProcedural->NumChannels = NumChannels;
-		SoundWaveProcedural->Duration = INDEFINITELY_LOOPING_DURATION; // Or calculate based on PCMData size
+		
+		// Calculate duration: TotalSamples / SampleRate
+		// TotalSamples = PCMData.Num() / (NumChannels * BytesPerSample)
+		// Assuming 16-bit PCM (2 bytes per sample)
+		int32 BytesPerSample = 2;
+		float Duration = (float)PCMData.Num() / (SampleRate * NumChannels * BytesPerSample);
+		
+		SoundWaveProcedural->Duration = Duration; 
 		SoundWaveProcedural->SoundGroup = ESoundGroup::SOUNDGROUP_Effects;
 		SoundWaveProcedural->bLooping = false;
 
@@ -90,7 +121,14 @@ void URene_AIVoicePlaybackComponent::PlayAIVoiceFromWavData(const TArray<uint8>&
 		//재생 시작 이벤트 발생
 		OnAIVoiceStateChanged.Broadcast(true);
 		
-		UE_LOG(LogTemp, Log, TEXT("Playing AI voice from WAV data. SampleRate: %d, Channels: %d, PCM Size: %d"), SampleRate, NumChannels, PCMData.Num());
+		// Set a timer to manually trigger OnAudioFinished
+		if (GetWorld())
+		{
+			// Add a small buffer (e.g., 0.1s) to ensure audio is fully done
+			GetWorld()->GetTimerManager().SetTimer(AudioFinishTimerHandle, this, &URene_AIVoicePlaybackComponent::OnAudioFinished, Duration + 0.1f, false);
+		}
+		
+		UE_LOG(LogTemp, Log, TEXT("Playing AI voice from WAV data. SampleRate: %d, Channels: %d, PCM Size: %d, Duration: %f"), SampleRate, NumChannels, PCMData.Num(), Duration);
 	}
 	else
 	{

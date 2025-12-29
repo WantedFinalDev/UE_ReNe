@@ -1,5 +1,4 @@
 // Rene_LocalVoiceRecorder.cpp
-// Rene_LocalVoiceRecorder.cpp
 
 #include "Network/Rene_LocalVoiceRecorder.h"
 #include "Modules/ModuleManager.h"
@@ -312,113 +311,8 @@ void URene_LocalVoiceRecorder::OnUploadComplete(FHttpRequestPtr Request, FHttpRe
         UE_LOG(LogTemp, Log, TEXT("Voice data uploaded successfully. Server response: %s"), *ResponseBody);
         OnUploadSuccess.Broadcast(ResponseBody);
 
-        // --- AI Response Handling ---
-        TSharedPtr<FJsonObject> JsonObject;
-        TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
-
-        if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
-        {
-            // 자막 텍스트 추출 및 이벤트 발생
-            FString AIMessage;
-            if (JsonObject->TryGetStringField(TEXT("ai_message"), AIMessage) && !AIMessage.IsEmpty())
-            {
-                OnAIMessageReceived.Broadcast(AIMessage);
-            }
-
-            // Play audio first, in case the response also contains a "done" status.
-            FString AIAudioBase64;
-            if (JsonObject->TryGetStringField(TEXT("ai_audio_base64"), AIAudioBase64))
-            {
-                if (!AIAudioBase64.IsEmpty())
-                {
-                    UE_LOG(LogTemp, Log, TEXT("Received AI audio (Base64). Attempting to play."));
-
-                    // Find the ARene_AI_Interviewer in the world
-                    ARene_AI_Interviewer* AIInterviewer = nullptr;
-                    for (TActorIterator<ARene_AI_Interviewer> It(GetWorld()); It; ++It)
-                    {
-                        AIInterviewer = *It;
-                        break; // Found the first one
-                    }
-
-                    if (AIInterviewer)
-                    {
-                        AIInterviewer->PlayAIVoiceResponse(AIAudioBase64);
-                    }
-                    else
-                    {
-                        UE_LOG(LogTemp, Error, TEXT("Could not find ARene_AI_Interviewer in the world to play AI voice."));
-                    }
-                }
-                else
-                {
-                    UE_LOG(LogTemp, Warning, TEXT("AI audio (Base64) field is empty in server response."));
-                }
-            }
-            else
-            {
-                UE_LOG(LogTemp, Warning, TEXT("Server response does not contain 'ai_audio_base64' field."));
-            }
-
-            // Now, check for interview status.
-            FString InterviewStatus;
-            if (JsonObject->TryGetStringField(TEXT("status"), InterviewStatus))
-            {
-                if (InterviewStatus.Equals(TEXT("done"), ESearchCase::IgnoreCase))
-                {
-                    int32 InterviewResultID = -1;
-                    if (JsonObject->TryGetNumberField(TEXT("interview_result_id"), InterviewResultID))
-                    {
-                        UE_LOG(LogTemp, Log, TEXT("AI Interview is DONE. Result ID: %d"), InterviewResultID);
-                        OnAIInterviewFinished.Broadcast(InterviewResultID);
-                    }
-                    else
-                    {
-                        UE_LOG(LogTemp, Warning, TEXT("AI Interview is DONE, but 'interview_result_id' was not found in the response."));
-                    }
-
-                    if (APlayerController* OwningPC = Cast<APlayerController>(GetOwner()))
-                    {
-                        if (ARene_PlayerController* RenePC = Cast<ARene_PlayerController>(OwningPC))
-                        {
-                            RenePC->SetIsInAIInterview(false);
-                            RenePC->SetAISessionID(FString());
-                        }
-                    }
-                    return; 
-                }
-                else
-                {
-                    UE_LOG(LogTemp, Log, TEXT("AI Interview Status: %s"), *InterviewStatus);
-                }
-            }
-            else
-            {
-                UE_LOG(LogTemp, Warning, TEXT("Server response does not contain 'status' field."));
-            }
-
-            // Also extract and update the session_id if it's present in the response
-            FString NewSessionID;
-            if (JsonObject->TryGetStringField(TEXT("session_id"), NewSessionID))
-            {
-                if (!NewSessionID.IsEmpty())
-                {
-                    if (APlayerController* OwningPC = Cast<APlayerController>(GetOwner()))
-                    {
-                        if (ARene_PlayerController* RenePC = Cast<ARene_PlayerController>(OwningPC))
-                        {
-                            RenePC->SetAISessionID(NewSessionID);
-                            UE_LOG(LogTemp, Log, TEXT("Updated AI Session ID to: %s"), *NewSessionID);
-                        }
-                    }
-                }
-            }
-        }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("Failed to deserialize server response JSON for AI voice. Response: %s"), *ResponseBody);
-        }
-        // --- End AI Response Handling ---
+        // 공통 처리 로직 호출
+        ProcessAIResponse(ResponseBody);
     }
     else
     {
@@ -452,5 +346,175 @@ void URene_LocalVoiceRecorder::OnUploadComplete(FHttpRequestPtr Request, FHttpRe
 
         UE_LOG(LogTemp, Error, TEXT("Voice data upload failed. Reason: %s"), *ErrorMessageForLog);
         OnUploadFailure.Broadcast(ErrorMessageForLog);
+    }
+}
+
+void URene_LocalVoiceRecorder::ProcessAIResponse(const FString& ResponseBody)
+{
+    TSharedPtr<FJsonObject> JsonObject;
+    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
+
+    if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+    {
+        // 자막 텍스트 추출 및 이벤트 발생
+        FString AIMessage;
+        if (JsonObject->TryGetStringField(TEXT("ai_message"), AIMessage) && !AIMessage.IsEmpty())
+        {
+            OnAIMessageReceived.Broadcast(AIMessage);
+        }
+
+        // Play audio first, in case the response also contains a "done" status.
+        FString AIAudioBase64;
+        if (JsonObject->TryGetStringField(TEXT("ai_audio_base64"), AIAudioBase64))
+        {
+            if (!AIAudioBase64.IsEmpty())
+            {
+                UE_LOG(LogTemp, Log, TEXT("Received AI audio (Base64). Attempting to play."));
+
+                // Find the ARene_AI_Interviewer in the world
+                ARene_AI_Interviewer* AIInterviewer = nullptr;
+                for (TActorIterator<ARene_AI_Interviewer> It(GetWorld()); It; ++It)
+                {
+                    AIInterviewer = *It;
+                    break; // Found the first one
+                }
+
+                if (AIInterviewer)
+                {
+                    AIInterviewer->PlayAIVoiceResponse(AIAudioBase64);
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Error, TEXT("Could not find ARene_AI_Interviewer in the world to play AI voice."));
+                }
+            }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("AI audio (Base64) field is empty in server response."));
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Server response does not contain 'ai_audio_base64' field."));
+        }
+
+        // Now, check for interview status.
+        FString InterviewStatus;
+        if (JsonObject->TryGetStringField(TEXT("status"), InterviewStatus))
+        {
+            if (InterviewStatus.Equals(TEXT("done"), ESearchCase::IgnoreCase))
+            {
+                int32 InterviewResultID = -1;
+                if (JsonObject->TryGetNumberField(TEXT("interview_result_id"), InterviewResultID))
+                {
+                    UE_LOG(LogTemp, Log, TEXT("AI Interview is DONE. Result ID: %d"), InterviewResultID);
+                    OnAIInterviewFinished.Broadcast(InterviewResultID);
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Warning, TEXT("AI Interview is DONE, but 'interview_result_id' was not found in the response."));
+                }
+
+                if (APlayerController* OwningPC = Cast<APlayerController>(GetOwner()))
+                {
+                    if (ARene_PlayerController* RenePC = Cast<ARene_PlayerController>(OwningPC))
+                    {
+                        RenePC->SetIsInAIInterview(false);
+                        RenePC->SetAISessionID(FString());
+                    }
+                }
+                return; 
+            }
+            else
+            {
+                UE_LOG(LogTemp, Log, TEXT("AI Interview Status: %s"), *InterviewStatus);
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Server response does not contain 'status' field."));
+        }
+
+        // Also extract and update the session_id if it's present in the response
+        FString NewSessionID;
+        if (JsonObject->TryGetStringField(TEXT("session_id"), NewSessionID))
+        {
+            if (!NewSessionID.IsEmpty())
+            {
+                if (APlayerController* OwningPC = Cast<APlayerController>(GetOwner()))
+                {
+                    if (ARene_PlayerController* RenePC = Cast<ARene_PlayerController>(OwningPC))
+                    {
+                        RenePC->SetAISessionID(NewSessionID);
+                        UE_LOG(LogTemp, Log, TEXT("Updated AI Session ID to: %s"), *NewSessionID);
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to deserialize server response JSON for AI voice. Response: %s"), *ResponseBody);
+    }
+}
+
+void URene_LocalVoiceRecorder::RequestForceEndInterview(const FString& AISessionID)
+{
+    URene_GameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance<URene_GameInstance>() : nullptr;
+    if (!GameInstance) return;
+
+    // 명세서 엔드포인트 반영: /chat/voice -> /force-end
+    FString TargetURL = GameInstance->GetNetworkSettings().AIInterviewChatURL;
+    if (TargetURL.IsEmpty())
+    {
+        UE_LOG(LogTemp, Error, TEXT("Force End failed: AIInterviewChatURL is not set."));
+        return;
+    }
+    
+    TargetURL = TargetURL.Replace(TEXT("/chat/voice"), TEXT("/force-end"));
+
+    FHttpModule& HttpModule = FHttpModule::Get();
+    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
+
+    Request->OnProcessRequestComplete().BindUObject(this, &URene_LocalVoiceRecorder::OnForceEndComplete);
+    Request->SetURL(TargetURL);
+    Request->SetVerb(TEXT("POST"));
+    Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+
+    TSharedPtr<FJsonObject> JsonRequest = MakeShareable(new FJsonObject);
+    JsonRequest->SetStringField(TEXT("session_id"), AISessionID);
+
+    FString RequestBody;
+    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
+    FJsonSerializer::Serialize(JsonRequest.ToSharedRef(), Writer);
+
+    Request->SetContentAsString(RequestBody);
+    Request->ProcessRequest();
+    
+    // 로딩 상태 표시
+    OnAIResponseStateChanged.Broadcast(true);
+}
+
+void URene_LocalVoiceRecorder::OnForceEndComplete(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+{
+    OnAIResponseStateChanged.Broadcast(false);
+
+    if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+    {
+        FString ResponseBody = Response->GetContentAsString();
+        UE_LOG(LogTemp, Log, TEXT("Force End successful. Response: %s"), *ResponseBody);
+        
+        // 공통 처리 로직 호출 (여기서 status=done 처리됨)
+        ProcessAIResponse(ResponseBody);
+    }
+    else
+    {
+        FString ErrorMsg = TEXT("인터뷰 종료 요청 실패.");
+        if (Response.IsValid())
+        {
+            ErrorMsg += FString::Printf(TEXT(" (HTTP %d)"), Response->GetResponseCode());
+        }
+        OnAIMessageReceived.Broadcast(ErrorMsg);
+        UE_LOG(LogTemp, Error, TEXT("Force End failed. %s"), *ErrorMsg);
     }
 }

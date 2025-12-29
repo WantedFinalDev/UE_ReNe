@@ -418,15 +418,15 @@ void ARene_PlayerController::EndInterview()
 {
 	if (!IsLocalController()) return;
 
-	if (InterviewWidgetInstance)
+	if (LocalVoiceRecorder && !AISessionID.IsEmpty())
 	{
-		InterviewWidgetInstance->RemoveFromParent();
-		InterviewWidgetInstance = nullptr;
+		LocalVoiceRecorder->RequestForceEndInterview(AISessionID);
 	}
-	SetIsInAIInterview(false);
-	ServerRPC_RequestStandUp();
-	ServerRPC_TeleportToLocation(FVector(-559.999985,69.999981,112.000021));
-	DisableUIControll();
+	else
+	{
+		SetIsInAIInterview(false);
+		CloseReportAndWebView();
+	}
 }
 
 void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
@@ -543,4 +543,16 @@ void ARene_PlayerController::CloseReportAndWebView()
         WebViewInstance->RemoveFromParent();
         WebViewInstance = nullptr;
     }
+
+	if (IsLocalController())
+	{
+		if (InterviewWidgetInstance)
+		{
+			InterviewWidgetInstance->RemoveFromParent();
+			InterviewWidgetInstance = nullptr;
+		}
+		ServerRPC_RequestStandUp();
+		ServerRPC_TeleportToLocation(FVector(-559.999985,69.999981,112.000021));
+		DisableUIControll();
+	}
 }
