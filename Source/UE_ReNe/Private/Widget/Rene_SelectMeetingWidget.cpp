@@ -53,8 +53,26 @@ void URene_SelectMeetingWidget::OnStartPrivateInterviewClicked()
 	// 내부 변수가 유효한지 확인
 	if (PlayerController && PrivateInterviewTargetActor)
 	{
+		// 1. Move and Sit (Always happens)
 		PlayerController->ServerRPC_RequestMoveAndSit(PrivateInterviewTargetActor->GetActorTransform());
 		LOGWARNF(TEXT("Requesting move and sit to: %s"), *PrivateInterviewTargetActor->GetActorTransform().ToString());
+
+		// 2. Handle P2P Interview Request Flow
+		if (PlayerController->HasAuthority())
+		{
+			// I am the Host (Server)
+			// If I click this, I am either initiating or accepting.
+			// For now, let's assume I am accepting if there is a pending request, or just waiting if not.
+			// Since we don't have a separate "Accept" button in this widget, we treat this click as "I am ready/Accept".
+			PlayerController->ServerRPC_AcceptPrivateInterview();
+		}
+		else
+		{
+			// I am the Client
+			// I want to request an interview with the Host.
+			PlayerController->ServerRPC_RequestPrivateInterview();
+		}
+
 		this->RemoveFromParent();
 	}
 }

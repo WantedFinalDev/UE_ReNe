@@ -29,6 +29,9 @@ public:
 	
 	// New getter for voice chat eligibility
 	bool IsInPrivateInterview() const { return bVoicable; }
+	
+	// Setter for voice chat eligibility
+	void SetIsInPrivateInterview(bool bNewState);
 
 	// Getter and Setter for the AI Interview Result ID
 	void SetInterviewResultID(int32 ResultID);

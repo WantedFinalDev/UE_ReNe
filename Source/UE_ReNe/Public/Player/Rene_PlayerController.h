@@ -82,6 +82,28 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void CloseReportAndWebView();
 
+	// --- P2P Interview Request Flow ---
+
+	// Called by the Client to request a P2P interview with the Host
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "P2P Interview")
+	void ServerRPC_RequestPrivateInterview();
+
+	// Called by the Server on the Host to show the interview request UI
+	UFUNCTION(Client, Reliable)
+	void ClientRPC_ShowInterviewRequest(const FString& RequestorName);
+
+	// Called by the Host to accept the interview request
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "P2P Interview")
+	void ServerRPC_AcceptPrivateInterview();
+
+	// Called by the Host to decline the interview request
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category = "P2P Interview")
+	void ServerRPC_DeclinePrivateInterview();
+
+	// Called by the Server on the Client to notify them of a declined request
+	UFUNCTION(Client, Reliable)
+	void ClientRPC_InterviewRequestDeclined();
+
 private:
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_RequestStandUp();
@@ -169,4 +191,8 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<URene_WebViewWidget> WebViewInstance;
+
+	// Temporary storage for the pending interview requestor (Server-side only)
+	UPROPERTY()
+	TObjectPtr<ARene_PlayerController> PendingRequestorPC;
 };

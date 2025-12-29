@@ -556,3 +556,97 @@ void ARene_PlayerController::CloseReportAndWebView()
 		DisableUIControll();
 	}
 }
+
+// --- P2P Interview Request Flow Implementation ---
+
+void ARene_PlayerController::ServerRPC_RequestPrivateInterview_Implementation()
+{
+	// 1. Find the Host PlayerController (Authority)
+	// In a Listen Server setup, the Host is the first player controller on the server.
+	// However, we need to be careful not to send the request to ourselves if we are the host.
+	
+	ARene_PlayerController* HostPC = nullptr;
+	
+	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	{
+		ARene_PlayerController* PC = Cast<ARene_PlayerController>(Iterator->Get());
+		if (PC && PC->IsLocalController()) // On the server, IsLocalController() is true for the Host
+		{
+			HostPC = PC;
+			break;
+		}
+	}
+
+	if (HostPC)
+	{
+		// Store the requestor so the Host knows who to accept
+		HostPC->PendingRequestorPC = this;
+		
+		// Get Requestor Name
+		FString RequestorName = TEXT("Unknown");
+		if (ARene_PlayerState* PS = GetPlayerState<ARene_PlayerState>())
+		{
+			RequestorName = PS->GetPlayerName();
+		}
+
+		// Show UI on Host
+		HostPC->ClientRPC_ShowInterviewRequest(RequestorName);
+		UE_LOG(LogVoicePC, Log, TEXT("ServerRPC_RequestPrivateInterview: Request sent to Host from %s"), *RequestorName);
+	}
+	else
+	{
+		UE_LOG(LogVoicePC, Warning, TEXT("ServerRPC_RequestPrivateInterview: Could not find Host PlayerController."));
+	}
+}
+
+void ARene_PlayerController::ClientRPC_ShowInterviewRequest_Implementation(const FString& RequestorName)
+{
+	// Show UI to Host
+	// For now, we will just log it. You should hook this up to your UI.
+	// Ideally, you would show a popup widget here.
+	
+	UE_LOG(LogVoicePC, Log, TEXT("ClientRPC_ShowInterviewRequest: Received request from %s"), *RequestorName);
+	
+	// Example: If you have a notification system, trigger it here.
+	// For this implementation, we assume the Host will manually click "Start Private Interview" (which acts as Accept).
+	// Or we can auto-accept for testing if desired, but let's stick to the plan.
+	
+	// TODO: Show "Accept / Decline" Widget
+}
+
+void ARene_PlayerController::ServerRPC_AcceptPrivateInterview_Implementation()
+{
+	// This function is called by the Host when they click "Accept" (or "Start Private Interview" when a request is pending).
+	
+	if (PendingRequestorPC)
+	{
+		if (ARene_Booth_GameMode* GameMode = GetWorld()->GetAuthGameMode<ARene_Booth_GameMode>())
+		{
+			GameMode->StartOneToOneVoiceChat(this, PendingRequestorPC);
+			UE_LOG(LogVoicePC, Log, TEXT("ServerRPC_AcceptPrivateInterview: Started interview with %s"), *PendingRequestorPC->GetName());
+			
+			// Clear pending request
+			PendingRequestorPC = nullptr;
+		}
+	}
+	else
+	{
+		UE_LOG(LogVoicePC, Warning, TEXT("ServerRPC_AcceptPrivateInterview: No pending requestor found."));
+	}
+}
+
+void ARene_PlayerController::ServerRPC_DeclinePrivateInterview_Implementation()
+{
+	if (PendingRequestorPC)
+	{
+		PendingRequestorPC->ClientRPC_InterviewRequestDeclined();
+		PendingRequestorPC = nullptr;
+	}
+}
+
+void ARene_PlayerController::ClientRPC_InterviewRequestDeclined_Implementation()
+{
+	// Notify Client
+	UE_LOG(LogVoicePC, Log, TEXT("ClientRPC_InterviewRequestDeclined: Your interview request was declined."));
+	// TODO: Show "Declined" popup
+}
