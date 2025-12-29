@@ -7,14 +7,13 @@
 #include "Interfaces/IHttpResponse.h"
 #include "GameFramework/PlayerState.h"
 #include "GameFramework/Controller.h"
-#include "Global/Rene_GameInstance.h" // GameInstance 헤더 추가
-#include "Player/Rene_PlayerController.h" // For ARene_PlayerController
-#include "AI/Rene_AI_Interviewer.h" // For ARene_AI_Interviewer
-#include "Dom/JsonObject.h"         // For JSON parsing
-#include "Serialization/JsonReader.h" // For JSON parsing
-#include "Serialization/JsonSerializer.h" // For JSON parsing
-#include "EngineUtils.h" // For TActorIterator
-
+#include "Global/Rene_GameInstance.h"
+#include "Player/Rene_PlayerController.h"
+#include "AI/Rene_AI_Interviewer.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
+#include "EngineUtils.h"
 
 URene_LocalVoiceRecorder::URene_LocalVoiceRecorder()
 {
@@ -30,7 +29,6 @@ void URene_LocalVoiceRecorder::BeginPlay()
 
 void URene_LocalVoiceRecorder::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    // Clean up resources
     if (VoiceCapture.IsValid())
     {
         if (bIsRecording)
@@ -45,7 +43,6 @@ void URene_LocalVoiceRecorder::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void URene_LocalVoiceRecorder::InitializeVoiceCapture()
 {
-    // The FVoiceModule is required for voice capture.
     FVoiceModule& VoiceModule = FModuleManager::LoadModuleChecked<FVoiceModule>("Voice");
     VoiceCapture = VoiceModule.CreateVoiceCapture(FString());
 
@@ -75,19 +72,15 @@ void URene_LocalVoiceRecorder::StartRecording()
 
     bIsRecording = true;
     
-    // Clear any previously recorded data.
     {
         FScopeLock Lock(&VoiceBufferCriticalSection);
         RecordedVoiceData.Empty();
     }
 
-    // Start capturing audio from the default microphone.
     if (VoiceCapture->Start())
     {
         UE_LOG(LogTemp, Log, TEXT("Local voice recording started."));
 
-        // Poll for voice data on a timer. A 20ms interval is a good starting point.
-        // This is preferred over Tick to have explicit control over the polling frequency.
         GetWorld()->GetTimerManager().SetTimer(
             VoiceCaptureTimerHandle,
             this,
@@ -123,7 +116,6 @@ void URene_LocalVoiceRecorder::CaptureVoiceData()
         if (BytesRead > 0)
         {
             FScopeLock Lock(&VoiceBufferCriticalSection);
-            // Append the new data to our main buffer
             RecordedVoiceData.Append(TempBuffer.GetData(), BytesRead);
         }
     }
@@ -138,10 +130,7 @@ void URene_LocalVoiceRecorder::StopAndUploadRecording(const FString& AISessionID
 
     bIsRecording = false;
     
-    // Stop the polling timer.
     GetWorld()->GetTimerManager().ClearTimer(VoiceCaptureTimerHandle);
-
-	// Perform one final capture to get any data buffered since the last timer tick.
 	CaptureVoiceData();
 
     if (VoiceCapture.IsValid())
@@ -156,19 +145,18 @@ void URene_LocalVoiceRecorder::StopAndUploadRecording(const FString& AISessionID
         if (RecordedVoiceData.Num() == 0)
         {
             UE_LOG(LogTemp, Warning, TEXT("No voice data was recorded. Skipping upload."));
+            // 로딩 상태를 다시 false로 되돌려야 UI가 멈추지 않음
+            OnAIResponseStateChanged.Broadcast(false);
             return;
         }
-        // Make a copy for the HTTP request, as it will be processed on another thread.
         VoiceDataToUpload = RecordedVoiceData;
         RecordedVoiceData.Empty();
     }
 
     UE_LOG(LogTemp, Log, TEXT("Uploading %d bytes of voice data."), VoiceDataToUpload.Num());
 
-    // Get Player Name from the owning PlayerController
     FString PlayerName = TEXT("UnknownPlayer");
     
-    // 0번 로컬 플레이어의 컨트롤러를 가져옵니다. (로컬 클라이언트 자신을 의미)
     if (APlayerController* LocalPC = GetWorld()->GetFirstPlayerController())
     {
         if (ULocalPlayer* LocalPlayer = LocalPC->GetLocalPlayer())
@@ -186,19 +174,18 @@ void URene_LocalVoiceRecorder::StopAndUploadRecording(const FString& AISessionID
         UE_LOG(LogTemp, Error, TEXT("Could not find Local PlayerController (Index 0)."));
     }
 
-    // UI에 "AI 생각 중" 상태 표시를 요청
     OnAIResponseStateChanged.Broadcast(true);
     SendHttpRequest(VoiceDataToUpload, PlayerName, AISessionID);
 }
 
 void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, const FString& PlayerName, const FString& AISessionID)
 {
-    // --- GameInstance에서 네트워크 설정 가져오기 ---
     URene_GameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance<URene_GameInstance>() : nullptr;
     if (!GameInstance)
     {
         UE_LOG(LogTemp, Error, TEXT("Voice upload failed: GameInstance is not valid."));
         OnUploadFailure.Broadcast(TEXT("GameInstance is not valid."));
+        OnAIResponseStateChanged.Broadcast(false);
         return;
     }
     
@@ -210,6 +197,7 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
         {
             UE_LOG(LogTemp, Error, TEXT("AI Voice Chat upload failed: AIInterviewChatURL is not set in DataTable."));
             OnUploadFailure.Broadcast(TEXT("AIInterviewChatURL is not set in DataTable."));
+            OnAIResponseStateChanged.Broadcast(false);
             return;
         }
     }
@@ -220,19 +208,18 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
         {
             UE_LOG(LogTemp, Error, TEXT("Voice upload failed: VoiceDataUploadURL is not set in DataTable."));
             OnUploadFailure.Broadcast(TEXT("VoiceDataUploadURL is not set in DataTable."));
+            OnAIResponseStateChanged.Broadcast(false);
             return;
         }
     }
-    // --- 설정 가져오기 끝 ---
 
     FHttpModule& HttpModule = FHttpModule::Get();
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
 
     Request->OnProcessRequestComplete().BindUObject(this, &URene_LocalVoiceRecorder::OnUploadComplete);
-    Request->SetURL(TargetURL); // Use the determined URL
+    Request->SetURL(TargetURL);
     Request->SetVerb(TEXT("POST"));
 
-    // Determine speaker_role based on authority
     FString SpeakerRole;
     if (GetOwner() && GetOwner()->HasAuthority())
     {
@@ -243,14 +230,12 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
         SpeakerRole = TEXT("seeker");
     }
 
-    // --- Manually create the multipart/form-data payload ---
     FString Boundary = FString::Printf(TEXT("rene-voice-boundary-%s"), *FGuid::NewGuid().ToString());
 
     Request->SetHeader(TEXT("Content-Type"), FString::Printf(TEXT("multipart/form-data; boundary=%s"), *Boundary));
 
     TArray<uint8> RequestPayload;
     
-    // 헬퍼 람다 함수: 문자열을 UTF8로 변환하여 안전하게 페이로드에 추가
     auto AddStringField = [&](const FString& InString)
     {
         FTCHARToUTF8 Convert(*InString);
@@ -260,7 +245,6 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
     const FString BoundaryLine = TEXT("--") + Boundary + TEXT("\r\n");
     const FString BoundaryEnd = TEXT("\r\n--") + Boundary + TEXT("--\r\n");
 
-    // 1. Append speaker_role part
     AddStringField(BoundaryLine);
     
     FString SpeakerRoleHeader = FString::Printf(TEXT("Content-Disposition: form-data; name=\"speaker_role\"\r\n\r\n"));
@@ -268,7 +252,6 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
     AddStringField(SpeakerRole);
     AddStringField(TEXT("\r\n"));
 
-    // 2. Append session_id part if provided
     if (!AISessionID.IsEmpty())
     {
         AddStringField(BoundaryLine);
@@ -278,8 +261,6 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
         AddStringField(TEXT("\r\n"));
     }
 
-    // 3. Append file part (VoiceData)
-    // Generate a unique filename using PlayerName and a timestamp
     FString Timestamp = FDateTime::UtcNow().ToString(TEXT("%Y%m%d_%H%M%S"));
     FString UniqueFileName = FString::Printf(TEXT("%s_%s_%s.pcm"), *SpeakerRole, *PlayerName, *Timestamp);
 
@@ -290,10 +271,8 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
     
     AddStringField(FileHeader);
 
-    // Append the actual voice data
     RequestPayload.Append(VoiceData);
 
-    // Append the final boundary
     AddStringField(BoundaryEnd);
 
     Request->SetContent(RequestPayload);
@@ -302,7 +281,6 @@ void URene_LocalVoiceRecorder::SendHttpRequest(const TArray<uint8>& VoiceData, c
 
 void URene_LocalVoiceRecorder::OnUploadComplete(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-    // Always turn off the "thinking" indicator as soon as we get a response.
     OnAIResponseStateChanged.Broadcast(false);
 
     if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
@@ -311,20 +289,18 @@ void URene_LocalVoiceRecorder::OnUploadComplete(FHttpRequestPtr Request, FHttpRe
         UE_LOG(LogTemp, Log, TEXT("Voice data uploaded successfully. Server response: %s"), *ResponseBody);
         OnUploadSuccess.Broadcast(ResponseBody);
 
-        // 공통 처리 로직 호출
         ProcessAIResponse(ResponseBody);
     }
     else
     {
         FString ErrorMessageForLog = TEXT("Unknown error");
-        FString ErrorMessageForUI = TEXT("오류가 발생했습니다. 다시 시도해주세요."); // Default UI message
+        FString ErrorMessageForUI = TEXT("오류가 발생했습니다. 다시 시도해주세요.");
 
         if (Response.IsValid())
         {
             FString ResponseBody = Response->GetContentAsString();
             ErrorMessageForLog = FString::Printf(TEXT("HTTP %d: %s"), Response->GetResponseCode(), *ResponseBody);
 
-            // Try to parse the detail message from the JSON error response
             TSharedPtr<FJsonObject> JsonObject;
             TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
             if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
@@ -341,7 +317,6 @@ void URene_LocalVoiceRecorder::OnUploadComplete(FHttpRequestPtr Request, FHttpRe
             ErrorMessageForLog = TEXT("HTTP request failed or no response received.");
         }
 
-        // Display the detailed error message on the UI
         OnAIMessageReceived.Broadcast(ErrorMessageForUI);
 
         UE_LOG(LogTemp, Error, TEXT("Voice data upload failed. Reason: %s"), *ErrorMessageForLog);
@@ -356,14 +331,12 @@ void URene_LocalVoiceRecorder::ProcessAIResponse(const FString& ResponseBody)
 
     if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
     {
-        // 자막 텍스트 추출 및 이벤트 발생
         FString AIMessage;
         if (JsonObject->TryGetStringField(TEXT("ai_message"), AIMessage) && !AIMessage.IsEmpty())
         {
             OnAIMessageReceived.Broadcast(AIMessage);
         }
 
-        // Play audio first, in case the response also contains a "done" status.
         FString AIAudioBase64;
         if (JsonObject->TryGetStringField(TEXT("ai_audio_base64"), AIAudioBase64))
         {
@@ -371,12 +344,11 @@ void URene_LocalVoiceRecorder::ProcessAIResponse(const FString& ResponseBody)
             {
                 UE_LOG(LogTemp, Log, TEXT("Received AI audio (Base64). Attempting to play."));
 
-                // Find the ARene_AI_Interviewer in the world
                 ARene_AI_Interviewer* AIInterviewer = nullptr;
                 for (TActorIterator<ARene_AI_Interviewer> It(GetWorld()); It; ++It)
                 {
                     AIInterviewer = *It;
-                    break; // Found the first one
+                    break;
                 }
 
                 if (AIInterviewer)
@@ -398,7 +370,6 @@ void URene_LocalVoiceRecorder::ProcessAIResponse(const FString& ResponseBody)
             UE_LOG(LogTemp, Warning, TEXT("Server response does not contain 'ai_audio_base64' field."));
         }
 
-        // Now, check for interview status.
         FString InterviewStatus;
         if (JsonObject->TryGetStringField(TEXT("status"), InterviewStatus))
         {
@@ -435,7 +406,16 @@ void URene_LocalVoiceRecorder::ProcessAIResponse(const FString& ResponseBody)
             UE_LOG(LogTemp, Warning, TEXT("Server response does not contain 'status' field."));
         }
 
-        // Also extract and update the session_id if it's present in the response
+        FString InterviewStage;
+        if (JsonObject->TryGetStringField(TEXT("interview_stage"), InterviewStage))
+        {
+            if (!InterviewStage.IsEmpty())
+            {
+                OnInterviewStageReceived.Broadcast(InterviewStage);
+                UE_LOG(LogTemp, Log, TEXT("Received Interview Stage: %s"), *InterviewStage);
+            }
+        }
+
         FString NewSessionID;
         if (JsonObject->TryGetStringField(TEXT("session_id"), NewSessionID))
         {
@@ -463,7 +443,6 @@ void URene_LocalVoiceRecorder::RequestForceEndInterview(const FString& AISession
     URene_GameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance<URene_GameInstance>() : nullptr;
     if (!GameInstance) return;
 
-    // 명세서 엔드포인트 반영: /chat/voice -> /force-end
     FString TargetURL = GameInstance->GetNetworkSettings().AIInterviewChatURL;
     if (TargetURL.IsEmpty())
     {
@@ -491,7 +470,6 @@ void URene_LocalVoiceRecorder::RequestForceEndInterview(const FString& AISession
     Request->SetContentAsString(RequestBody);
     Request->ProcessRequest();
     
-    // 로딩 상태 표시
     OnAIResponseStateChanged.Broadcast(true);
 }
 
@@ -504,7 +482,6 @@ void URene_LocalVoiceRecorder::OnForceEndComplete(FHttpRequestPtr Request, FHttp
         FString ResponseBody = Response->GetContentAsString();
         UE_LOG(LogTemp, Log, TEXT("Force End successful. Response: %s"), *ResponseBody);
         
-        // 공통 처리 로직 호출 (여기서 status=done 처리됨)
         ProcessAIResponse(ResponseBody);
     }
     else

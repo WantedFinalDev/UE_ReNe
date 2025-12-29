@@ -16,6 +16,7 @@
 #include "Global/Rene_PlayerState.h"
 #include "Global/Rene_GameInstance.h"
 #include "Network/Rene_LocalVoiceRecorder.h"  // New include for local voice recorder
+#include "Network/Rene_FileUploader.h" // 헤더 추가
 #include "UE_ReNeCharacter.h" // 헤더 변경
 #include "AIController.h" // AIController 사용을 위해 헤더 추가
 #include "EngineUtils.h"
@@ -96,6 +97,7 @@ void ARene_PlayerController::BeginPlay()
 			LocalVoiceRecorder->OnAIMessageReceived.AddDynamic(this, &ARene_PlayerController::OnAIMessageReceived);
 			LocalVoiceRecorder->OnAIResponseStateChanged.AddDynamic(this, &ARene_PlayerController::OnAIResponseStateChanged);
 			LocalVoiceRecorder->OnAIInterviewFinished.AddDynamic(this, &ARene_PlayerController::OnAIInterviewFinished);
+			LocalVoiceRecorder->OnInterviewStageReceived.AddDynamic(this, &ARene_PlayerController::OnInterviewStageReceived);
 		}
 		
 		for (TActorIterator<ARene_AI_Interviewer> It(GetWorld()); It; ++It)
@@ -304,14 +306,26 @@ void ARene_PlayerController::OnStartTalking()
         if (LocalVoiceRecorder) 
         	LocalVoiceRecorder->StartRecording();
     }
-	if (InterviewWidgetInstance) InterviewWidgetInstance->ShowPlayerSpeaking(true);
+	if (InterviewWidgetInstance)
+	{
+		InterviewWidgetInstance->ShowPlayerSpeaking(true);
+		InterviewWidgetInstance->ShowPressToTalk(false); // Hide prompt when talking
+	}
 }
 
 void ARene_PlayerController::OnStopTalking()
 {
 	if (!IsLocalController()) return;
 	
-	if (InterviewWidgetInstance) InterviewWidgetInstance->ShowPlayerSpeaking(false);
+	if (InterviewWidgetInstance)
+	{
+		InterviewWidgetInstance->ShowPlayerSpeaking(false);
+		// 로딩 중이 아니라면 다시 안내 문구 표시
+		if (InterviewWidgetInstance->txt_Loading->GetVisibility() == ESlateVisibility::Collapsed)
+		{
+			InterviewWidgetInstance->ShowPressToTalk(true);
+		}
+	}
 	
 	if (bIsInAIInterview)
 	{
@@ -420,6 +434,7 @@ void ARene_PlayerController::EndInterview()
 
 	if (LocalVoiceRecorder && !AISessionID.IsEmpty())
 	{
+		CurrentInterviewStage = TEXT("LAST_COMMENTS");
 		LocalVoiceRecorder->RequestForceEndInterview(AISessionID);
 	}
 	else
@@ -444,7 +459,29 @@ void ARene_PlayerController::OnAIMessageReceived(const FString& AIMessage)
 void ARene_PlayerController::OnAIResponseStateChanged(bool bIsWaiting)
 {
 	if (bIsInAIInterview && InterviewWidgetInstance)
+	{
+		if (bIsWaiting)
+		{
+			InterviewWidgetInstance->ShowPressToTalk(false);
+
+			if (CurrentInterviewStage == TEXT("LAST_COMMENTS"))
+			{
+				InterviewWidgetInstance->SetLoadingText(TEXT("면접 결과 분석 대기 중..."));
+			}
+			else
+			{
+				InterviewWidgetInstance->SetLoadingText(TEXT("AI 면접자가 다음 질문을 생각 중입니다..."));
+			}
+		}
+		else
+		{
+			if (!bIsAISpeaking)
+			{
+				InterviewWidgetInstance->ShowPressToTalk(true);
+			}
+		}
 		InterviewWidgetInstance->SetLoadingState(bIsWaiting);
+	}
 }
 
 void ARene_PlayerController::DisplayInitialAIMessage(const FString& InitialMessage)
@@ -528,7 +565,18 @@ void ARene_PlayerController::OnAIVoiceStateChanged(bool bIsPlaying)
 	{
 		InterviewWidgetInstance->SetInteractivity(!bIsPlaying);
 		InterviewWidgetInstance->ShowAISpeaking(bIsPlaying);
+		
+		// 로딩 중이 아닐 때만 상태 변경
+		if (InterviewWidgetInstance->txt_Loading->GetVisibility() == ESlateVisibility::Collapsed)
+		{
+			InterviewWidgetInstance->ShowPressToTalk(!bIsPlaying);
+		}
 	}
+}
+
+void ARene_PlayerController::OnInterviewStageReceived(const FString& Stage)
+{
+	CurrentInterviewStage = Stage;
 }
 
 void ARene_PlayerController::CloseReportAndWebView()
@@ -561,16 +609,12 @@ void ARene_PlayerController::CloseReportAndWebView()
 
 void ARene_PlayerController::ServerRPC_RequestPrivateInterview_Implementation()
 {
-	// 1. Find the Host PlayerController (Authority)
-	// In a Listen Server setup, the Host is the first player controller on the server.
-	// However, we need to be careful not to send the request to ourselves if we are the host.
-	
 	ARene_PlayerController* HostPC = nullptr;
 	
 	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
 		ARene_PlayerController* PC = Cast<ARene_PlayerController>(Iterator->Get());
-		if (PC && PC->IsLocalController()) // On the server, IsLocalController() is true for the Host
+		if (PC && PC->IsLocalController())
 		{
 			HostPC = PC;
 			break;
@@ -579,17 +623,14 @@ void ARene_PlayerController::ServerRPC_RequestPrivateInterview_Implementation()
 
 	if (HostPC)
 	{
-		// Store the requestor so the Host knows who to accept
 		HostPC->PendingRequestorPC = this;
 		
-		// Get Requestor Name
 		FString RequestorName = TEXT("Unknown");
 		if (ARene_PlayerState* PS = GetPlayerState<ARene_PlayerState>())
 		{
 			RequestorName = PS->GetPlayerName();
 		}
 
-		// Show UI on Host
 		HostPC->ClientRPC_ShowInterviewRequest(RequestorName);
 		UE_LOG(LogVoicePC, Log, TEXT("ServerRPC_RequestPrivateInterview: Request sent to Host from %s"), *RequestorName);
 	}
@@ -601,23 +642,11 @@ void ARene_PlayerController::ServerRPC_RequestPrivateInterview_Implementation()
 
 void ARene_PlayerController::ClientRPC_ShowInterviewRequest_Implementation(const FString& RequestorName)
 {
-	// Show UI to Host
-	// For now, we will just log it. You should hook this up to your UI.
-	// Ideally, you would show a popup widget here.
-	
 	UE_LOG(LogVoicePC, Log, TEXT("ClientRPC_ShowInterviewRequest: Received request from %s"), *RequestorName);
-	
-	// Example: If you have a notification system, trigger it here.
-	// For this implementation, we assume the Host will manually click "Start Private Interview" (which acts as Accept).
-	// Or we can auto-accept for testing if desired, but let's stick to the plan.
-	
-	// TODO: Show "Accept / Decline" Widget
 }
 
 void ARene_PlayerController::ServerRPC_AcceptPrivateInterview_Implementation()
 {
-	// This function is called by the Host when they click "Accept" (or "Start Private Interview" when a request is pending).
-	
 	if (PendingRequestorPC)
 	{
 		if (ARene_Booth_GameMode* GameMode = GetWorld()->GetAuthGameMode<ARene_Booth_GameMode>())
@@ -625,7 +654,6 @@ void ARene_PlayerController::ServerRPC_AcceptPrivateInterview_Implementation()
 			GameMode->StartOneToOneVoiceChat(this, PendingRequestorPC);
 			UE_LOG(LogVoicePC, Log, TEXT("ServerRPC_AcceptPrivateInterview: Started interview with %s"), *PendingRequestorPC->GetName());
 			
-			// Clear pending request
 			PendingRequestorPC = nullptr;
 		}
 	}
@@ -646,7 +674,5 @@ void ARene_PlayerController::ServerRPC_DeclinePrivateInterview_Implementation()
 
 void ARene_PlayerController::ClientRPC_InterviewRequestDeclined_Implementation()
 {
-	// Notify Client
 	UE_LOG(LogVoicePC, Log, TEXT("ClientRPC_InterviewRequestDeclined: Your interview request was declined."));
-	// TODO: Show "Declined" popup
 }
