@@ -31,6 +31,13 @@ void URene_GameInstance::Init()
 		LOGERRORF(TEXT("NetworkSettingsTable is not set in the GameInstance Blueprint. Please assign the Data Table asset."));
 	}
 	// --- 데이터 테이블 로드 로직 끝 ---
+
+	// Initialize LoginManager
+	LoginManager = NewObject<URene_LoginManager>(this);
+	if (LoginManager)
+	{
+		LoginManager->OnLoginComplete.AddDynamic(this, &URene_GameInstance::OnLoginManagerComplete);
+	}
 	
 	IOnlineSubsystem* sys = Online::GetSubsystem(GetWorld());
 	if (sys == nullptr) return;
@@ -110,12 +117,13 @@ void URene_GameInstance::DestroyReneSession()
 	}
 }
 
-void URene_GameInstance::SetReneUserData(const FString& id, const FString& name, const int32 level, const FString& role)
+void URene_GameInstance::SetReneUserData(const FString& id, const FString& pw, const FString& name, const int32 level, const FString& role)
 {
 	f_userdata.ID = id;
+	f_userdata.PW = pw;
 	f_userdata.Name = name;
 	f_userdata.Level = level;
-	f_userdata.Role = role; // Role 추가
+	f_userdata.Role = role; 
 	
 	LOGWARNF(TEXT("UserData Cached : %s, Role: %s"), *f_userdata.Name, *f_userdata.Role);
 }
@@ -123,6 +131,51 @@ void URene_GameInstance::SetReneUserData(const FString& id, const FString& name,
 const FRene_NetworkSettings& URene_GameInstance::GetNetworkSettings() const
 {
 	return CachedNetworkSettings;
+}
+
+void URene_GameInstance::RequestLogin(const FString& Email, const FString& Password, const FString& Role)
+{
+	if (!LoginManager)
+	{
+		OnLoginComplete.Broadcast(false, FReneUserData(), TEXT("LoginManager is not initialized."));
+		return;
+	}
+
+	FString Endpoint;
+	if (Role == TEXT("jobseeker"))
+	{
+		Endpoint = CachedNetworkSettings.JobSeekerLoginEndpoint;
+	}
+	else if (Role == TEXT("company"))
+	{
+		Endpoint = CachedNetworkSettings.CompanyLoginEndpoint;
+	}
+	else
+	{
+		OnLoginComplete.Broadcast(false, FReneUserData(), TEXT("Invalid role selected."));
+		return;
+	}
+
+	if (CachedNetworkSettings.ServerBaseURL.IsEmpty() || Endpoint.IsEmpty())
+	{
+		OnLoginComplete.Broadcast(false, FReneUserData(), TEXT("Server URL or Endpoint is not configured."));
+		return;
+	}
+
+	LoginManager->RequestLogin(Email, Password, Role, CachedNetworkSettings.ServerBaseURL, Endpoint);
+}
+
+void URene_GameInstance::OnLoginManagerComplete(bool bSuccess, const FReneUserData& UserData, FString ErrorMessage)
+{
+	if (bSuccess)
+	{
+		// Cache the user data
+		// Note: Password might be empty in UserData from response, so we might want to keep the one from request if needed.
+		// But here we just use what we got.
+		SetReneUserData(UserData.ID, UserData.PW, UserData.Name, UserData.Level, UserData.Role);
+	}
+
+	OnLoginComplete.Broadcast(bSuccess, UserData, ErrorMessage);
 }
 
 void URene_GameInstance::OnCreateReneSession(FName sessionname, bool b_success)

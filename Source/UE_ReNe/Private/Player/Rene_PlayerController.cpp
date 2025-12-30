@@ -16,8 +16,11 @@
 #include "Global/Rene_PlayerState.h"
 #include "Global/Rene_GameInstance.h"
 #include "Network/Rene_LocalVoiceRecorder.h"  // New include for local voice recorder
+#include "Network/Rene_FileUploader.h" // 헤더 추가
 #include "UE_ReNeCharacter.h" // 헤더 변경
 #include "AIController.h" // AIController 사용을 위해 헤더 추가
+#include "EngineUtils.h"
+#include "AI/Rene_AI_Interviewer.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h" // AI 기능 사용을 위한 핵심 헤더
 #include "Widget/Rene_InterviewWidget.h" // 헤더 추가
 #include "Widget/Rene_InterviewResultPopupWidget.h" // 헤더 추가
@@ -48,6 +51,7 @@ ARene_PlayerController::ARene_PlayerController()
 	FileUploader = CreateDefaultSubobject<URene_FileUploader>(TEXT("FileUploaderComponent"));
 
 	bIsInAIInterview = false; // Initialize the flag
+	bIsAISpeaking = false;
 }
 
 void ARene_PlayerController::BeginPlay()
@@ -93,6 +97,18 @@ void ARene_PlayerController::BeginPlay()
 			LocalVoiceRecorder->OnAIMessageReceived.AddDynamic(this, &ARene_PlayerController::OnAIMessageReceived);
 			LocalVoiceRecorder->OnAIResponseStateChanged.AddDynamic(this, &ARene_PlayerController::OnAIResponseStateChanged);
 			LocalVoiceRecorder->OnAIInterviewFinished.AddDynamic(this, &ARene_PlayerController::OnAIInterviewFinished);
+			LocalVoiceRecorder->OnInterviewStageReceived.AddDynamic(this, &ARene_PlayerController::OnInterviewStageReceived);
+		}
+		
+		for (TActorIterator<ARene_AI_Interviewer> It(GetWorld()); It; ++It)
+		{
+			ARene_AI_Interviewer* AIInterviewer = *It;
+			if (AIInterviewer && AIInterviewer->AIVoicePlaybackComponent)
+			{
+				AIInterviewer->AIVoicePlaybackComponent->OnAIVoiceStateChanged.AddDynamic(this, &ARene_PlayerController::OnAIVoiceStateChanged);
+				UE_LOG(LogVoicePC, Log, TEXT("Bound to AI Voice Playback Component."));
+				break; // 하나만 있다고 가정하고 첫 번째 것만 바인딩
+			}
 		}
 	}
 }
@@ -266,9 +282,15 @@ TObjectPtr<class UUserWidget> ARene_PlayerController::GetUserWidget()
 void ARene_PlayerController::OnStartTalking()
 {
 	if (!IsLocalController()) return;
+	
+	if (bIsAISpeaking)
+	{
+		UE_LOG(LogVoicePC, Warning, TEXT("Cannot start recording while AI is speaking."));
+		return;
+	}
 
     ARene_PlayerState* RenePlayerState = GetPlayerState<ARene_PlayerState>();
-
+	
 	if (bIsInAIInterview)
 	{
 		if (LocalVoiceRecorder) 
@@ -284,12 +306,27 @@ void ARene_PlayerController::OnStartTalking()
         if (LocalVoiceRecorder) 
         	LocalVoiceRecorder->StartRecording();
     }
+	if (InterviewWidgetInstance)
+	{
+		InterviewWidgetInstance->ShowPlayerSpeaking(true);
+		InterviewWidgetInstance->ShowPressToTalk(false); // Hide prompt when talking
+	}
 }
 
 void ARene_PlayerController::OnStopTalking()
 {
 	if (!IsLocalController()) return;
-
+	
+	if (InterviewWidgetInstance)
+	{
+		InterviewWidgetInstance->ShowPlayerSpeaking(false);
+		// 로딩 중이 아니라면 다시 안내 문구 표시
+		if (InterviewWidgetInstance->txt_Loading->GetVisibility() == ESlateVisibility::Collapsed)
+		{
+			InterviewWidgetInstance->ShowPressToTalk(true);
+		}
+	}
+	
 	if (bIsInAIInterview)
 	{
 		if (LocalVoiceRecorder) 
@@ -395,15 +432,16 @@ void ARene_PlayerController::EndInterview()
 {
 	if (!IsLocalController()) return;
 
-	if (InterviewWidgetInstance)
+	if (LocalVoiceRecorder && !AISessionID.IsEmpty())
 	{
-		InterviewWidgetInstance->RemoveFromParent();
-		InterviewWidgetInstance = nullptr;
+		CurrentInterviewStage = TEXT("LAST_COMMENTS");
+		LocalVoiceRecorder->RequestForceEndInterview(AISessionID);
 	}
-	SetIsInAIInterview(false);
-	ServerRPC_RequestStandUp();
-	ServerRPC_TeleportToLocation(FVector(-559.999985,69.999981,112.000021));
-	DisableUIControll();
+	else
+	{
+		SetIsInAIInterview(false);
+		CloseReportAndWebView();
+	}
 }
 
 void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
@@ -421,7 +459,29 @@ void ARene_PlayerController::OnAIMessageReceived(const FString& AIMessage)
 void ARene_PlayerController::OnAIResponseStateChanged(bool bIsWaiting)
 {
 	if (bIsInAIInterview && InterviewWidgetInstance)
+	{
+		if (bIsWaiting)
+		{
+			InterviewWidgetInstance->ShowPressToTalk(false);
+
+			if (CurrentInterviewStage == TEXT("LAST_COMMENTS"))
+			{
+				InterviewWidgetInstance->SetLoadingText(TEXT("면접 결과 분석 대기 중..."));
+			}
+			else
+			{
+				InterviewWidgetInstance->SetLoadingText(TEXT("AI 면접자가 다음 질문을 생각 중입니다..."));
+			}
+		}
+		else
+		{
+			if (!bIsAISpeaking)
+			{
+				InterviewWidgetInstance->ShowPressToTalk(true);
+			}
+		}
 		InterviewWidgetInstance->SetLoadingState(bIsWaiting);
+	}
 }
 
 void ARene_PlayerController::DisplayInitialAIMessage(const FString& InitialMessage)
@@ -496,6 +556,29 @@ void ARene_PlayerController::HandleShowReportClicked()
     }
 }
 
+void ARene_PlayerController::OnAIVoiceStateChanged(bool bIsPlaying)
+{
+	bIsAISpeaking = bIsPlaying;
+	UE_LOG(LogVoicePC, Log, TEXT("AI Speaking State Changed: %s"), bIsPlaying ? TEXT("True") : TEXT("False"));
+	
+	if (InterviewWidgetInstance)
+	{
+		InterviewWidgetInstance->SetInteractivity(!bIsPlaying);
+		InterviewWidgetInstance->ShowAISpeaking(bIsPlaying);
+		
+		// 로딩 중이 아닐 때만 상태 변경
+		if (InterviewWidgetInstance->txt_Loading->GetVisibility() == ESlateVisibility::Collapsed)
+		{
+			InterviewWidgetInstance->ShowPressToTalk(!bIsPlaying);
+		}
+	}
+}
+
+void ARene_PlayerController::OnInterviewStageReceived(const FString& Stage)
+{
+	CurrentInterviewStage = Stage;
+}
+
 void ARene_PlayerController::CloseReportAndWebView()
 {
     if (InterviewResultPopupInstance)
@@ -508,4 +591,88 @@ void ARene_PlayerController::CloseReportAndWebView()
         WebViewInstance->RemoveFromParent();
         WebViewInstance = nullptr;
     }
+
+	if (IsLocalController())
+	{
+		if (InterviewWidgetInstance)
+		{
+			InterviewWidgetInstance->RemoveFromParent();
+			InterviewWidgetInstance = nullptr;
+		}
+		ServerRPC_RequestStandUp();
+		ServerRPC_TeleportToLocation(FVector(-559.999985,69.999981,112.000021));
+		DisableUIControll();
+	}
+}
+
+// --- P2P Interview Request Flow Implementation ---
+
+void ARene_PlayerController::ServerRPC_RequestPrivateInterview_Implementation()
+{
+	ARene_PlayerController* HostPC = nullptr;
+	
+	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	{
+		ARene_PlayerController* PC = Cast<ARene_PlayerController>(Iterator->Get());
+		if (PC && PC->IsLocalController())
+		{
+			HostPC = PC;
+			break;
+		}
+	}
+
+	if (HostPC)
+	{
+		HostPC->PendingRequestorPC = this;
+		
+		FString RequestorName = TEXT("Unknown");
+		if (ARene_PlayerState* PS = GetPlayerState<ARene_PlayerState>())
+		{
+			RequestorName = PS->GetPlayerName();
+		}
+
+		HostPC->ClientRPC_ShowInterviewRequest(RequestorName);
+		UE_LOG(LogVoicePC, Log, TEXT("ServerRPC_RequestPrivateInterview: Request sent to Host from %s"), *RequestorName);
+	}
+	else
+	{
+		UE_LOG(LogVoicePC, Warning, TEXT("ServerRPC_RequestPrivateInterview: Could not find Host PlayerController."));
+	}
+}
+
+void ARene_PlayerController::ClientRPC_ShowInterviewRequest_Implementation(const FString& RequestorName)
+{
+	UE_LOG(LogVoicePC, Log, TEXT("ClientRPC_ShowInterviewRequest: Received request from %s"), *RequestorName);
+}
+
+void ARene_PlayerController::ServerRPC_AcceptPrivateInterview_Implementation()
+{
+	if (PendingRequestorPC)
+	{
+		if (ARene_Booth_GameMode* GameMode = GetWorld()->GetAuthGameMode<ARene_Booth_GameMode>())
+		{
+			GameMode->StartOneToOneVoiceChat(this, PendingRequestorPC);
+			UE_LOG(LogVoicePC, Log, TEXT("ServerRPC_AcceptPrivateInterview: Started interview with %s"), *PendingRequestorPC->GetName());
+			
+			PendingRequestorPC = nullptr;
+		}
+	}
+	else
+	{
+		UE_LOG(LogVoicePC, Warning, TEXT("ServerRPC_AcceptPrivateInterview: No pending requestor found."));
+	}
+}
+
+void ARene_PlayerController::ServerRPC_DeclinePrivateInterview_Implementation()
+{
+	if (PendingRequestorPC)
+	{
+		PendingRequestorPC->ClientRPC_InterviewRequestDeclined();
+		PendingRequestorPC = nullptr;
+	}
+}
+
+void ARene_PlayerController::ClientRPC_InterviewRequestDeclined_Implementation()
+{
+	UE_LOG(LogVoicePC, Log, TEXT("ClientRPC_InterviewRequestDeclined: Your interview request was declined."));
 }

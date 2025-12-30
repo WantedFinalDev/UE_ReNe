@@ -16,6 +16,9 @@ struct FReneUserData
 	FString ID = TEXT("EmptyID");
 	
 	UPROPERTY(BlueprintReadWrite)
+	FString PW = TEXT("EmptyPW");
+	
+	UPROPERTY(BlueprintReadWrite)
 	FString Name = TEXT("EmptyName");
 	
 	UPROPERTY(BlueprintReadWrite)

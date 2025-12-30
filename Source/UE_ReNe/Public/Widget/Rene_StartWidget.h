@@ -4,6 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/CheckBox.h"
 #include "Components/TextBlock.h"
+#include "Data/ReneUserData.h" // FReneUserData 사용을 위해 추가
 #include "Rene_StartWidget.generated.h"
 
 
@@ -30,6 +31,9 @@ private:
 	void OnClickedExit();
 	UFUNCTION()
 	void OnClickedReturn();
+
+	UFUNCTION()
+	void OnLoginResponse(bool bSuccess, const FReneUserData& UserData, FString ErrorMessage);
 	
 	
 	
@@ -47,6 +51,9 @@ public:
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UEditableTextBox> etxt_ID;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UEditableTextBox> etxt_PW;
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<URene_LobbyWidget> WBP_LobbyUI;

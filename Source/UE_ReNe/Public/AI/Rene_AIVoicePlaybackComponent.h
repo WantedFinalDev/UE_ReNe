@@ -6,8 +6,15 @@
 #include "Components/SceneComponent.h"
 #include "Rene_AIVoicePlaybackComponent.generated.h"
 
+// "AI 음성 재생 중" 상태 표시를 제어하기 위한 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAIVoiceStateChanged, bool, bIsPlaying);
+
+// Delegate to broadcast amplitude (0.0 to 1.0)
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAIVoiceAmplitudeChanged, float, Amplitude);
+
 class UAudioComponent;
 class USoundWaveProcedural; // Forward declaration for USoundWaveProcedural
+class USoundWave; // Forward declaration for USoundWave
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UE_RENE_API URene_AIVoicePlaybackComponent : public USceneComponent
@@ -16,7 +23,22 @@ class UE_RENE_API URene_AIVoicePlaybackComponent : public USceneComponent
 
 public:
 	URene_AIVoicePlaybackComponent();
+	
+	UPROPERTY(BlueprintAssignable, Category = "AI Voice")
+	FOnAIVoiceStateChanged OnAIVoiceStateChanged;
 
+	// The event that the Character will listen to
+	UPROPERTY(BlueprintAssignable, Category = "AI Voice")
+	FOnAIVoiceAmplitudeChanged OnAIVoiceAmplitudeChanged;
+	
+	UFUNCTION()
+	void OnAudioFinished();
+
+	// Internal callback from the Audio Engine
+	// Corrected signature to match FOnAudioSingleEnvelopeValue
+	UFUNCTION()
+	void OnAudioEnvelopeValue(const class USoundWave* PlayingSoundWave, const float EnvelopeValue);
+	
 	/**
 	 * Decodes a Base64 encoded string into a TArray of bytes.
 	 * @param Base64String The Base64 string to decode.
@@ -45,6 +67,9 @@ protected:
 private:
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> AudioComponent;
+
+	// Timer handle for manual audio finish event
+	FTimerHandle AudioFinishTimerHandle;
 
 	// Helper function to parse WAV header and extract PCM data
 	bool ParseWavData(const TArray<uint8>& WavData, TArray<uint8>& OutPCMData, int32& OutSampleRate, int32& OutNumChannels);

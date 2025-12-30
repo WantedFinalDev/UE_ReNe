@@ -79,6 +79,10 @@ void ARene_Booth_GameMode::StartOneToOneVoiceChat(APlayerController* PlayerA, AP
         return;
     }
 
+    // Set the state on both players
+    PlayerStateA->SetIsInPrivateInterview(true);
+    PlayerStateB->SetIsInPrivateInterview(true);
+
     // Get the GameState, which owns the VoiceChatManager
     ARene_Booth_GameState* MyGameState = GetGameState<ARene_Booth_GameState>();
     if (!MyGameState)
@@ -137,8 +141,8 @@ void ARene_Booth_GameMode::EndOneToOneVoiceChat(APlayerController* PlayerA, APla
     }
 
     // Reset the bIsInPrivateInterview flag for both participants
-    PlayerStateA->bVoicable = false;
-    PlayerStateB->bVoicable = false;
+    PlayerStateA->SetIsInPrivateInterview(false);
+    PlayerStateB->SetIsInPrivateInterview(false);
 
     // Get the GameState, which owns the VoiceChatManager
     ARene_Booth_GameState* MyGameState = GetGameState<ARene_Booth_GameState>();
