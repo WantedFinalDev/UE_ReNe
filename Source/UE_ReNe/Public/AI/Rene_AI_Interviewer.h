@@ -20,6 +20,10 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	// Function to update the face morph targets
+	UFUNCTION()
+	void OnVoiceAmplitudeChanged(float Amplitude);
+
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

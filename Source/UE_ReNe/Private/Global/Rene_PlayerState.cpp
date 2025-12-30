@@ -18,6 +18,14 @@ void ARene_PlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimePropert
 	DOREPLIFETIME(ARene_PlayerState, bVoicable); // Replicate the new flag
 }
 
+void ARene_PlayerState::SetIsInPrivateInterview(bool bNewState)
+{
+	if (HasAuthority())
+	{
+		bVoicable = bNewState;
+	}
+}
+
 void ARene_PlayerState::SetInterviewResultID(int32 ResultID)
 {
 	InterviewResultID = ResultID;
