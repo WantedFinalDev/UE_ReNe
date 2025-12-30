@@ -32,6 +32,13 @@ void URene_InterviewWidget::NativeConstruct()
 	{
 		txt_PlayerSpeaking->SetVisibility(ESlateVisibility::Collapsed);
 	}
+
+	if (txt_PressToTalk)
+	{
+		// Initially visible if AI is not speaking, but usually we start with AI speaking.
+		// Let's default to collapsed and let the controller manage it.
+		txt_PressToTalk->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void URene_InterviewWidget::OnEndButtonClicked()
@@ -63,6 +70,14 @@ void URene_InterviewWidget::SetLoadingState(bool bIsLoading)
 		{
 			txt_Subtitle->SetVisibility(ESlateVisibility::Collapsed);
 		}
+	}
+}
+
+void URene_InterviewWidget::SetLoadingText(const FString& NewText)
+{
+	if (txt_Loading)
+	{
+		txt_Loading->SetText(FText::FromString(NewText));
 	}
 }
 
@@ -101,5 +116,13 @@ void URene_InterviewWidget::ShowPlayerSpeaking(bool bIsSpeaking)
 		{
 			txt_PlayerSpeaking->SetVisibility(ESlateVisibility::Collapsed);
 		}
+	}
+}
+
+void URene_InterviewWidget::ShowPressToTalk(bool bShow)
+{
+	if (txt_PressToTalk)
+	{
+		txt_PressToTalk->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
 }

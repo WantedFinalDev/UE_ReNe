@@ -22,6 +22,11 @@ void ARene_AI_Interviewer::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	// Bind to the amplitude update
+	if (AIVoicePlaybackComponent)
+	{
+		AIVoicePlaybackComponent->OnAIVoiceAmplitudeChanged.AddDynamic(this, &ARene_AI_Interviewer::OnVoiceAmplitudeChanged);
+	}
 }
 
 // Called every frame
@@ -45,5 +50,39 @@ void ARene_AI_Interviewer::PlayAIVoiceResponse(const FString& Base64String)
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("AIVoicePlaybackComponent is null on ARene_AI_Interviewer."));
+	}
+}
+
+void ARene_AI_Interviewer::OnVoiceAmplitudeChanged(float Amplitude)
+{
+	// 1. Find the Face Mesh
+	// MetaHumans usually have a skeletal mesh component named "Face"
+	USkeletalMeshComponent* FaceMesh = nullptr;
+	
+	TArray<USkeletalMeshComponent*> SkeletalMeshes;
+	GetComponents<USkeletalMeshComponent>(SkeletalMeshes);
+	
+	for (USkeletalMeshComponent* SkeletalMesh : SkeletalMeshes)
+	{
+		if (SkeletalMesh->GetName().Contains(TEXT("Face")))
+		{
+			FaceMesh = SkeletalMesh;
+			break;
+		}
+	}
+
+	// 2. Apply Morph Targets
+	if (FaceMesh)
+	{
+		// Amplitude is usually very small (0.0 to 0.2 for normal speech), so we multiply it.
+		// You can tweak the '10.0f' multiplier to make the mouth open wider or less.
+		float Sensitivity = 10.0f; 
+		float JawValue = FMath::Clamp(Amplitude * Sensitivity, 0.0f, 1.0f);
+
+		// "JawOpen" is the standard ARKit blendshape
+		FaceMesh->SetMorphTarget(FName("JawOpen"), JawValue);
+		
+		// Optional: Add a little bit of "MouthFunnel" to make it look less like a nutcracker
+		FaceMesh->SetMorphTarget(FName("MouthFunnel"), JawValue * 0.4f);
 	}
 }

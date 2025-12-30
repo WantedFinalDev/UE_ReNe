@@ -17,6 +17,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAIMessageReceived, const FString&
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAIResponseStateChanged, bool, bIsWaitingForResponse);
 // AI 면접이 최종적으로 종료되고 결과 ID를 받았을 때 호출되는 델리게이트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAIInterviewFinished, int32, InterviewResultID);
+// 인터뷰 스테이지 정보를 전달하기 위한 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInterviewStageReceived, const FString&, Stage);
 
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -47,6 +49,10 @@ public:
     UPROPERTY(BlueprintAssignable, Category = "AI Interview|Events")
     FOnAIInterviewFinished OnAIInterviewFinished;
 
+    /** 인터뷰 스테이지(예: LAST_COMMENTS)가 수신되었을 때 호출됩니다. */
+    UPROPERTY(BlueprintAssignable, Category = "AI Interview|Events")
+    FOnInterviewStageReceived OnInterviewStageReceived;
+
     /** Starts capturing local microphone data. */
     void StartRecording();
 
@@ -55,6 +61,12 @@ public:
      * @param AISessionID The session ID for the AI interview, if applicable.
      */
     void StopAndUploadRecording(const FString& AISessionID);
+
+    /**
+     * Sends a request to force-end the interview.
+     * @param AISessionID The session ID to end.
+     */
+    void RequestForceEndInterview(const FString& AISessionID);
 
 protected:
     virtual void BeginPlay() override;
@@ -82,6 +94,16 @@ private:
      * @param bWasSuccessful True if the request was successfully processed.
      */
     void OnUploadComplete(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+
+    /**
+     * Processes the JSON response from the AI server (shared by Voice Upload and Force End).
+     */
+    void ProcessAIResponse(const FString& ResponseBody);
+
+    /**
+     * Callback function for when the Force End request completes.
+     */
+    void OnForceEndComplete(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 
     // The UE Voice Capture interface.
     TSharedPtr<IVoiceCapture> VoiceCapture;
