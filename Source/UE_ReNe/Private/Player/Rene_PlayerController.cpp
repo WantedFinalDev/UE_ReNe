@@ -47,6 +47,10 @@ ARene_PlayerController::ARene_PlayerController()
 	if (tmp_imc.Succeeded())
 		imc_Common = tmp_imc.Object;
 	
+	static ConstructorHelpers::FClassFinder<UUserWidget> tmp_info(TEXT("/Game/UI/WBP_Infodesk.WBP_Infodesk_C"));
+	if (tmp_info.Succeeded())
+		wbp_infodesk = tmp_info.Class;
+	
 	LocalVoiceRecorder = CreateDefaultSubobject<URene_LocalVoiceRecorder>(TEXT("LocalVoiceRecorder")); // Create the new component
 	FileUploader = CreateDefaultSubobject<URene_FileUploader>(TEXT("FileUploaderComponent"));
 
@@ -202,6 +206,16 @@ void ARene_PlayerController::OnToggleMenu()
 	}
 }
 
+void ARene_PlayerController::CreateInfodeskUI()
+{
+	if (!IsValid(wbp_infodesk)) return;
+	
+	infodesk_ui = CreateWidget(this, wbp_infodesk);
+	infodesk_ui->AddToViewport();
+	EnableUIControll();
+	SetWidgetCameraToInfo();
+}
+
 void ARene_PlayerController::CreateCompanyUI()
 {
 	if (!IsValid(companyui_class)) return;
@@ -242,6 +256,42 @@ void ARene_PlayerController::OnSeekerUI()
 		FInputModeUIOnly im;
 		SetInputMode(im);
 		bShowMouseCursor = true;
+	}
+}
+
+void ARene_PlayerController::SetWidgetCameraToInfo()
+{
+	AActor* CamLoc0 = nullptr;
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	{
+		if (It->ActorHasTag(FName("WidgetCamera00")))
+		{
+			CamLoc0 = *It;
+			break;
+		}
+	}
+
+	if (CamLoc0)
+	{
+		SetViewTargetWithBlend(CamLoc0, 0.2f);
+	}
+}
+
+void ARene_PlayerController::SetWidgetCameraToMeet()
+{
+	AActor* CamLoc1 = nullptr;
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	{
+		if (It->ActorHasTag(FName("WidgetCamera01")))
+		{
+			CamLoc1 = *It;
+			break;
+		}
+	}
+
+	if (CamLoc1)
+	{
+		SetViewTargetWithBlend(CamLoc1, 0.2f);
 	}
 }
 

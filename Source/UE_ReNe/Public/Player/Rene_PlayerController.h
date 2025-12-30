@@ -35,15 +35,24 @@ public:
 	void ClientRPC_CreateBoothUI();
 
 	void OnToggleMenu();
+	void CreateInfodeskUI();
 	void CreateCompanyUI();
 	void CreateSeekerUI();
 	void OnCompanyUI();
 	void OnSeekerUI();
+	
+	//	Widget Camera Moving
+	UFUNCTION(BlueprintCallable)
+	void SetWidgetCameraToInfo();
+	UFUNCTION(BlueprintCallable)
+	void SetWidgetCameraToMeet();
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_SendUserData(struct FReneUserData data);
 
+	UFUNCTION(BlueprintCallable)
 	void EnableUIControll();
+	UFUNCTION(BlueprintCallable)
 	void DisableUIControll();
 
 	TObjectPtr<class UUserWidget> GetUserWidget();
@@ -119,12 +128,18 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<URene_Seeker_Widget> seekerui_class;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UUserWidget> wbp_infodesk;
 
 	UPROPERTY()
 	TObjectPtr<URene_Company_Widget> company_ui;
 
 	UPROPERTY()
 	TObjectPtr<URene_Seeker_Widget> seeker_ui;
+	
+	UPROPERTY()
+	TObjectPtr<UUserWidget> infodesk_ui;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> imc_Common;

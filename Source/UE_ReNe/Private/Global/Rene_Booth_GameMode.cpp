@@ -32,10 +32,11 @@ void ARene_Booth_GameMode::PostLogin(APlayerController* NewPlayer)
 	
     if (ARene_PlayerController* pc = Cast<ARene_PlayerController>(NewPlayer))
     {
-        if (pc->IsLocalPlayerController())
+        /*if (pc->IsLocalPlayerController())
             pc->CreateCompanyUI();
         else
-            pc->ClientRPC_CreateBoothUI();
+            pc->ClientRPC_CreateBoothUI();*/
+        pc->CreateInfodeskUI();
     }
     
     //	UI 통폐합
