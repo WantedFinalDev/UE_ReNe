@@ -34,10 +34,11 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_CreateBoothUI();
 
+	UFUNCTION(Client, Reliable)
+	void ClientRPC_CreateInfodeskUI();
+
 	void OnToggleMenu();
 	void CreateInfodeskUI();
-	void CreateCompanyUI();
-	void CreateSeekerUI();
 	void OnCompanyUI();
 	void OnSeekerUI();
 	

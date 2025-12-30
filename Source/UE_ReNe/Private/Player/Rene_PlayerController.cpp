@@ -181,7 +181,12 @@ bool ARene_PlayerController::ShowFileDialog(const FString& DialogTitle, const FS
 
 void ARene_PlayerController::ClientRPC_CreateBoothUI_Implementation()
 {
-	CreateSeekerUI();
+	OnSeekerUI();
+}
+
+void ARene_PlayerController::ClientRPC_CreateInfodeskUI_Implementation()
+{
+	CreateInfodeskUI();
 }
 
 void ARene_PlayerController::OnToggleMenu()
@@ -208,54 +213,57 @@ void ARene_PlayerController::OnToggleMenu()
 
 void ARene_PlayerController::CreateInfodeskUI()
 {
-	if (!IsValid(wbp_infodesk)) return;
-	
+	if (!IsValid(wbp_infodesk))
+	{
+		LOGERRORF(TEXT("wbp_infodesk class is not valid"));
+		return;
+	}
+
 	infodesk_ui = CreateWidget(this, wbp_infodesk);
+	if (!IsValid(infodesk_ui))
+	{
+		LOGERRORF(TEXT("Failed to create infodesk widget"));
+		return;
+	}
+
 	infodesk_ui->AddToViewport();
 	EnableUIControll();
 	SetWidgetCameraToInfo();
 }
 
-void ARene_PlayerController::CreateCompanyUI()
-{
-	if (!IsValid(companyui_class)) return;
-	if (!IsLocalPlayerController() || !HasAuthority()) return;
-	
-	company_ui = CreateWidget<URene_Company_Widget>(this, companyui_class);
-	company_ui->AddToViewport();
-	EnableUIControll();
-}
-
-void ARene_PlayerController::CreateSeekerUI()
-{
-	if (!IsValid(seekerui_class)) return;
-	
-	seeker_ui = CreateWidget<URene_Seeker_Widget>(this, seekerui_class);
-	seeker_ui->AddToViewport();
-	EnableUIControll();
-}
-
 void ARene_PlayerController::OnCompanyUI()
 {
+	if (!IsValid(companyui_class)) return;
 	if (!HasAuthority() || !IsLocalPlayerController()) return;
 	if (IsValid(company_ui))
 	{
 		company_ui->SetVisibility(ESlateVisibility::Visible);
-		FInputModeUIOnly im;
-		SetInputMode(im);
-		bShowMouseCursor = true;
+		EnableUIControll();
+	}
+	else
+	{
+		company_ui = CreateWidget<URene_Company_Widget>(this, companyui_class);
+		company_ui->AddToViewport();
+		EnableUIControll();
 	}
 }
 
 void ARene_PlayerController::OnSeekerUI()
 {
+	//	CreateSeekerUI() -> OnSeekerUi() 통합
+	
 	if (!IsLocalPlayerController() || HasAuthority()) return;
-	if (IsValid(seeker_ui))
+	if (!IsValid(seekerui_class)) return;
+	if (!IsValid(seeker_ui))
+	{
+		seeker_ui = CreateWidget<URene_Seeker_Widget>(this, seekerui_class);
+		seeker_ui->AddToViewport();
+		EnableUIControll();
+	}
+	else
 	{
 		seeker_ui->SetVisibility(ESlateVisibility::Visible);
-		FInputModeUIOnly im;
-		SetInputMode(im);
-		bShowMouseCursor = true;
+		EnableUIControll();
 	}
 }
 
