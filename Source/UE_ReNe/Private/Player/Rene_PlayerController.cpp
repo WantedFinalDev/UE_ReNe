@@ -179,7 +179,12 @@ bool ARene_PlayerController::ShowFileDialog(const FString& DialogTitle, const FS
     return false;
 }
 
-void ARene_PlayerController::ClientRPC_CreateBoothUI_Implementation()
+void ARene_PlayerController::ServerRPC_CreateSeekerUI_Implementation()
+{
+	ClientRPC_CreateSeekerUI();
+}
+
+void ARene_PlayerController::ClientRPC_CreateSeekerUI_Implementation()
 {
 	OnSeekerUI();
 }
@@ -193,21 +198,11 @@ void ARene_PlayerController::OnToggleMenu()
 {
 	if (HasAuthority())
 	{
-		if (!IsValid(company_ui))
-		{
-			LOGERRORF(TEXT("NULL Host UI"))
-			return;
-		}
 		OnCompanyUI();
 	}
 	else
 	{
-		if (!IsValid(seeker_ui))
-		{
-			LOGERRORF(TEXT("NULL Client UI"))
-			return;
-		}
-		OnSeekerUI();
+		ServerRPC_CreateSeekerUI();
 	}
 }
 
@@ -243,6 +238,11 @@ void ARene_PlayerController::OnCompanyUI()
 	else
 	{
 		company_ui = CreateWidget<URene_Company_Widget>(this, companyui_class);
+		if (!IsValid(company_ui))
+		{
+			LOGERRORF(TEXT("company_ui class is not valid"));
+			return;
+		}
 		company_ui->AddToViewport();
 		EnableUIControll();
 	}
@@ -257,8 +257,16 @@ void ARene_PlayerController::OnSeekerUI()
 	if (!IsValid(seeker_ui))
 	{
 		seeker_ui = CreateWidget<URene_Seeker_Widget>(this, seekerui_class);
-		seeker_ui->AddToViewport();
-		EnableUIControll();
+		if (IsValid(seeker_ui))
+		{
+			seeker_ui->AddToViewport();
+			EnableUIControll();
+		}
+		else
+		{
+			LOGERRORF(TEXT("Seeker_UI is not valid"));
+			return;
+		}
 	}
 	else
 	{

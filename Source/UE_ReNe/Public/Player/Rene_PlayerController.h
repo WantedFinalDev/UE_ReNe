@@ -31,8 +31,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "File")
 	bool ShowFileDialog(const FString& DialogTitle, const FString& DefaultPath, const FString& FileTypes, FString& OutFilePath);
 
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_CreateSeekerUI();
 	UFUNCTION(Client, Reliable)
-	void ClientRPC_CreateBoothUI();
+	void ClientRPC_CreateSeekerUI();
 
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_CreateInfodeskUI();
