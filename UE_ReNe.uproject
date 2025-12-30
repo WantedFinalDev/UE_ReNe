@@ -55,6 +55,8 @@
 		{
 			"Name": "GPULightmass",
 			"Enabled": true
+		},
+		{
 			"Name": "MetaHumanCharacter",
 			"Enabled": true
 		},
