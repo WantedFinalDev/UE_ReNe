@@ -17,7 +17,7 @@ class URene_InterviewResultPopupWidget;
 class URene_WebViewWidget;
 
 UCLASS()
-class UE_RENE_API ARene_PlayerController : public APlayerController
+class UE_RENE_API ARene_PlayerController : public AUE_ReNePlayerController
 {
 	GENERATED_BODY()
 
