@@ -24,6 +24,7 @@
 #include "Blueprint/AIBlueprintHelperLibrary.h" // AI 기능 사용을 위한 핵심 헤더
 #include "Widget/Rene_InterviewWidget.h" // 헤더 추가
 #include "Widget/Rene_InterviewResultPopupWidget.h" // 헤더 추가
+#include "Widget/Rene_ProfileWidget.h"
 #include "Widget/Rene_WebViewWidget.h"
 
 
@@ -243,6 +244,7 @@ void ARene_PlayerController::OnCompanyUI()
 			LOGERRORF(TEXT("company_ui class is not valid"));
 			return;
 		}
+		company_ui->WBP_ProfileUI->SetProfileName(true, Cast<URene_GameInstance>(GetGameInstance())->GetCachedUserData(), TEXT(""));
 		company_ui->AddToViewport();
 		EnableUIControll();
 	}
@@ -259,6 +261,7 @@ void ARene_PlayerController::OnSeekerUI()
 		seeker_ui = CreateWidget<URene_Seeker_Widget>(this, seekerui_class);
 		if (IsValid(seeker_ui))
 		{
+			seeker_ui->WBP_ProfileUI->SetProfileName(true, Cast<URene_GameInstance>(GetGameInstance())->GetCachedUserData(), TEXT(""));
 			seeker_ui->AddToViewport();
 			EnableUIControll();
 		}

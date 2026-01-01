@@ -143,6 +143,7 @@ void URene_GameInstance::RequestLogin(const FString& Email, const FString& Passw
 	
 	if (Email == TEXT("Test"))
 	{
+		SetReneUserData(TEXT("00"), TEXT("00"), TEXT("Dev"), 1, Role);
 		OnLoginComplete.Broadcast(true, FReneUserData(TEXT("00"), TEXT("00"), TEXT("Dev"), 1, Role), TEXT(""));
 		return;
 	}
