@@ -4,6 +4,7 @@
 #include "Components/Button.h"
 #include "Components/ScrollBox.h"
 #include "Components/SizeBox.h"
+#include "Components/TextBlock.h"
 #include "Components/WidgetSwitcher.h"
 #include "Global/Rene_Booth_GameState.h"
 #include "Global/Rene_GameInstance.h"
@@ -17,7 +18,6 @@ void URene_Company_Widget::NativeConstruct()
 	Super::NativeConstruct();
 	
 	btn_HostUIClose->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedClose);
-	btn_UserList->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedList);
 	btn_DashToMain->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedDashToMain);
 	WBP_ProfileUI->OnClickReturnDynamic.AddDynamic(this, &URene_Company_Widget::OnClickedReturn);
 	WBP_ProfileUI->OnClickDashDynamic.AddDynamic(this, &URene_Company_Widget::OnClickedMainToDash);
@@ -33,11 +33,6 @@ void URene_Company_Widget::OnClickedClose()
 		return;
 	}
 	pc->DisableUIControll();
-}
-
-void URene_Company_Widget::OnClickedList()
-{
-	PopulateUserList();
 }
 
 void URene_Company_Widget::OnClickedMainToDash()
@@ -66,7 +61,7 @@ void URene_Company_Widget::OnClickedReturn()
 	}
 }
 
-void URene_Company_Widget::PopulateUserList()
+/*void URene_Company_Widget::PopulateUserList()
 {
 	if (!scr_UserList || !ImplementWidget) return;
 	ClearUserList();
@@ -101,11 +96,11 @@ void URene_Company_Widget::PopulateUserList()
 			}
 		}
 	}
-}
+}*/
 
-void URene_Company_Widget::ClearUserList()
+/*void URene_Company_Widget::ClearUserList()
 {
 	if (!scr_UserList) return;
 	scr_UserList->ClearChildren();
 	// arr_userlistwidget.Empty();
-}
+}*/

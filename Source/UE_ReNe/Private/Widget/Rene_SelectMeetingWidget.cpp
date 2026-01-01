@@ -26,6 +26,8 @@ void URene_SelectMeetingWidget::NativeConstruct()
 	{
 		btn_StartAIInterview->OnClicked.AddDynamic(this, &URene_SelectMeetingWidget::OnStartAIInterviewClicked);
 	}
+	
+	btn_Back->OnClicked.AddDynamic(this, &URene_SelectMeetingWidget::OnClickedBackButton);
 }
 
 void URene_SelectMeetingWidget::SetTargetActors(AActor* InPrivateInterviewTarget, AActor* InAIInterviewTarget)
@@ -45,6 +47,12 @@ void URene_SelectMeetingWidget::SetActualAIInterviewer(ARene_AI_Interviewer* InA
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Set Actual AI Interviewer: Null reference provided."));
 	}
+}
+
+void URene_SelectMeetingWidget::OnClickedBackButton()
+{
+	OnClickedBack.Broadcast();
+	
 }
 
 void URene_SelectMeetingWidget::OnStartPrivateInterviewClicked()

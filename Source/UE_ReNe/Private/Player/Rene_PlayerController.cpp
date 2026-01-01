@@ -47,6 +47,10 @@ ARene_PlayerController::ARene_PlayerController()
 	if (tmp_imc.Succeeded())
 		imc_Common = tmp_imc.Object;
 	
+	static ConstructorHelpers::FClassFinder<UUserWidget> tmp_info(TEXT("/Game/UI/WBP_Infodesk.WBP_Infodesk_C"));
+	if (tmp_info.Succeeded())
+		wbp_infodesk = tmp_info.Class;
+	
 	LocalVoiceRecorder = CreateDefaultSubobject<URene_LocalVoiceRecorder>(TEXT("LocalVoiceRecorder")); // Create the new component
 	FileUploader = CreateDefaultSubobject<URene_FileUploader>(TEXT("FileUploaderComponent"));
 
@@ -175,73 +179,135 @@ bool ARene_PlayerController::ShowFileDialog(const FString& DialogTitle, const FS
     return false;
 }
 
-void ARene_PlayerController::ClientRPC_CreateBoothUI_Implementation()
+void ARene_PlayerController::ServerRPC_CreateSeekerUI_Implementation()
 {
-	CreateSeekerUI();
+	ClientRPC_CreateSeekerUI();
+}
+
+void ARene_PlayerController::ClientRPC_CreateSeekerUI_Implementation()
+{
+	OnSeekerUI();
+}
+
+void ARene_PlayerController::ClientRPC_CreateInfodeskUI_Implementation()
+{
+	CreateInfodeskUI();
 }
 
 void ARene_PlayerController::OnToggleMenu()
 {
 	if (HasAuthority())
 	{
-		if (!IsValid(company_ui))
-		{
-			LOGERRORF(TEXT("NULL Host UI"))
-			return;
-		}
 		OnCompanyUI();
 	}
 	else
 	{
-		if (!IsValid(seeker_ui))
-		{
-			LOGERRORF(TEXT("NULL Client UI"))
-			return;
-		}
-		OnSeekerUI();
+		ServerRPC_CreateSeekerUI();
 	}
 }
 
-void ARene_PlayerController::CreateCompanyUI()
+void ARene_PlayerController::CreateInfodeskUI()
 {
-	if (!IsValid(companyui_class)) return;
-	if (!IsLocalPlayerController() || !HasAuthority()) return;
-	
-	company_ui = CreateWidget<URene_Company_Widget>(this, companyui_class);
-	company_ui->AddToViewport();
-	EnableUIControll();
-}
+	if (!IsValid(wbp_infodesk))
+	{
+		LOGERRORF(TEXT("wbp_infodesk class is not valid"));
+		return;
+	}
 
-void ARene_PlayerController::CreateSeekerUI()
-{
-	if (!IsValid(seekerui_class)) return;
-	
-	seeker_ui = CreateWidget<URene_Seeker_Widget>(this, seekerui_class);
-	seeker_ui->AddToViewport();
+	infodesk_ui = CreateWidget(this, wbp_infodesk);
+	if (!IsValid(infodesk_ui))
+	{
+		LOGERRORF(TEXT("Failed to create infodesk widget"));
+		return;
+	}
+
+	infodesk_ui->AddToViewport();
 	EnableUIControll();
+	SetWidgetCameraToInfo();
 }
 
 void ARene_PlayerController::OnCompanyUI()
 {
+	if (!IsValid(companyui_class)) return;
 	if (!HasAuthority() || !IsLocalPlayerController()) return;
 	if (IsValid(company_ui))
 	{
 		company_ui->SetVisibility(ESlateVisibility::Visible);
-		FInputModeUIOnly im;
-		SetInputMode(im);
-		bShowMouseCursor = true;
+		EnableUIControll();
+	}
+	else
+	{
+		company_ui = CreateWidget<URene_Company_Widget>(this, companyui_class);
+		if (!IsValid(company_ui))
+		{
+			LOGERRORF(TEXT("company_ui class is not valid"));
+			return;
+		}
+		company_ui->AddToViewport();
+		EnableUIControll();
 	}
 }
 
 void ARene_PlayerController::OnSeekerUI()
 {
+	//	CreateSeekerUI() -> OnSeekerUi() 통합
+	
 	if (!IsLocalPlayerController() || HasAuthority()) return;
-	if (IsValid(seeker_ui))
+	if (!IsValid(seekerui_class)) return;
+	if (!IsValid(seeker_ui))
+	{
+		seeker_ui = CreateWidget<URene_Seeker_Widget>(this, seekerui_class);
+		if (IsValid(seeker_ui))
+		{
+			seeker_ui->AddToViewport();
+			EnableUIControll();
+		}
+		else
+		{
+			LOGERRORF(TEXT("Seeker_UI is not valid"));
+			return;
+		}
+	}
+	else
 	{
 		seeker_ui->SetVisibility(ESlateVisibility::Visible);
-		FInputModeUIOnly im;
-		SetInputMode(im);
-		bShowMouseCursor = true;
+		EnableUIControll();
+	}
+}
+
+void ARene_PlayerController::SetWidgetCameraToInfo()
+{
+	AActor* CamLoc0 = nullptr;
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	{
+		if (It->ActorHasTag(FName("WidgetCamera00")))
+		{
+			CamLoc0 = *It;
+			break;
+		}
+	}
+
+	if (CamLoc0)
+	{
+		SetViewTargetWithBlend(CamLoc0, 0.2f);
+	}
+}
+
+void ARene_PlayerController::SetWidgetCameraToMeet()
+{
+	AActor* CamLoc1 = nullptr;
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	{
+		if (It->ActorHasTag(FName("WidgetCamera01")))
+		{
+			CamLoc1 = *It;
+			break;
+		}
+	}
+
+	if (CamLoc1)
+	{
+		SetViewTargetWithBlend(CamLoc1, 0.2f);
 	}
 }
 

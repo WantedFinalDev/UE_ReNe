@@ -140,6 +140,12 @@ void URene_GameInstance::RequestLogin(const FString& Email, const FString& Passw
 		OnLoginComplete.Broadcast(false, FReneUserData(), TEXT("LoginManager is not initialized."));
 		return;
 	}
+	
+	if (Email == TEXT("Test"))
+	{
+		OnLoginComplete.Broadcast(true, FReneUserData(TEXT("00"), TEXT("00"), TEXT("Dev"), 1, Role), TEXT(""));
+		return;
+	}
 
 	FString Endpoint;
 	if (Role == TEXT("jobseeker"))

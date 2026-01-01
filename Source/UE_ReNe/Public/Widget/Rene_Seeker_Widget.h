@@ -5,6 +5,7 @@
 #include "Interfaces/IHttpRequest.h"
 #include "Rene_Seeker_Widget.generated.h"
 
+class URene_DashBoardWidget;
 class URene_WebViewWidget;
 class ARene_PlayerController;
 class URene_ProfileWidget;
@@ -23,7 +24,6 @@ public:
 	virtual void NativeConstruct() override;
 
 
-
 private:
 	UFUNCTION()
 	void OnClickedClose();
@@ -33,6 +33,9 @@ private:
 	
 	UFUNCTION()
 	void OnClickedDash();
+	
+	UFUNCTION()
+	void OnClickedDashToMain();
 
 
 	/* Field */
@@ -44,16 +47,19 @@ public:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCanvasPanel> cv_Main;
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UCanvasPanel> cv_WebView;
+	TObjectPtr<UCanvasPanel> cv_Dash;
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> btn_Close;		//	UI Close
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UButton> btn_DashToMain;
+	
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<URene_ProfileWidget> WBP_ProfileUI;
 	
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<URene_WebViewWidget> WBP_WebViewUI;
+	TObjectPtr<URene_DashBoardWidget> WBP_DashBoardUI;
 	
 private:
 	UPROPERTY()
