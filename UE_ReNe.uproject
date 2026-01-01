@@ -50,7 +50,7 @@
 		},
 		{
 			"Name": "NullStaticMeshCleaner",
-			"Enabled": true
+			"Enabled": false
 		},
 		{
 			"Name": "GPULightmass",
