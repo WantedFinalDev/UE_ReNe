@@ -77,6 +77,9 @@ public:
 	TObjectPtr<UButton> btn_BackToMain;
 	
 	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UButton> btn_Back;
+	
+	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UScrollBox> scr_SessionList;
 	
 	UPROPERTY(meta=(BindWidget))
@@ -88,10 +91,7 @@ public:
 	TSubclassOf<class URene_SessionInfoWidget> session_info_widget;
 	
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<URene_ProfileWidget> WBP_ProfileUI_main;
-	
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<URene_ProfileWidget> WBP_ProfileUI_dash;
+	TObjectPtr<URene_ProfileWidget> WBP_ProfileUI;
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<URene_DashBoardWidget> WBP_DashBoardUI;
