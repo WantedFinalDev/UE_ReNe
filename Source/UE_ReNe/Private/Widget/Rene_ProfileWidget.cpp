@@ -1,6 +1,8 @@
 #include "Widget/Rene_ProfileWidget.h"
 
+#include "UE_ReNe.h"
 #include "Components/Button.h"
+#include "Components/TextBlock.h"
 #include "Player/Rene_PlayerController.h"
 #include "Network/Rene_FileUploader.h"
 #include "Global/Rene_GameInstance.h" // GameInstance 헤더 추가
@@ -9,9 +11,11 @@ void URene_ProfileWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	
-	btn_Upload->OnClicked.AddDynamic(this, &URene_ProfileWidget::OnClickUpload);
 	btn_DashBoard->OnClicked.AddDynamic(this, &URene_ProfileWidget::OnClickDashBoard);
 	btn_Return->OnClicked.AddDynamic(this, &URene_ProfileWidget::OnClickReturn);
+	btn_Upload->OnClicked.AddDynamic(this, &URene_ProfileWidget::OnClickUpload);
+	
+	Cast<URene_GameInstance>(GetGameInstance())->OnLoginComplete.AddDynamic(this, &URene_ProfileWidget::SetProfileName);
 }
 
 void URene_ProfileWidget::OnClickUpload()
@@ -57,4 +61,16 @@ void URene_ProfileWidget::OnClickDashBoard()
 void URene_ProfileWidget::OnClickReturn()
 {
 	OnClickReturnDynamic.Broadcast();
+}
+
+void URene_ProfileWidget::SetProfileName(bool bSuccess, const FReneUserData& UserData, FString ErrorMessage)
+{
+	if (bSuccess)
+		txt_UserName->SetText(FText::FromString(UserData.Name));
+	else
+	{
+		LOGERRORF(TEXT("%s"), *ErrorMessage);
+		URene_GameInstance* gi = Cast<URene_GameInstance>(GetGameInstance());
+		txt_UserName->SetText(FText::FromString(gi->GetCachedUserData().Name));
+	}
 }

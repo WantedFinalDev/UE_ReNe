@@ -16,7 +16,7 @@ void URene_StartWidget::NativeConstruct()
 	
 	btn_Enter->OnClicked.AddDynamic(this, &URene_StartWidget::OnClickedEnter);
 	btn_Exit->OnClicked.AddDynamic(this, &URene_StartWidget::OnClickedExit);
-	WBP_LobbyUI->WBP_ProfileUI_main->OnClickReturnDynamic.AddDynamic(this, &URene_StartWidget::OnClickedReturn);
+	WBP_LobbyUI->WBP_ProfileUI->OnClickReturnDynamic.AddDynamic(this, &URene_StartWidget::OnClickedReturn);
 
 	// Bind to GameInstance login delegate
 	if (URene_GameInstance* gi = Cast<URene_GameInstance>(GetGameInstance()))
@@ -27,6 +27,26 @@ void URene_StartWidget::NativeConstruct()
 
 void URene_StartWidget::OnClickedEnter()
 {
+	if (etxt_ID->GetText().ToString() == TEXT("Test"))
+	{
+		TObjectPtr<URene_GameInstance> gi = Cast<URene_GameInstance>(GetGameInstance());
+		if (IsValidChecked(gi))
+		{
+			FString userRole = "jobseeker";
+			if (cbox_Company->IsChecked())
+			{
+				userRole = "company";
+			}
+		
+			// Disable button to prevent multiple clicks
+			btn_Enter->SetIsEnabled(false);
+			txt_Error->SetText(FText::FromString(TEXT("Logging in...")));
+
+			// Request Login via GameInstance
+			gi->RequestLogin(etxt_ID->GetText().ToString(), etxt_PW->GetText().ToString(), userRole);
+		}
+	}
+	
 	if (cbox_Company->IsChecked() && cbox_Seeker->IsChecked())
 	{		
 		txt_Error->SetText(FText::FromString(TEXT("Please select only one role.")));
@@ -98,3 +118,5 @@ void URene_StartWidget::OnClickedReturn()
 {
 	sw_Switcher->SetActiveWidgetIndex(0);
 }
+
+

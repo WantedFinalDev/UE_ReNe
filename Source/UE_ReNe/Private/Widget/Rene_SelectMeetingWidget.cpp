@@ -52,6 +52,7 @@ void URene_SelectMeetingWidget::SetActualAIInterviewer(ARene_AI_Interviewer* InA
 void URene_SelectMeetingWidget::OnClickedBackButton()
 {
 	OnClickedBack.Broadcast();
+	
 }
 
 void URene_SelectMeetingWidget::OnStartPrivateInterviewClicked()

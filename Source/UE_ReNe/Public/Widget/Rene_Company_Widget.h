@@ -23,13 +23,10 @@ public:
 	
 	
 	
-	
 
 private:
 	UFUNCTION()
 	void OnClickedClose();
-	UFUNCTION()
-	void OnClickedList();
 	UFUNCTION()
 	void OnClickedMainToDash();
 	UFUNCTION()
@@ -37,8 +34,8 @@ private:
 	UFUNCTION()
 	void OnClickedReturn();
 	
-	void PopulateUserList();
-	void ClearUserList();
+	// void PopulateUserList();
+	// void ClearUserList();
 	
 	
 	
@@ -57,17 +54,14 @@ public:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> btn_HostUIClose;
 	
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UButton> btn_UserList;
-	
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UScrollBox> scr_UserList;
+	// UPROPERTY(meta=(BindWidget))
+	// TObjectPtr<UButton> btn_UserList;
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> btn_DashToMain;
 	
-	UPROPERTY(EditAnywhere, Category=UI)
-	TSubclassOf<class URene_UserListImplementWidget> ImplementWidget;
+	// UPROPERTY(EditAnywhere, Category=UI)
+	// TSubclassOf<class URene_UserListImplementWidget> ImplementWidget;
 
 	
 	//	Private Room : Placed TargetPoint Actor

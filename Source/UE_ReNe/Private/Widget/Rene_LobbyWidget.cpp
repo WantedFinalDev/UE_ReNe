@@ -12,17 +12,20 @@ void URene_LobbyWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	
-	btn_Find->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedFind);
 	//	btn_CloseList->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedCloseList);
-	btn_Create->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedCreate);
 	URene_GameInstance* GI = Cast<URene_GameInstance>(GetGameInstance());
 	GI->OnFindReneSessionComplete.AddUObject(this, &URene_LobbyWidget::OnFindComplete);
+	
+	btn_Find->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedFind);
+	btn_Create->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedCreate);
 	btn_CreateSession->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedCreateSession);
 	btn_BackToMain->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedBack);
+	btn_Back->OnClicked.AddDynamic(this, &URene_LobbyWidget::OnClickedReturnMain);
 	
 	//	WBP_ProfileWidget->OnClickDelDoc.AddUObject(this, &URene_LobbyWidget::OnClickedDoc);
-	WBP_ProfileUI_main->OnClickDashDynamic.AddDynamic(this, &URene_LobbyWidget::OnClickedDash);
-	WBP_ProfileUI_dash->OnClickReturnDynamic.AddDynamic(this, &URene_LobbyWidget::OnClickedReturnMain);
+	WBP_ProfileUI->OnClickDashDynamic.AddDynamic(this, &URene_LobbyWidget::OnClickedDash);
+	WBP_ProfileUI->OnClickReturnDynamic.AddDynamic(this, &URene_LobbyWidget::OnClickedReturnMain);
+	
 }
 
 void URene_LobbyWidget::OnFindComplete(int idx, FString str)
