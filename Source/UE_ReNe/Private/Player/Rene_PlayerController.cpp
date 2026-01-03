@@ -22,6 +22,8 @@
 #include "EngineUtils.h"
 #include "AI/Rene_AI_Interviewer.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h" // AI 기능 사용을 위한 핵심 헤더
+#include "Components/WidgetSwitcher.h"
+#include "Widget/Rene_HUD.h"
 #include "Widget/Rene_InterviewWidget.h" // 헤더 추가
 #include "Widget/Rene_InterviewResultPopupWidget.h" // 헤더 추가
 #include "Widget/Rene_ProfileWidget.h"
@@ -48,15 +50,12 @@ ARene_PlayerController::ARene_PlayerController()
 	if (tmp_imc.Succeeded())
 		imc_Common = tmp_imc.Object;
 	
-	static ConstructorHelpers::FClassFinder<UUserWidget> tmp_info(TEXT("/Game/UI/WBP_Infodesk.WBP_Infodesk_C"));
-	if (tmp_info.Succeeded())
-		wbp_infodesk = tmp_info.Class;
-	
 	LocalVoiceRecorder = CreateDefaultSubobject<URene_LocalVoiceRecorder>(TEXT("LocalVoiceRecorder")); // Create the new component
 	FileUploader = CreateDefaultSubobject<URene_FileUploader>(TEXT("FileUploaderComponent"));
 
 	bIsInAIInterview = false; // Initialize the flag
 	bIsAISpeaking = false;
+	bIsAutoMoving = false;
 }
 
 void ARene_PlayerController::BeginPlay()
@@ -139,7 +138,7 @@ void ARene_PlayerController::SetupInputComponent()
 			
 			EIC->BindAction(PushToTalkAction, ETriggerEvent::Started, this, &ARene_PlayerController::OnStartTalking);
 			EIC->BindAction(PushToTalkAction, ETriggerEvent::Completed, this, &ARene_PlayerController::OnStopTalking);
-			EIC->BindAction(ia_Menu, ETriggerEvent::Triggered, this, &ARene_PlayerController::OnToggleMenu);
+			EIC->BindAction(ia_Menu, ETriggerEvent::Triggered, this, &ARene_PlayerController::OnToggleHomeMenu);
 			
 			
 		}
@@ -192,7 +191,7 @@ void ARene_PlayerController::ClientRPC_CreateSeekerUI_Implementation()
 
 void ARene_PlayerController::ClientRPC_CreateInfodeskUI_Implementation()
 {
-	CreateInfodeskUI();
+	ShowInfodeskUI();
 }
 
 void ARene_PlayerController::OnToggleMenu()
@@ -207,15 +206,23 @@ void ARene_PlayerController::OnToggleMenu()
 	}
 }
 
-void ARene_PlayerController::CreateInfodeskUI()
+void ARene_PlayerController::ShowInfodeskUI()
 {
-	if (!IsValid(wbp_infodesk))
+	// 기존 위젯 정리 (SelectMeeting 문제 방지)
+	if (IsValid(infodesk_ui))
+	{
+		infodesk_ui->RemoveFromParent();
+		infodesk_ui = nullptr;
+	}
+
+	if (!IsValid(info_widget))
 	{
 		LOGERRORF(TEXT("wbp_infodesk class is not valid"));
 		return;
 	}
 
-	infodesk_ui = CreateWidget(this, wbp_infodesk);
+	// 항상 새로 생성하여 깨끗한 상태 보장
+	infodesk_ui = CreateWidget(this, info_widget);
 	if (!IsValid(infodesk_ui))
 	{
 		LOGERRORF(TEXT("Failed to create infodesk widget"));
@@ -224,7 +231,42 @@ void ARene_PlayerController::CreateInfodeskUI()
 
 	infodesk_ui->AddToViewport();
 	EnableUIControll();
-	SetWidgetCameraToInfo();
+}
+
+void ARene_PlayerController::ShowHUD()
+{
+	FString current_map = GetWorld()->GetMapName();
+	if (current_map.Contains(TEXT("StartMap"))) return;
+	
+	if (IsValid(HUD_ui))
+	{
+		HUD_ui->AddToViewport();
+		HUD_ui->SetVisibility(ESlateVisibility::Visible);
+		HUD_ui->sw_HUD->SetActiveWidgetIndex(0);
+		DisableUIControll();
+	}
+	
+	else
+	{
+		if (!IsValid(HUD_Widget)) return;
+		
+		HUD_ui = CreateWidget<URene_HUD>(this, HUD_Widget);
+		if (!IsValid(HUD_ui))
+		{
+			LOGERRORF(TEXT("HUD UI has Created BUT is not valid"));
+			return;
+		}
+		HUD_ui->AddToViewport();
+		HUD_ui->SetVisibility(ESlateVisibility::Visible);
+		HUD_ui->sw_HUD->SetActiveWidgetIndex(0);
+		DisableUIControll();
+	}
+}
+
+void ARene_PlayerController::OnToggleHomeMenu()
+{
+	if (!IsValid(HUD_ui)) return;
+	HUD_ui->OnClickedHome();
 }
 
 void ARene_PlayerController::OnCompanyUI()
@@ -446,6 +488,9 @@ void ARene_PlayerController::ServerRPC_RequestMoveAndSit_Implementation(FTransfo
 {
 	if (!HasAuthority()) return;
 
+	// 자동 이동 시작
+	SetAutoMoving(true);
+
 	if (AUE_ReNeCharacter* ControlledCharacter = Cast<AUE_ReNeCharacter>(GetPawn()))
 	{
 		ControlledCharacter->SetTargetSitTransform(TargetTransform);
@@ -511,6 +556,7 @@ void ARene_PlayerController::EndInterview()
 		SetIsInAIInterview(false);
 		CloseReportAndWebView();
 	}
+	ShowHUD();
 }
 
 void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
@@ -744,4 +790,10 @@ void ARene_PlayerController::ServerRPC_DeclinePrivateInterview_Implementation()
 void ARene_PlayerController::ClientRPC_InterviewRequestDeclined_Implementation()
 {
 	UE_LOG(LogVoicePC, Log, TEXT("ClientRPC_InterviewRequestDeclined: Your interview request was declined."));
+}
+
+void ARene_PlayerController::SetAutoMoving(bool bNewAutoMoving)
+{
+	bIsAutoMoving = bNewAutoMoving;
+	UE_LOG(LogVoicePC, Log, TEXT("SetAutoMoving: %s"), bNewAutoMoving ? TEXT("True") : TEXT("False"));
 }

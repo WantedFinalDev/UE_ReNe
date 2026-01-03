@@ -8,6 +8,8 @@
 #include "Rene_SelectMeetingWidget.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSelectMeetingOnClickedBack);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInterviewClicked);
+
 
 class ARene_AI_Interviewer; // Forward declaration for the actual AI interviewer actor
 
@@ -70,4 +72,9 @@ private:
 	
 	UPROPERTY(BlueprintAssignable)
 	FSelectMeetingOnClickedBack OnClickedBack;
+	
+	UPROPERTY(BlueprintAssignable)
+	FInterviewClicked OnClickedInterview;
+	
+	
 };

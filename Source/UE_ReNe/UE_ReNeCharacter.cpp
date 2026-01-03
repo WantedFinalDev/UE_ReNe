@@ -189,6 +189,12 @@ void AUE_ReNeCharacter::Tick(float DeltaTime)
 		{
 			bIsMovingToSit = false; // 이동 중 상태 해제
 
+			// PlayerController의 자동 이동 플래그 해제
+			if (ARene_PlayerController* PC = Cast<ARene_PlayerController>(Controller))
+			{
+				PC->SetAutoMoving(false);
+			}
+
 			// 서버에서 '앉음' 상태로 변경
 			Server_SetIsSitting(true);
 		}
