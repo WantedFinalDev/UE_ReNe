@@ -16,18 +16,24 @@ void URene_SelectMeetingWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// 버튼 위젯이 유효한지 확인하고 클릭 이벤트를 바인딩합니다.
+	// 중복 바인딩 방지: 기존 바인딩 제거 후 재바인딩
 	if (btn_StartPrivateInterview)
 	{
+		btn_StartPrivateInterview->OnClicked.RemoveDynamic(this, &URene_SelectMeetingWidget::OnStartPrivateInterviewClicked);
 		btn_StartPrivateInterview->OnClicked.AddDynamic(this, &URene_SelectMeetingWidget::OnStartPrivateInterviewClicked);
 	}
 
 	if (btn_StartAIInterview)
 	{
+		btn_StartAIInterview->OnClicked.RemoveDynamic(this, &URene_SelectMeetingWidget::OnStartAIInterviewClicked);
 		btn_StartAIInterview->OnClicked.AddDynamic(this, &URene_SelectMeetingWidget::OnStartAIInterviewClicked);
 	}
-	
-	btn_Back->OnClicked.AddDynamic(this, &URene_SelectMeetingWidget::OnClickedBackButton);
+
+	if (btn_Back)
+	{
+		btn_Back->OnClicked.RemoveDynamic(this, &URene_SelectMeetingWidget::OnClickedBackButton);
+		btn_Back->OnClicked.AddDynamic(this, &URene_SelectMeetingWidget::OnClickedBackButton);
+	}
 }
 
 void URene_SelectMeetingWidget::SetTargetActors(AActor* InPrivateInterviewTarget, AActor* InAIInterviewTarget)

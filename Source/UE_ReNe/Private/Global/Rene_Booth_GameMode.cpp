@@ -33,7 +33,7 @@ void ARene_Booth_GameMode::PostLogin(APlayerController* NewPlayer)
     if (ARene_PlayerController* pc = Cast<ARene_PlayerController>(NewPlayer))
     {
         if (pc->IsLocalPlayerController())
-            pc->CreateInfodeskUI();
+            pc->ShowInfodeskUI();
         else
             pc->ClientRPC_CreateInfodeskUI();        
     }

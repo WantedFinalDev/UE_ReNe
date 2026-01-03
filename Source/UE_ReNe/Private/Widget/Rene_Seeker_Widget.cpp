@@ -24,6 +24,7 @@ void URene_Seeker_Widget::OnClickedClose()
 	if (!btn_Close) return;
 	SetVisibility(ESlateVisibility::Collapsed);
 	pc->DisableUIControll();
+	pc->ShowHUD();
 }
 
 void URene_Seeker_Widget::OnClickedReturn()

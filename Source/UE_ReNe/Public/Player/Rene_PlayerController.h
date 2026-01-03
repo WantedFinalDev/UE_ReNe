@@ -6,6 +6,7 @@
 #include "UE_ReNePlayerController.h"
 #include "Rene_PlayerController.generated.h"
 
+class URene_HUD;
 class URene_Company_Widget;
 class URene_Seeker_Widget;
 class UInputMappingContext;
@@ -21,6 +22,7 @@ class UE_RENE_API ARene_PlayerController : public AUE_ReNePlayerController
 {
 	GENERATED_BODY()
 
+	/* Method */
 public:
 	ARene_PlayerController();
 
@@ -38,9 +40,19 @@ public:
 
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_CreateInfodeskUI();
-
+	
+	UFUNCTION(BlueprintCallable)
 	void OnToggleMenu();
-	void CreateInfodeskUI();
+	
+	UFUNCTION(BlueprintCallable)
+	void ShowInfodeskUI();
+	
+	UFUNCTION(BlueprintCallable)
+	void ShowHUD();
+	
+	UFUNCTION()
+	void OnToggleHomeMenu();
+	
 	void OnCompanyUI();
 	void OnSeekerUI();
 	
@@ -122,10 +134,18 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_InterviewRequestDeclined();
 
+	
+	
+private:
+	
+	
+	
+	
+	/* Field */
+public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<URene_FileUploader> FileUploader;
 
-protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<URene_Company_Widget> companyui_class;
 
@@ -133,8 +153,11 @@ protected:
 	TSubclassOf<URene_Seeker_Widget> seekerui_class;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSubclassOf<UUserWidget> wbp_infodesk;
-
+	TSubclassOf<UUserWidget> info_widget;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<URene_HUD> HUD_Widget;
+	
 	UPROPERTY()
 	TObjectPtr<URene_Company_Widget> company_ui;
 
@@ -143,7 +166,10 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<UUserWidget> infodesk_ui;
-
+	
+	UPROPERTY()
+	TObjectPtr<URene_HUD> HUD_ui;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> imc_Common;
 
@@ -185,11 +211,17 @@ protected:
 	TObjectPtr<ARene_PlayerController> PendingRequestorPC;
 
 	bool bIsAutoMoving;
-
-public:
+	
 	// --- Auto Movement State ---
 	UFUNCTION(BlueprintPure, Category = "Movement")
 	bool IsAutoMoving() const { return bIsAutoMoving; }
 
 	void SetAutoMoving(bool bNewAutoMoving);
+	
+	
+private:
+	
+	
+	
+	
 };
