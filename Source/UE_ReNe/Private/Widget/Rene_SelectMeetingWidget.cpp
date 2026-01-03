@@ -65,6 +65,11 @@ void URene_SelectMeetingWidget::OnStartPrivateInterviewClicked()
 	// 내부 변수가 유효한지 확인
 	if (PlayerController && PrivateInterviewTargetActor)
 	{
+		// To Infodesk UI
+		OnClickedInterview.Broadcast();
+		
+		PlayerController->ServerRPC_TeleportToLocation(FVector(100,510,119));
+		
 		// 1. Move and Sit (Always happens)
 		PlayerController->ServerRPC_RequestMoveAndSit(PrivateInterviewTargetActor->GetActorTransform());
 		LOGWARNF(TEXT("Requesting move and sit to: %s"), *PrivateInterviewTargetActor->GetActorTransform().ToString());
@@ -84,7 +89,7 @@ void URene_SelectMeetingWidget::OnStartPrivateInterviewClicked()
 			// I want to request an interview with the Host.
 			PlayerController->ServerRPC_RequestPrivateInterview();
 		}
-
+		
 		this->RemoveFromParent();
 	}
 }
@@ -146,9 +151,12 @@ void URene_SelectMeetingWidget::OnStartAIInterviewClicked()
 	Request->ProcessRequest();
 
 	UE_LOG(LogTemp, Log, TEXT("Sent AI Interview Start request to: %s"), *AIInterviewStartURL);
+	
+	//	To Infodesk UI
+	OnClickedInterview.Broadcast();
 
 	// The existing move and sit logic can remain here, as the AI's initial greeting will play after the server response.
-	PlayerController->ServerRPC_TeleportToLocation((PlayerController->GetPawn()->GetActorLocation())+FVector(0,0,440));
+	PlayerController->ServerRPC_TeleportToLocation(FVector(100,510,558));
 	PlayerController->ServerRPC_RequestMoveAndSit(AIInterviewTargetActor->GetActorTransform());
 	LOGWARNF(TEXT("Requesting move and sit to: %s"), *AIInterviewTargetActor->GetActorLocation().ToString());
 	this->RemoveFromParent();

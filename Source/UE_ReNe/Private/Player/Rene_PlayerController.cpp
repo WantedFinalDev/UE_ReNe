@@ -57,6 +57,7 @@ ARene_PlayerController::ARene_PlayerController()
 
 	bIsInAIInterview = false; // Initialize the flag
 	bIsAISpeaking = false;
+	bIsAutoMoving = false;
 }
 
 void ARene_PlayerController::BeginPlay()
@@ -224,7 +225,7 @@ void ARene_PlayerController::CreateInfodeskUI()
 
 	infodesk_ui->AddToViewport();
 	EnableUIControll();
-	SetWidgetCameraToInfo();
+	// SetWidgetCameraToInfo();
 }
 
 void ARene_PlayerController::OnCompanyUI()
@@ -445,6 +446,9 @@ void ARene_PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void ARene_PlayerController::ServerRPC_RequestMoveAndSit_Implementation(FTransform TargetTransform)
 {
 	if (!HasAuthority()) return;
+
+	// 자동 이동 시작
+	SetAutoMoving(true);
 
 	if (AUE_ReNeCharacter* ControlledCharacter = Cast<AUE_ReNeCharacter>(GetPawn()))
 	{
@@ -744,4 +748,10 @@ void ARene_PlayerController::ServerRPC_DeclinePrivateInterview_Implementation()
 void ARene_PlayerController::ClientRPC_InterviewRequestDeclined_Implementation()
 {
 	UE_LOG(LogVoicePC, Log, TEXT("ClientRPC_InterviewRequestDeclined: Your interview request was declined."));
+}
+
+void ARene_PlayerController::SetAutoMoving(bool bNewAutoMoving)
+{
+	bIsAutoMoving = bNewAutoMoving;
+	UE_LOG(LogVoicePC, Log, TEXT("SetAutoMoving: %s"), bNewAutoMoving ? TEXT("True") : TEXT("False"));
 }

@@ -183,4 +183,13 @@ protected:
 	// --- P2P Interview ---
 	UPROPERTY()
 	TObjectPtr<ARene_PlayerController> PendingRequestorPC;
+
+	bool bIsAutoMoving;
+
+public:
+	// --- Auto Movement State ---
+	UFUNCTION(BlueprintPure, Category = "Movement")
+	bool IsAutoMoving() const { return bIsAutoMoving; }
+
+	void SetAutoMoving(bool bNewAutoMoving);
 };
