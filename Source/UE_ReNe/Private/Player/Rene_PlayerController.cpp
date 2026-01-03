@@ -235,6 +235,8 @@ void ARene_PlayerController::ShowInfodeskUI()
 
 void ARene_PlayerController::ShowHUD()
 {
+	if (!IsLocalController()) return;
+
 	FString current_map = GetWorld()->GetMapName();
 	if (current_map.Contains(TEXT("StartMap"))) return;
 	
