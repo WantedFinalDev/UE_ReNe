@@ -16,7 +16,13 @@
 void URene_Company_Widget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	
+
+	// 중복 바인딩 방지: 기존 바인딩 제거 후 재바인딩
+	btn_HostUIClose->OnClicked.RemoveDynamic(this, &URene_Company_Widget::OnClickedClose);
+	btn_DashToMain->OnClicked.RemoveDynamic(this, &URene_Company_Widget::OnClickedDashToMain);
+	WBP_ProfileUI->OnClickReturnDynamic.RemoveDynamic(this, &URene_Company_Widget::OnClickedReturn);
+	WBP_ProfileUI->OnClickDashDynamic.RemoveDynamic(this, &URene_Company_Widget::OnClickedMainToDash);
+
 	btn_HostUIClose->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedClose);
 	btn_DashToMain->OnClicked.AddDynamic(this, &URene_Company_Widget::OnClickedDashToMain);
 	WBP_ProfileUI->OnClickReturnDynamic.AddDynamic(this, &URene_Company_Widget::OnClickedReturn);
@@ -33,6 +39,7 @@ void URene_Company_Widget::OnClickedClose()
 		return;
 	}
 	pc->DisableUIControll();
+	pc->ShowHUD();
 }
 
 void URene_Company_Widget::OnClickedMainToDash()
