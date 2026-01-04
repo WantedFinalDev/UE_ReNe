@@ -16,15 +16,23 @@ void URene_SelectMeetingWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// 버튼 위젯이 유효한지 확인하고 클릭 이벤트를 바인딩합니다.
+	// 중복 바인딩 방지: 기존 바인딩 제거 후 재바인딩
 	if (btn_StartPrivateInterview)
 	{
+		btn_StartPrivateInterview->OnClicked.RemoveDynamic(this, &URene_SelectMeetingWidget::OnStartPrivateInterviewClicked);
 		btn_StartPrivateInterview->OnClicked.AddDynamic(this, &URene_SelectMeetingWidget::OnStartPrivateInterviewClicked);
 	}
 
 	if (btn_StartAIInterview)
 	{
+		btn_StartAIInterview->OnClicked.RemoveDynamic(this, &URene_SelectMeetingWidget::OnStartAIInterviewClicked);
 		btn_StartAIInterview->OnClicked.AddDynamic(this, &URene_SelectMeetingWidget::OnStartAIInterviewClicked);
+	}
+
+	if (btn_Back)
+	{
+		btn_Back->OnClicked.RemoveDynamic(this, &URene_SelectMeetingWidget::OnClickedBackButton);
+		btn_Back->OnClicked.AddDynamic(this, &URene_SelectMeetingWidget::OnClickedBackButton);
 	}
 }
 
@@ -47,12 +55,27 @@ void URene_SelectMeetingWidget::SetActualAIInterviewer(ARene_AI_Interviewer* InA
 	}
 }
 
+void URene_SelectMeetingWidget::OnClickedBackButton()
+{
+	OnClickedBack.Broadcast();
+	if (IsInViewport())
+	{
+		RemoveFromParent();
+		Cast<ARene_PlayerController>(GetOwningPlayer())->DisableUIControll();
+	}
+}
+
 void URene_SelectMeetingWidget::OnStartPrivateInterviewClicked()
 {
 	ARene_PlayerController* PlayerController = Cast<ARene_PlayerController>(GetOwningPlayer());
 	// 내부 변수가 유효한지 확인
 	if (PlayerController && PrivateInterviewTargetActor)
 	{
+		// To Infodesk UI
+		OnClickedInterview.Broadcast();
+		
+		PlayerController->ServerRPC_TeleportToLocation(FVector(100,510,119));
+		
 		// 1. Move and Sit (Always happens)
 		PlayerController->ServerRPC_RequestMoveAndSit(PrivateInterviewTargetActor->GetActorTransform());
 		LOGWARNF(TEXT("Requesting move and sit to: %s"), *PrivateInterviewTargetActor->GetActorTransform().ToString());
@@ -72,7 +95,7 @@ void URene_SelectMeetingWidget::OnStartPrivateInterviewClicked()
 			// I want to request an interview with the Host.
 			PlayerController->ServerRPC_RequestPrivateInterview();
 		}
-
+		
 		this->RemoveFromParent();
 	}
 }
@@ -134,9 +157,12 @@ void URene_SelectMeetingWidget::OnStartAIInterviewClicked()
 	Request->ProcessRequest();
 
 	UE_LOG(LogTemp, Log, TEXT("Sent AI Interview Start request to: %s"), *AIInterviewStartURL);
+	
+	//	To Infodesk UI
+	OnClickedInterview.Broadcast();
 
 	// The existing move and sit logic can remain here, as the AI's initial greeting will play after the server response.
-	PlayerController->ServerRPC_TeleportToLocation((PlayerController->GetPawn()->GetActorLocation())+FVector(0,0,440));
+	PlayerController->ServerRPC_TeleportToLocation(FVector(100,510,558));
 	PlayerController->ServerRPC_RequestMoveAndSit(AIInterviewTargetActor->GetActorTransform());
 	LOGWARNF(TEXT("Requesting move and sit to: %s"), *AIInterviewTargetActor->GetActorLocation().ToString());
 	this->RemoveFromParent();

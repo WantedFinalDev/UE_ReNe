@@ -12,6 +12,8 @@ class UE_RENE_API URene_WebBrowser : public UWebBrowser
 	/* Method */
 public:
 	// LoadURL 함수는 URene_WebViewWidget으로 이동됩니다.
+	UFUNCTION(BlueprintCallable, Category = "URL")
+	void SetURL(const FString& url);
 	
 private:
 	

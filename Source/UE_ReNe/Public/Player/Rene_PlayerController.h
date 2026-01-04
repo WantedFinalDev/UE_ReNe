@@ -5,6 +5,7 @@
 #include "DesktopPlatformModule.h"
 #include "Rene_PlayerController.generated.h"
 
+class URene_HUD;
 class URene_Company_Widget;
 class URene_Seeker_Widget;
 class UInputMappingContext;
@@ -20,6 +21,7 @@ class UE_RENE_API ARene_PlayerController : public AUE_ReNePlayerController
 {
 	GENERATED_BODY()
 
+	/* Method */
 public:
 	ARene_PlayerController();
 
@@ -31,19 +33,41 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "File")
 	bool ShowFileDialog(const FString& DialogTitle, const FString& DefaultPath, const FString& FileTypes, FString& OutFilePath);
 
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_CreateSeekerUI();
 	UFUNCTION(Client, Reliable)
-	void ClientRPC_CreateBoothUI();
+	void ClientRPC_CreateSeekerUI();
 
+	UFUNCTION(Client, Reliable)
+	void ClientRPC_CreateInfodeskUI();
+	
+	UFUNCTION(BlueprintCallable)
 	void OnToggleMenu();
-	void CreateCompanyUI();
-	void CreateSeekerUI();
+	
+	UFUNCTION(BlueprintCallable)
+	void ShowInfodeskUI();
+	
+	UFUNCTION(BlueprintCallable)
+	void ShowHUD();
+	
+	UFUNCTION()
+	void OnToggleHomeMenu();
+	
 	void OnCompanyUI();
 	void OnSeekerUI();
+	
+	//	Widget Camera Moving
+	UFUNCTION(BlueprintCallable)
+	void SetWidgetCameraToInfo();
+	UFUNCTION(BlueprintCallable)
+	void SetWidgetCameraToMeet();
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_SendUserData(struct FReneUserData data);
 
+	UFUNCTION(BlueprintCallable)
 	void EnableUIControll();
+	UFUNCTION(BlueprintCallable)
 	void DisableUIControll();
 
 	TObjectPtr<class UUserWidget> GetUserWidget();
@@ -116,22 +140,42 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_InterviewRequestDeclined();
 
+	
+	
+private:
+	
+	
+	
+	
+	/* Field */
+public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<URene_FileUploader> FileUploader;
 
-protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<URene_Company_Widget> companyui_class;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<URene_Seeker_Widget> seekerui_class;
-
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UUserWidget> info_widget;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<URene_HUD> HUD_Widget;
+	
 	UPROPERTY()
 	TObjectPtr<URene_Company_Widget> company_ui;
 
 	UPROPERTY()
 	TObjectPtr<URene_Seeker_Widget> seeker_ui;
-
+	
+	UPROPERTY()
+	TObjectPtr<UUserWidget> infodesk_ui;
+	
+	UPROPERTY()
+	TObjectPtr<URene_HUD> HUD_ui;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> imc_Common;
 
@@ -171,4 +215,19 @@ protected:
 	// --- P2P Interview ---
 	UPROPERTY()
 	TObjectPtr<ARene_PlayerController> PendingRequestorPC;
+
+	bool bIsAutoMoving;
+	
+	// --- Auto Movement State ---
+	UFUNCTION(BlueprintPure, Category = "Movement")
+	bool IsAutoMoving() const { return bIsAutoMoving; }
+
+	void SetAutoMoving(bool bNewAutoMoving);
+	
+	
+private:
+	
+	
+	
+	
 };

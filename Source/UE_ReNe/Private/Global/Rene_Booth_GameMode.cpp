@@ -33,17 +33,16 @@ void ARene_Booth_GameMode::PostLogin(APlayerController* NewPlayer)
     if (ARene_PlayerController* pc = Cast<ARene_PlayerController>(NewPlayer))
     {
         if (pc->IsLocalPlayerController())
-            pc->CreateCompanyUI();
+            pc->ShowInfodeskUI();
         else
-            pc->ClientRPC_CreateBoothUI();
+            pc->ClientRPC_CreateInfodeskUI();        
     }
     
     //	UI 통폐합
     //	TODO : 클라이언트의 Voice 관련 함수를 GM에서 설정중이였음. 수정필요.
     // Establish 는 P2P 면접시 면접관과 구직자만의 음성채널 분리목적, 별도 로직 구현 필요.
     //  모든 입장Player에 대해 MIC 켜줘야하므로 PublicVoice() 호출.
-    StartPublicVoiceChat(Cast<ARene_PlayerController>(NewPlayer));                    
-    
+    StartPublicVoiceChat(Cast<ARene_PlayerController>(NewPlayer));                 
 }
 
 void ARene_Booth_GameMode::StartOneToOneVoiceChat(APlayerController* PlayerA, APlayerController* PlayerB)

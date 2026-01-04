@@ -1,7 +1,9 @@
 #include "Widget/Rene_Seeker_Widget.h"
 #include "UE_ReNe.h"
 #include "Components/Button.h"
+#include "Components/TextBlock.h"
 #include "Components/WidgetSwitcher.h"
+#include "Global/Rene_GameInstance.h"
 #include "Player/Rene_PlayerController.h"
 #include "Widget/Rene_ProfileWidget.h"
 
@@ -11,6 +13,7 @@ void URene_Seeker_Widget::NativeConstruct()
 	Super::NativeConstruct();
 	pc = Cast<ARene_PlayerController>(GetWorld()->GetFirstPlayerController());
 	btn_Close->OnClicked.AddDynamic(this, &URene_Seeker_Widget::OnClickedClose);
+	btn_DashToMain->OnClicked.AddDynamic(this, &URene_Seeker_Widget::OnClickedDashToMain);
 	WBP_ProfileUI->OnClickReturnDynamic.AddDynamic(this, &URene_Seeker_Widget::OnClickedReturn);
 	WBP_ProfileUI->OnClickDashDynamic.AddDynamic(this, &URene_Seeker_Widget::OnClickedDash);
 }
@@ -21,6 +24,7 @@ void URene_Seeker_Widget::OnClickedClose()
 	if (!btn_Close) return;
 	SetVisibility(ESlateVisibility::Collapsed);
 	pc->DisableUIControll();
+	pc->ShowHUD();
 }
 
 void URene_Seeker_Widget::OnClickedReturn()
@@ -38,4 +42,9 @@ void URene_Seeker_Widget::OnClickedDash()
 {
 	sw_Main->SetActiveWidgetIndex(1);
 	//	Set Seeker Web page URL
+}
+
+void URene_Seeker_Widget::OnClickedDashToMain()
+{
+	sw_Main->SetActiveWidgetIndex(0);
 }

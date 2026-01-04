@@ -7,6 +7,10 @@
 #include "Interfaces/IHttpResponse.h" // Required for FHttpResponsePtr
 #include "Rene_SelectMeetingWidget.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSelectMeetingOnClickedBack);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInterviewClicked);
+
+
 class ARene_AI_Interviewer; // Forward declaration for the actual AI interviewer actor
 
 /**
@@ -25,6 +29,9 @@ public:
 	// 레벨 블루프린트에서 호출할 함수 (실제 AI 면접관 액터)
 	UFUNCTION(BlueprintCallable)
 	void SetActualAIInterviewer(ARene_AI_Interviewer* InAIInterviewer);
+	
+	UFUNCTION(BlueprintCallable)
+	void OnClickedBackButton();
 
 protected:
 	virtual void NativeConstruct() override;
@@ -47,6 +54,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> btn_StartAIInterview;
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> btn_Back;
 
 private:
 	// 타겟 액터를 저장할 내부 변수 (블루프린트 노출 없음) - 플레이어 이동 위치
@@ -59,4 +69,12 @@ private:
 	// 실제 AI 면접관 액터 (음성 재생 등)
 	UPROPERTY()
 	TObjectPtr<ARene_AI_Interviewer> ActualAIInterviewer;
+	
+	UPROPERTY(BlueprintAssignable)
+	FSelectMeetingOnClickedBack OnClickedBack;
+	
+	UPROPERTY(BlueprintAssignable)
+	FInterviewClicked OnClickedInterview;
+	
+	
 };

@@ -22,8 +22,11 @@
 #include "EngineUtils.h"
 #include "AI/Rene_AI_Interviewer.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h" // AI 기능 사용을 위한 핵심 헤더
+#include "Components/WidgetSwitcher.h"
+#include "Widget/Rene_HUD.h"
 #include "Widget/Rene_InterviewWidget.h" // 헤더 추가
 #include "Widget/Rene_InterviewResultPopupWidget.h" // 헤더 추가
+#include "Widget/Rene_ProfileWidget.h"
 #include "Widget/Rene_WebViewWidget.h"
 
 
@@ -52,6 +55,7 @@ ARene_PlayerController::ARene_PlayerController()
 
 	bIsInAIInterview = false; // Initialize the flag
 	bIsAISpeaking = false;
+	bIsAutoMoving = false;
 }
 
 void ARene_PlayerController::BeginPlay()
@@ -156,7 +160,7 @@ void ARene_PlayerController::SetupInputComponent()
 			
 			EIC->BindAction(PushToTalkAction, ETriggerEvent::Started, this, &ARene_PlayerController::OnStartTalking);
 			EIC->BindAction(PushToTalkAction, ETriggerEvent::Completed, this, &ARene_PlayerController::OnStopTalking);
-			EIC->BindAction(ia_Menu, ETriggerEvent::Triggered, this, &ARene_PlayerController::OnToggleMenu);
+			EIC->BindAction(ia_Menu, ETriggerEvent::Triggered, this, &ARene_PlayerController::OnToggleHomeMenu);
 			
 			
 		}
@@ -197,73 +201,182 @@ bool ARene_PlayerController::ShowFileDialog(const FString& DialogTitle, const FS
     return false;
 }
 
-void ARene_PlayerController::ClientRPC_CreateBoothUI_Implementation()
+void ARene_PlayerController::ServerRPC_CreateSeekerUI_Implementation()
 {
-	CreateSeekerUI();
+	ClientRPC_CreateSeekerUI();
+}
+
+void ARene_PlayerController::ClientRPC_CreateSeekerUI_Implementation()
+{
+	OnSeekerUI();
+}
+
+void ARene_PlayerController::ClientRPC_CreateInfodeskUI_Implementation()
+{
+	ShowInfodeskUI();
 }
 
 void ARene_PlayerController::OnToggleMenu()
 {
 	if (HasAuthority())
 	{
-		if (!IsValid(company_ui))
-		{
-			LOGERRORF(TEXT("NULL Host UI"))
-			return;
-		}
 		OnCompanyUI();
 	}
 	else
 	{
-		if (!IsValid(seeker_ui))
-		{
-			LOGERRORF(TEXT("NULL Client UI"))
-			return;
-		}
-		OnSeekerUI();
+		ServerRPC_CreateSeekerUI();
 	}
 }
 
-void ARene_PlayerController::CreateCompanyUI()
+void ARene_PlayerController::ShowInfodeskUI()
 {
-	if (!IsValid(companyui_class)) return;
-	if (!IsLocalPlayerController() || !HasAuthority()) return;
-	
-	company_ui = CreateWidget<URene_Company_Widget>(this, companyui_class);
-	company_ui->AddToViewport();
+	// 기존 위젯 정리 (SelectMeeting 문제 방지)
+	if (IsValid(infodesk_ui))
+	{
+		infodesk_ui->RemoveFromParent();
+		infodesk_ui = nullptr;
+	}
+
+	if (!IsValid(info_widget))
+	{
+		LOGERRORF(TEXT("wbp_infodesk class is not valid"));
+		return;
+	}
+
+	// 항상 새로 생성하여 깨끗한 상태 보장
+	infodesk_ui = CreateWidget(this, info_widget);
+	if (!IsValid(infodesk_ui))
+	{
+		LOGERRORF(TEXT("Failed to create infodesk widget"));
+		return;
+	}
+
+	infodesk_ui->AddToViewport();
 	EnableUIControll();
 }
 
-void ARene_PlayerController::CreateSeekerUI()
+void ARene_PlayerController::ShowHUD()
 {
-	if (!IsValid(seekerui_class)) return;
+	if (!IsLocalController()) return;
+
+	FString current_map = GetWorld()->GetMapName();
+	if (current_map.Contains(TEXT("StartMap"))) return;
 	
-	seeker_ui = CreateWidget<URene_Seeker_Widget>(this, seekerui_class);
-	seeker_ui->AddToViewport();
-	EnableUIControll();
+	if (IsValid(HUD_ui))
+	{
+		HUD_ui->AddToViewport();
+		HUD_ui->SetVisibility(ESlateVisibility::Visible);
+		HUD_ui->sw_HUD->SetActiveWidgetIndex(0);
+		DisableUIControll();
+	}
+	
+	else
+	{
+		if (!IsValid(HUD_Widget)) return;
+		
+		HUD_ui = CreateWidget<URene_HUD>(this, HUD_Widget);
+		if (!IsValid(HUD_ui))
+		{
+			LOGERRORF(TEXT("HUD UI has Created BUT is not valid"));
+			return;
+		}
+		HUD_ui->AddToViewport();
+		HUD_ui->SetVisibility(ESlateVisibility::Visible);
+		HUD_ui->sw_HUD->SetActiveWidgetIndex(0);
+		DisableUIControll();
+	}
+}
+
+void ARene_PlayerController::OnToggleHomeMenu()
+{
+	if (!IsValid(HUD_ui)) return;
+	HUD_ui->OnClickedHome();
 }
 
 void ARene_PlayerController::OnCompanyUI()
 {
+	if (!IsValid(companyui_class)) return;
 	if (!HasAuthority() || !IsLocalPlayerController()) return;
 	if (IsValid(company_ui))
 	{
 		company_ui->SetVisibility(ESlateVisibility::Visible);
-		FInputModeUIOnly im;
-		SetInputMode(im);
-		bShowMouseCursor = true;
+		EnableUIControll();
+	}
+	else
+	{
+		company_ui = CreateWidget<URene_Company_Widget>(this, companyui_class);
+		if (!IsValid(company_ui))
+		{
+			LOGERRORF(TEXT("company_ui class is not valid"));
+			return;
+		}
+		company_ui->WBP_ProfileUI->SetProfileName(true, Cast<URene_GameInstance>(GetGameInstance())->GetCachedUserData(), TEXT(""));
+		company_ui->AddToViewport();
+		EnableUIControll();
 	}
 }
 
 void ARene_PlayerController::OnSeekerUI()
 {
+	//	CreateSeekerUI() -> OnSeekerUi() 통합
+	
 	if (!IsLocalPlayerController() || HasAuthority()) return;
-	if (IsValid(seeker_ui))
+	if (!IsValid(seekerui_class)) return;
+	if (!IsValid(seeker_ui))
+	{
+		seeker_ui = CreateWidget<URene_Seeker_Widget>(this, seekerui_class);
+		if (IsValid(seeker_ui))
+		{
+			seeker_ui->WBP_ProfileUI->SetProfileName(true, Cast<URene_GameInstance>(GetGameInstance())->GetCachedUserData(), TEXT(""));
+			seeker_ui->AddToViewport();
+			EnableUIControll();
+		}
+		else
+		{
+			LOGERRORF(TEXT("Seeker_UI is not valid"));
+			return;
+		}
+	}
+	else
 	{
 		seeker_ui->SetVisibility(ESlateVisibility::Visible);
-		FInputModeUIOnly im;
-		SetInputMode(im);
-		bShowMouseCursor = true;
+		EnableUIControll();
+	}
+}
+
+void ARene_PlayerController::SetWidgetCameraToInfo()
+{
+	AActor* CamLoc0 = nullptr;
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	{
+		if (It->ActorHasTag(FName("WidgetCamera00")))
+		{
+			CamLoc0 = *It;
+			break;
+		}
+	}
+
+	if (CamLoc0)
+	{
+		SetViewTargetWithBlend(CamLoc0, 0.2f);
+	}
+}
+
+void ARene_PlayerController::SetWidgetCameraToMeet()
+{
+	AActor* CamLoc1 = nullptr;
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	{
+		if (It->ActorHasTag(FName("WidgetCamera01")))
+		{
+			CamLoc1 = *It;
+			break;
+		}
+	}
+
+	if (CamLoc1)
+	{
+		SetViewTargetWithBlend(CamLoc1, 0.2f);
 	}
 }
 
@@ -399,6 +512,9 @@ void ARene_PlayerController::ServerRPC_RequestMoveAndSit_Implementation(FTransfo
 {
 	if (!HasAuthority()) return;
 
+	// 자동 이동 시작
+	SetAutoMoving(true);
+
 	if (AUE_ReNeCharacter* ControlledCharacter = Cast<AUE_ReNeCharacter>(GetPawn()))
 	{
 		ControlledCharacter->SetTargetSitTransform(TargetTransform);
@@ -464,6 +580,7 @@ void ARene_PlayerController::EndInterview()
 		SetIsInAIInterview(false);
 		CloseReportAndWebView();
 	}
+	ShowHUD();
 }
 
 void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
@@ -708,4 +825,10 @@ void ARene_PlayerController::ServerRPC_DeclinePrivateInterview_Implementation()
 void ARene_PlayerController::ClientRPC_InterviewRequestDeclined_Implementation()
 {
 	UE_LOG(LogVoicePC, Log, TEXT("ClientRPC_InterviewRequestDeclined: Your interview request was declined."));
+}
+
+void ARene_PlayerController::SetAutoMoving(bool bNewAutoMoving)
+{
+	bIsAutoMoving = bNewAutoMoving;
+	UE_LOG(LogVoicePC, Log, TEXT("SetAutoMoving: %s"), bNewAutoMoving ? TEXT("True") : TEXT("False"));
 }
