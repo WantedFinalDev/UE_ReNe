@@ -15,6 +15,7 @@ class URene_FileUploader;
 class URene_InterviewWidget;
 class URene_InterviewResultPopupWidget;
 class URene_WebViewWidget;
+class URene_HostSitWidget;
 
 UCLASS()
 class UE_RENE_API ARene_PlayerController : public AUE_ReNePlayerController
@@ -28,6 +29,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnRep_PlayerState() override;
 
 	UFUNCTION(BlueprintCallable, Category = "File")
@@ -140,6 +142,9 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_InterviewRequestDeclined();
 
+	// --- Host Movement ---
+	void RequestMoveToHostSitTarget();
+
 	
 	
 private:
@@ -207,6 +212,12 @@ public:
 	UPROPERTY()
 	TObjectPtr<URene_WebViewWidget> WebViewInstance;
 
+	// --- Host Sit ---
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<URene_HostSitWidget> HostSitWidgetClass;
+
+	TObjectPtr<AActor> HostSitTargetActor;
+
 	bool bIsInAIInterview;
 	bool bIsAISpeaking;
 	FString AISessionID;
@@ -218,9 +229,16 @@ public:
 
 	bool bIsAutoMoving;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float HostSitWidgetShowDistance;
+
 	// --- Auto Movement State ---
 	UFUNCTION(BlueprintPure, Category = "Movement")
 	bool IsAutoMoving() const { return bIsAutoMoving; }
+
+	// Public so the widget can null out its reference
+	UPROPERTY()
+	TObjectPtr<URene_HostSitWidget> HostSitWidgetInstance;
 
 	void SetAutoMoving(bool bNewAutoMoving);
 	

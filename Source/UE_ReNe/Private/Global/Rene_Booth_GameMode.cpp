@@ -7,6 +7,7 @@
 #include "Global/Rene_Booth_GameState.h"
 #include "Voice/Rene_VoiceChatManager.h"
 #include "GameFramework/PlayerState.h"
+#include "Kismet/GameplayStatics.h"
 
 void ARene_Booth_GameMode::PostLogin(APlayerController* NewPlayer)
 {
@@ -43,6 +44,27 @@ void ARene_Booth_GameMode::PostLogin(APlayerController* NewPlayer)
     // Establish 는 P2P 면접시 면접관과 구직자만의 음성채널 분리목적, 별도 로직 구현 필요.
     //  모든 입장Player에 대해 MIC 켜줘야하므로 PublicVoice() 호출.
     StartPublicVoiceChat(Cast<ARene_PlayerController>(NewPlayer));                 
+}
+
+UClass* ARene_Booth_GameMode::GetDefaultPawnClassForController_Implementation(AController* Controller)
+{
+	const FString CurrentMapName = UGameplayStatics::GetCurrentLevelName(GetWorld());
+
+	// On OfficeMap, spawn a different pawn for clients
+	if (CurrentMapName.Equals(TEXT("OfficeMap"), ESearchCase::IgnoreCase))
+	{
+		// Server-side check: A non-authoritative controller is a client.
+		if (Controller && !Controller->HasAuthority())
+		{
+			if (ClientPawnClass)
+			{
+				return ClientPawnClass;
+			}
+		}
+	}
+
+	// For all other cases (host, or different map), use the default.
+	return Super::GetDefaultPawnClassForController_Implementation(Controller);
 }
 
 void ARene_Booth_GameMode::StartOneToOneVoiceChat(APlayerController* PlayerA, APlayerController* PlayerB)

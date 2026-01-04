@@ -16,6 +16,9 @@ class UE_RENE_API ARene_Booth_GameMode : public AGameModeBase
 public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
+	// Determines the pawn class to spawn for a given player controller
+	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* Controller) override;
+
 	/**
 	 * Starts a private 1-on-1 voice chat between two players.
 	 * This should only be called on the server.
@@ -42,7 +45,9 @@ private:
 	
 	/* Field */
 public:
-	
+	// The pawn class to spawn for clients on specific maps
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Classes")
+	TSubclassOf<APawn> ClientPawnClass;
 	
 	
 	

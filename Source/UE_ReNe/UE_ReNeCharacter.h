@@ -122,6 +122,26 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_bIsSitting)
 	bool bIsSitting;
 
+	// [D] 부드러운 착석 보정을 위한 변수들
+	bool bIsBlendingToSitTarget;
+	float SitBlendDuration;
+	float SitBlendElapsed;
+	FVector SitBlendStartLoc;
+	FRotator SitBlendStartRot;
+
+
+// =================================================================
+//                 걸어가서 앉기 기능 개선 (아래)
+// =================================================================
+
+public:
+	// [B] 블루프린트에서 도착 판정 거리를 조절할 수 있도록 노출
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float SitArrivalThreshold;
+
+
+
+
 // =================================================================
 //                 속도 및 회전 개선용 변수 (아래)
 // =================================================================
