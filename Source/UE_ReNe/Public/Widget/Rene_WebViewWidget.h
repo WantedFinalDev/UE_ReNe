@@ -13,15 +13,19 @@ class UE_RENE_API URene_WebViewWidget : public UUserWidget
 
 public:
     /**
-     * Loads the specified URL in the web browser widget.
+     * Sets the URL to be loaded by the web browser widget.
+     * The actual loading happens in the Blueprint's Construct event.
      * @param NewURL The URL to load.
      */
     UFUNCTION(BlueprintCallable, Category = "Web View")
     void LoadURL(const FString& NewURL);
 
+    UPROPERTY(BlueprintReadWrite, Category = "Web View")
+    FString InitialURL;
+
 protected:
     // The WebBrowser widget placed in the UMG designer.
     // Make sure to name the widget 'WebBrowser' in the UMG editor and check 'Is Variable'.
-    UPROPERTY(meta = (BindWidget))
+    UPROPERTY(meta = (BindWidget), BlueprintReadWrite)
     TObjectPtr<UWebBrowser> WebBrowser;
 };

@@ -110,6 +110,28 @@ void ARene_PlayerController::BeginPlay()
 				break; // 하나만 있다고 가정하고 첫 번째 것만 바인딩
 			}
 		}
+
+		// Host/Standalone의 경우 BeginPlay에서 PlayerState가 유효하므로 바로 구독
+		ARene_PlayerState* RenePlayerState = GetPlayerState<ARene_PlayerState>();
+		if (RenePlayerState)
+		{
+			RenePlayerState->OnInterviewResultIDUpdated.AddDynamic(this, &ARene_PlayerController::HandleInterviewResultIDUpdated);
+		}
+	}
+}
+
+void ARene_PlayerController::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	if (IsLocalController())
+	{
+		// Client의 경우 PlayerState가 복제된 이 시점에 구독
+		ARene_PlayerState* RenePlayerState = GetPlayerState<ARene_PlayerState>();
+		if (RenePlayerState)
+		{
+			RenePlayerState->OnInterviewResultIDUpdated.AddDynamic(this, &ARene_PlayerController::HandleInterviewResultIDUpdated);
+		}
 	}
 }
 
@@ -494,7 +516,11 @@ void ARene_PlayerController::OnAIInterviewFinished(int32 InterviewResultID)
 {
 	UE_LOG(LogVoicePC, Log, TEXT("AI Interview Finished on Client. Received Result ID: %d. Requesting server to store it."), InterviewResultID);
 	Server_SetInterviewResultID(InterviewResultID);
-    ShowAIReportPage();
+}
+
+void ARene_PlayerController::HandleInterviewResultIDUpdated(int32 NewResultID)
+{
+	ShowAIReportPage();
 }
 
 void ARene_PlayerController::Server_SetInterviewResultID_Implementation(int32 ResultID)
@@ -540,17 +566,24 @@ void ARene_PlayerController::HandleShowReportClicked()
         URene_GameInstance* GameInstance = GetGameInstance<URene_GameInstance>();
         if (!GameInstance) return;
 
-        const FString ReportURL = GameInstance->GetNetworkSettings().AIReportURL;
-        if (ReportURL.IsEmpty())
+        const FString BaseReportURL = GameInstance->GetNetworkSettings().AIReportURL;
+        if (BaseReportURL.IsEmpty())
         {
             UE_LOG(LogVoicePC, Error, TEXT("AIReportURL is not set in NetworkSettings."));
             return;
         }
 
+        ARene_PlayerState* RenePlayerState = GetPlayerState<ARene_PlayerState>();
+        if (!RenePlayerState) return;
+
+        const int32 ResultID = RenePlayerState->GetInterviewResultID();
+        const FString FinalReportURL = FString::Printf(TEXT("%s%d"), *BaseReportURL, ResultID);
+
         WebViewInstance = CreateWidget<URene_WebViewWidget>(this, WebViewWidgetClass);
         if (WebViewInstance)
         {
-            WebViewInstance->LoadURL(ReportURL);
+        	UE_LOG(LogVoicePC, Warning, TEXT("Attempting to load URL: %s"), *FinalReportURL);
+            WebViewInstance->LoadURL(FinalReportURL);
             WebViewInstance->AddToViewport();
         }
     }

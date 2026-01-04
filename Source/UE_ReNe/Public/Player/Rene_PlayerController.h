@@ -1,9 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/PlayerController.h"
-#include "DesktopPlatformModule.h"
 #include "UE_ReNePlayerController.h"
+#include "DesktopPlatformModule.h"
 #include "Rene_PlayerController.generated.h"
 
 class URene_Company_Widget;
@@ -27,6 +26,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void OnRep_PlayerState() override;
 
 	UFUNCTION(BlueprintCallable, Category = "File")
 	bool ShowFileDialog(const FString& DialogTitle, const FString& DefaultPath, const FString& FileTypes, FString& OutFilePath);
@@ -72,7 +72,10 @@ public:
 	void EndInterview();
 	void DisplayInitialAIMessage(const FString& InitialMessage);
 	void ShowAIReportPage();
+	
+	UFUNCTION()
 	void HandleShowReportClicked();
+	
 	void CloseReportAndWebView();
 
 	UFUNCTION(Server, Reliable)
@@ -87,6 +90,9 @@ public:
 
 	UFUNCTION()
 	void OnAIInterviewFinished(int32 InterviewResultID);
+
+	UFUNCTION()
+	void HandleInterviewResultIDUpdated(int32 NewResultID);
 
 	UFUNCTION()
 	void OnAIVoiceStateChanged(bool bIsPlaying);

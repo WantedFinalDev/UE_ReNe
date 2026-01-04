@@ -5,6 +5,8 @@
 #include "GameFramework/PlayerState.h"
 #include "Rene_PlayerState.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInterviewResultIDUpdated, int32, NewResultID);
+
 /*
  *
  */
@@ -39,7 +41,8 @@ public:
 	
 	
 private:
-	
+	UFUNCTION()
+	void OnRep_InterviewResultID();
 	
 	
 	
@@ -47,6 +50,9 @@ private:
 	
 	/* Field */
 public:
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnInterviewResultIDUpdated OnInterviewResultIDUpdated;
+	
 	// Flag to indicate if this player is currently in a private interview and allowed to use P2P voice chat
 	UPROPERTY(Replicated)
 	bool bVoicable;
@@ -58,7 +64,8 @@ private:
 	UPROPERTY(Replicated)
 	FReneUserData userdata;
 
-	// The result ID of the completed AI interview. Not replicated to other clients.
+	// The result ID of the completed AI interview. Replicated with a notification function.
+	UPROPERTY(ReplicatedUsing = OnRep_InterviewResultID)
 	int32 InterviewResultID;
 	
 	
