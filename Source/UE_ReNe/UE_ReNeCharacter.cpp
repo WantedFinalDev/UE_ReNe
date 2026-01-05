@@ -383,6 +383,15 @@ void AUE_ReNeCharacter::OnRep_bIsSitting()
 		// 일어나는 애니메이션 재생 또는 상태 변경 로직
 		// LOGWARNF(TEXT("Player %s is now standing up."), *GetName());
 
+		// Restore the camera view to this character if it's locally controlled
+		if (ARene_PlayerController* PC = Cast<ARene_PlayerController>(Controller))
+		{
+			if (PC->IsLocalController())
+			{
+				PC->SetViewTargetWithBlend(this, 0.8f);
+			}
+		}
+
 		// =================================================================
 		//                 통제권 전환 로직 (아래)
 		// =================================================================
