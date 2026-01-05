@@ -151,11 +151,13 @@ void ARene_PlayerController::Tick(float DeltaSeconds)
 		if (IsValid(HostSitTargetActor))
 		{
 			APawn* MyPawn = GetPawn();
-			if (MyPawn)
+			AUE_ReNeCharacter* ControlledCharacter = Cast<AUE_ReNeCharacter>(MyPawn);
+			if (ControlledCharacter)
 			{
-				const float Distance = FVector::Dist(MyPawn->GetActorLocation(), HostSitTargetActor->GetActorLocation());
+				const float Distance = FVector::Dist(ControlledCharacter->GetActorLocation(), HostSitTargetActor->GetActorLocation());
 
-				if (Distance <= HostSitWidgetShowDistance)
+				// Show widget only if in range, not already moving, and not already sitting.
+				if (Distance <= HostSitWidgetShowDistance && !IsAutoMoving() && !ControlledCharacter->IsSitting())
 				{
 					if (!IsValid(HostSitWidgetInstance))
 					{

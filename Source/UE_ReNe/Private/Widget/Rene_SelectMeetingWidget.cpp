@@ -80,6 +80,22 @@ void URene_SelectMeetingWidget::OnStartPrivateInterviewClicked()
 		PlayerController->ServerRPC_RequestMoveAndSit(PrivateInterviewTargetActor->GetActorTransform());
 		LOGWARNF(TEXT("Requesting move and sit to: %s"), *PrivateInterviewTargetActor->GetActorTransform().ToString());
 
+		// Switch to Private Interview Camera
+		ACameraActor* PrivateCamera = nullptr;
+		for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
+		{
+			if (It->ActorHasTag(FName("PrivateInterviewCamera")))
+			{
+				PrivateCamera = *It;
+				break;
+			}
+		}
+
+		if (PrivateCamera)
+		{
+			PlayerController->SetViewTargetWithBlend(PrivateCamera, 0.8f);
+		}
+
 		// 2. Handle P2P Interview Request Flow
 		if (PlayerController->HasAuthority())
 		{

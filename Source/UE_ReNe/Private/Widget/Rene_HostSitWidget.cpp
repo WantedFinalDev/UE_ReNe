@@ -3,6 +3,8 @@
 #include "Widget/Rene_HostSitWidget.h"
 #include "Components/Button.h"
 #include "Player/Rene_PlayerController.h"
+#include "Camera/CameraActor.h"
+#include "EngineUtils.h"
 #include "UE_ReNe.h"
 
 void URene_HostSitWidget::NativeConstruct()
@@ -28,6 +30,22 @@ void URene_HostSitWidget::OnSitHostClicked()
 		UE_LOG(Rene, Log, TEXT("URene_HostSitWidget: Sit button clicked. Requesting move."));
 		PC->RequestMoveToHostSitTarget();
 		PC->DisableUIControll(); // UI 모드 비활성화
+
+		// Switch to Host Interview Camera
+		ACameraActor* HostCamera = nullptr;
+		for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
+		{
+			if (It->ActorHasTag(FName("HostInterviewCamera")))
+			{
+				HostCamera = *It;
+				break;
+			}
+		}
+
+		if (HostCamera)
+		{
+			PC->SetViewTargetWithBlend(HostCamera, 0.8f);
+		}
         
         // Also null out the instance in the player controller so it can be re-created
         PC->HostSitWidgetInstance = nullptr;
