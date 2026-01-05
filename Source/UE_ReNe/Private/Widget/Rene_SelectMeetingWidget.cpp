@@ -175,9 +175,9 @@ void URene_SelectMeetingWidget::OnStartAIInterviewClicked()
 
 	// Construct JSON request body
 	TSharedPtr<FJsonObject> RequestObj = MakeShared<FJsonObject>();
-	RequestObj->SetNumberField(TEXT("jobseeker_id"), 1); // Placeholder as per API spec
-	RequestObj->SetNumberField(TEXT("company_id"), 2);   // Placeholder as per API spec
-	RequestObj->SetNumberField(TEXT("job_group_id"), 2); // Placeholder as per API spec
+	RequestObj->SetNumberField(TEXT("jobseeker_id"), 2); // Placeholder as per API spec 베타
+	RequestObj->SetNumberField(TEXT("company_id"), 4);   // Placeholder as per API spec
+	RequestObj->SetNumberField(TEXT("job_group_id"), 4); // Placeholder as per API spec
 
 	FString RequestBody;
 	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
