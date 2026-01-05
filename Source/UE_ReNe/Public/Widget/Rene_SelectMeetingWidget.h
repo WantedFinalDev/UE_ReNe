@@ -44,6 +44,9 @@ private:
 	UFUNCTION()
 	void OnStartAIInterviewClicked();
 
+	UFUNCTION()
+	void SwitchToPrivateInterviewCamera_Delayed();
+
 	// Callback for the AI Interview Start HTTP request
 	void OnAIInterviewStartResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 

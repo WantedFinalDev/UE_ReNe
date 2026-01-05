@@ -80,21 +80,10 @@ void URene_SelectMeetingWidget::OnStartPrivateInterviewClicked()
 		PlayerController->ServerRPC_RequestMoveAndSit(PrivateInterviewTargetActor->GetActorTransform());
 		LOGWARNF(TEXT("Requesting move and sit to: %s"), *PrivateInterviewTargetActor->GetActorTransform().ToString());
 
-		// Switch to Private Interview Camera
-		ACameraActor* PrivateCamera = nullptr;
-		for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
-		{
-			if (It->ActorHasTag(FName("PrivateInterviewCamera")))
-			{
-				PrivateCamera = *It;
-				break;
-			}
-		}
-
-		if (PrivateCamera)
-		{
-			PlayerController->SetViewTargetWithBlend(PrivateCamera, 0.8f);
-		}
+		// Delay camera switch to allow player to see movement start
+		const float CameraSwitchDelay = 2.5f; // << 여기에서 지연 시간을 초 단위로 조절할 수 있습니다.
+		FTimerHandle DummyTimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(DummyTimerHandle, this, &URene_SelectMeetingWidget::SwitchToPrivateInterviewCamera_Delayed, CameraSwitchDelay, false);
 
 		// 2. Handle P2P Interview Request Flow
 		if (PlayerController->HasAuthority())
@@ -113,6 +102,31 @@ void URene_SelectMeetingWidget::OnStartPrivateInterviewClicked()
 		}
 		
 		this->RemoveFromParent();
+	}
+}
+
+void URene_SelectMeetingWidget::SwitchToPrivateInterviewCamera_Delayed()
+{
+	ARene_PlayerController* PlayerController = Cast<ARene_PlayerController>(GetOwningPlayer());
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	ACameraActor* PrivateCamera = nullptr;
+	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
+	{
+		if (It->ActorHasTag(FName("PrivateInterviewCamera")))
+		{
+			PrivateCamera = *It;
+			break;
+		}
+	}
+
+	if (PrivateCamera)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Switching to PrivateInterviewCamera after delay."));
+		PlayerController->SetViewTargetWithBlend(PrivateCamera, 0.8f);
 	}
 }
 
