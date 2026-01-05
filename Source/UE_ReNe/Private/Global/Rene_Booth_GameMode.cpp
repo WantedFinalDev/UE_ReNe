@@ -50,20 +50,24 @@ UClass* ARene_Booth_GameMode::GetDefaultPawnClassForController_Implementation(AC
 {
 	const FString CurrentMapName = UGameplayStatics::GetCurrentLevelName(GetWorld());
 
-	// On OfficeMap, spawn a different pawn for clients
 	if (CurrentMapName.Equals(TEXT("OfficeMap"), ESearchCase::IgnoreCase))
 	{
-		// Server-side check: A non-authoritative controller is a client.
-		if (Controller && !Controller->HasAuthority())
+		if (APlayerController* PC = Cast<APlayerController>(Controller))
 		{
-			if (ClientPawnClass)
+			// In a Listen Server:
+			// - The Host's PlayerController is a Local Player Controller.
+			// - A Client's PlayerController is NOT a Local Player Controller.
+			if (!PC->IsLocalController())
 			{
-				return ClientPawnClass;
+				if (ClientPawnClass)
+				{
+					return ClientPawnClass; // Return BP_FirstPersonCharacter2 for clients
+				}
 			}
 		}
 	}
 
-	// For all other cases (host, or different map), use the default.
+	// For all other cases (host, or different map), use the default pawn class.
 	return Super::GetDefaultPawnClassForController_Implementation(Controller);
 }
 
