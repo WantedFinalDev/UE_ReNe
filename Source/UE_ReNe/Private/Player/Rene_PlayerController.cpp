@@ -666,8 +666,16 @@ void ARene_PlayerController::EndInterview()
 
 void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
 {
+	// Restore the camera view to the character
+	if (APawn* PlayerPawn = GetPawn())
+	{
+		SetViewTargetWithBlend(PlayerPawn, 0.8f);
+	}
+
 	if (AUE_ReNeCharacter* ControlledCharacter = Cast<AUE_ReNeCharacter>(GetPawn()))
+	{
 		ControlledCharacter->StandUp();
+	}
 }
 
 void ARene_PlayerController::OnAIMessageReceived(const FString& AIMessage)
