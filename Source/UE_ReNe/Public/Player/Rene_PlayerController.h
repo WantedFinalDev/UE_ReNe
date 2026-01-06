@@ -1,9 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/PlayerController.h"
-#include "DesktopPlatformModule.h"
 #include "UE_ReNePlayerController.h"
+#include "DesktopPlatformModule.h"
 #include "Rene_PlayerController.generated.h"
 
 class URene_HUD;
@@ -16,6 +15,7 @@ class URene_FileUploader;
 class URene_InterviewWidget;
 class URene_InterviewResultPopupWidget;
 class URene_WebViewWidget;
+class URene_HostSitWidget;
 
 UCLASS()
 class UE_RENE_API ARene_PlayerController : public AUE_ReNePlayerController
@@ -29,6 +29,8 @@ public:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void Tick(float DeltaSeconds) override;
+	virtual void OnRep_PlayerState() override;
 
 	UFUNCTION(BlueprintCallable, Category = "File")
 	bool ShowFileDialog(const FString& DialogTitle, const FString& DefaultPath, const FString& FileTypes, FString& OutFilePath);
@@ -96,7 +98,10 @@ public:
 	void EndInterview();
 	void DisplayInitialAIMessage(const FString& InitialMessage);
 	void ShowAIReportPage();
+	
+	UFUNCTION()
 	void HandleShowReportClicked();
+	
 	void CloseReportAndWebView();
 
 	UFUNCTION(Server, Reliable)
@@ -111,6 +116,9 @@ public:
 
 	UFUNCTION()
 	void OnAIInterviewFinished(int32 InterviewResultID);
+
+	UFUNCTION()
+	void HandleInterviewResultIDUpdated(int32 NewResultID);
 
 	UFUNCTION()
 	void OnAIVoiceStateChanged(bool bIsPlaying);
@@ -133,6 +141,9 @@ public:
 
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_InterviewRequestDeclined();
+
+	// --- Host Movement ---
+	void RequestMoveToHostSitTarget();
 
 	
 	
@@ -201,6 +212,12 @@ public:
 	UPROPERTY()
 	TObjectPtr<URene_WebViewWidget> WebViewInstance;
 
+	// --- Host Sit ---
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<URene_HostSitWidget> HostSitWidgetClass;
+
+	TObjectPtr<AActor> HostSitTargetActor;
+
 	bool bIsInAIInterview;
 	bool bIsAISpeaking;
 	FString AISessionID;
@@ -212,9 +229,16 @@ public:
 
 	bool bIsAutoMoving;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float HostSitWidgetShowDistance;
+
 	// --- Auto Movement State ---
 	UFUNCTION(BlueprintPure, Category = "Movement")
 	bool IsAutoMoving() const { return bIsAutoMoving; }
+
+	// Public so the widget can null out its reference
+	UPROPERTY()
+	TObjectPtr<URene_HostSitWidget> HostSitWidgetInstance;
 
 	void SetAutoMoving(bool bNewAutoMoving);
 	

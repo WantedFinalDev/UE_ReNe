@@ -16,6 +16,7 @@ void ARene_PlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimePropert
 	
 	DOREPLIFETIME(ARene_PlayerState, userdata);
 	DOREPLIFETIME(ARene_PlayerState, bVoicable); // Replicate the new flag
+	DOREPLIFETIME(ARene_PlayerState, InterviewResultID);
 }
 
 void ARene_PlayerState::SetIsInPrivateInterview(bool bNewState)
@@ -28,10 +29,22 @@ void ARene_PlayerState::SetIsInPrivateInterview(bool bNewState)
 
 void ARene_PlayerState::SetInterviewResultID(int32 ResultID)
 {
-	InterviewResultID = ResultID;
+	if (HasAuthority())
+	{
+		InterviewResultID = ResultID;
+		
+		// 서버(Host)에서는 OnRep이 자동 호출되지 않으므로 수동으로 호출하여
+		// Host 플레이어도 델리게이트 이벤트를 받을 수 있게 함
+		OnRep_InterviewResultID();
+	}
 }
 
 int32 ARene_PlayerState::GetInterviewResultID() const
 {
 	return InterviewResultID;
+}
+
+void ARene_PlayerState::OnRep_InterviewResultID()
+{
+	OnInterviewResultIDUpdated.Broadcast(InterviewResultID);
 }

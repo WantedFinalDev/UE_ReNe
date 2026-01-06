@@ -11,10 +11,11 @@ public class UE_ReNe : ModuleRules
 		PublicDependencyModuleNames.AddRange(new string[] 
 		{
 			"Core",
-			"CoreUObject",
+			"CoreUObject", 
 			"Engine",
 			"InputCore",
 			"EnhancedInput",
+			"NavigationSystem",
 			"AIModule",
 			"StateTreeModule",
 			"GameplayStateTreeModule",

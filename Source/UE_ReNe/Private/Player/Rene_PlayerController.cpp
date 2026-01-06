@@ -21,12 +21,14 @@
 #include "AIController.h" // AIController 사용을 위해 헤더 추가
 #include "EngineUtils.h"
 #include "AI/Rene_AI_Interviewer.h"
+#include "NavigationSystem.h" // NavMesh 투영을 위해 헤더 추가
 #include "Blueprint/AIBlueprintHelperLibrary.h" // AI 기능 사용을 위한 핵심 헤더
 #include "Components/WidgetSwitcher.h"
 #include "Widget/Rene_HUD.h"
 #include "Widget/Rene_InterviewWidget.h" // 헤더 추가
 #include "Widget/Rene_InterviewResultPopupWidget.h" // 헤더 추가
 #include "Widget/Rene_ProfileWidget.h"
+#include "Widget/Rene_HostSitWidget.h"
 #include "Widget/Rene_WebViewWidget.h"
 
 
@@ -56,6 +58,7 @@ ARene_PlayerController::ARene_PlayerController()
 	bIsInAIInterview = false; // Initialize the flag
 	bIsAISpeaking = false;
 	bIsAutoMoving = false;
+	HostSitWidgetShowDistance = 200.0f;
 }
 
 void ARene_PlayerController::BeginPlay()
@@ -113,6 +116,89 @@ void ARene_PlayerController::BeginPlay()
 				UE_LOG(LogVoicePC, Log, TEXT("Bound to AI Voice Playback Component."));
 				break; // 하나만 있다고 가정하고 첫 번째 것만 바인딩
 			}
+		}
+
+		// Host/Standalone의 경우 BeginPlay에서 PlayerState가 유효하므로 바로 구독
+		ARene_PlayerState* RenePlayerState = GetPlayerState<ARene_PlayerState>();
+		if (RenePlayerState)
+		{
+			RenePlayerState->OnInterviewResultIDUpdated.AddDynamic(this, &ARene_PlayerController::HandleInterviewResultIDUpdated);
+		}
+	}
+}
+
+void ARene_PlayerController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	// Host-only proximity check for sit widget
+	if (IsLocalController() && HasAuthority())
+	{
+		// Find the target actor if we don't have it
+		if (!IsValid(HostSitTargetActor))
+		{
+			for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+			{
+				if (It->ActorHasTag(FName("HostSitTarget")))
+				{
+					HostSitTargetActor = *It;
+					UE_LOG(LogVoicePC, Log, TEXT("Found HostSitTargetActor: %s"), *HostSitTargetActor->GetName());
+					break;
+				}
+			}
+		}
+
+		if (IsValid(HostSitTargetActor))
+		{
+			APawn* MyPawn = GetPawn();
+			AUE_ReNeCharacter* ControlledCharacter = Cast<AUE_ReNeCharacter>(MyPawn);
+			if (ControlledCharacter)
+			{
+				const float Distance = FVector::Dist(ControlledCharacter->GetActorLocation(), HostSitTargetActor->GetActorLocation());
+
+				// Show widget only if in range, not already moving, and not already sitting.
+				if (Distance <= HostSitWidgetShowDistance && !IsAutoMoving() && !ControlledCharacter->IsSitting())
+				{
+					if (!IsValid(HostSitWidgetInstance))
+					{
+						if (HostSitWidgetClass)
+						{
+							HostSitWidgetInstance = CreateWidget<URene_HostSitWidget>(this, HostSitWidgetClass);
+							if (HostSitWidgetInstance)
+							{
+								HostSitWidgetInstance->AddToViewport();
+								EnableUIControll(); // UI 모드 활성화
+								UE_LOG(LogVoicePC, Log, TEXT("Showing HostSitWidget. Distance: %.2f"), Distance);
+							}
+						}
+					}
+				}
+				else
+				{
+					if (IsValid(HostSitWidgetInstance))
+					{
+						HostSitWidgetInstance->RemoveFromParent();
+						HostSitWidgetInstance = nullptr;
+						DisableUIControll(); // UI 모드 비활성화
+						UE_LOG(LogVoicePC, Log, TEXT("Hiding HostSitWidget. Distance: %.2f"), Distance);
+					}
+				}
+			}
+		}
+	}
+}
+
+void ARene_PlayerController::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	if (IsLocalController())
+	{
+		// Client의 경우 PlayerState가 복제된 이 시점에 구독
+		ARene_PlayerState* RenePlayerState = GetPlayerState<ARene_PlayerState>();
+		if (RenePlayerState)
+		{
+			RenePlayerState->OnInterviewResultIDUpdated.AddDynamic(this, &ARene_PlayerController::HandleInterviewResultIDUpdated);
 		}
 	}
 }
@@ -490,6 +576,23 @@ void ARene_PlayerController::ServerRPC_RequestMoveAndSit_Implementation(FTransfo
 {
 	if (!HasAuthority()) return;
 
+	// [A] NavMesh 투영 진단 로그 추가
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	if (NavSys)
+	{
+		FNavLocation ProjectedLocation;
+		const FVector QueryExtent(100.0f, 100.0f, 1000.0f); // 충분한 탐색 반경
+		bool bProjected = NavSys->ProjectPointToNavigation(TargetTransform.GetLocation(), ProjectedLocation, QueryExtent);
+		if (bProjected)
+		{
+			UE_LOG(LogVoicePC, Log, TEXT("ServerRPC_RequestMoveAndSit: Target location projected to NavMesh successfully. Original: %s, Projected: %s, Distance: %.2f"), *TargetTransform.GetLocation().ToString(), *ProjectedLocation.Location.ToString(), FVector::Dist(TargetTransform.GetLocation(), ProjectedLocation.Location));
+		}
+		else
+		{
+			UE_LOG(LogVoicePC, Warning, TEXT("ServerRPC_RequestMoveAndSit: Failed to project target location %s to NavMesh."), *TargetTransform.GetLocation().ToString());
+		}
+	}
+
 	// 자동 이동 시작
 	SetAutoMoving(true);
 
@@ -564,7 +667,9 @@ void ARene_PlayerController::EndInterview()
 void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
 {
 	if (AUE_ReNeCharacter* ControlledCharacter = Cast<AUE_ReNeCharacter>(GetPawn()))
+	{
 		ControlledCharacter->StandUp();
+	}
 }
 
 void ARene_PlayerController::OnAIMessageReceived(const FString& AIMessage)
@@ -611,7 +716,11 @@ void ARene_PlayerController::OnAIInterviewFinished(int32 InterviewResultID)
 {
 	UE_LOG(LogVoicePC, Log, TEXT("AI Interview Finished on Client. Received Result ID: %d. Requesting server to store it."), InterviewResultID);
 	Server_SetInterviewResultID(InterviewResultID);
-    ShowAIReportPage();
+}
+
+void ARene_PlayerController::HandleInterviewResultIDUpdated(int32 NewResultID)
+{
+	ShowAIReportPage();
 }
 
 void ARene_PlayerController::Server_SetInterviewResultID_Implementation(int32 ResultID)
@@ -657,17 +766,24 @@ void ARene_PlayerController::HandleShowReportClicked()
         URene_GameInstance* GameInstance = GetGameInstance<URene_GameInstance>();
         if (!GameInstance) return;
 
-        const FString ReportURL = GameInstance->GetNetworkSettings().AIReportURL;
-        if (ReportURL.IsEmpty())
+        const FString BaseReportURL = GameInstance->GetNetworkSettings().AIReportURL;
+        if (BaseReportURL.IsEmpty())
         {
             UE_LOG(LogVoicePC, Error, TEXT("AIReportURL is not set in NetworkSettings."));
             return;
         }
 
+        ARene_PlayerState* RenePlayerState = GetPlayerState<ARene_PlayerState>();
+        if (!RenePlayerState) return;
+
+        const int32 ResultID = RenePlayerState->GetInterviewResultID();
+        const FString FinalReportURL = FString::Printf(TEXT("%s%d"), *BaseReportURL, ResultID);
+
         WebViewInstance = CreateWidget<URene_WebViewWidget>(this, WebViewWidgetClass);
         if (WebViewInstance)
         {
-            WebViewInstance->LoadURL(ReportURL);
+        	UE_LOG(LogVoicePC, Warning, TEXT("Attempting to load URL: %s"), *FinalReportURL);
+            WebViewInstance->LoadURL(FinalReportURL);
             WebViewInstance->AddToViewport();
         }
     }
@@ -792,6 +908,15 @@ void ARene_PlayerController::ServerRPC_DeclinePrivateInterview_Implementation()
 void ARene_PlayerController::ClientRPC_InterviewRequestDeclined_Implementation()
 {
 	UE_LOG(LogVoicePC, Log, TEXT("ClientRPC_InterviewRequestDeclined: Your interview request was declined."));
+}
+
+void ARene_PlayerController::RequestMoveToHostSitTarget()
+{
+	if (IsValid(HostSitTargetActor))
+	{
+		UE_LOG(LogVoicePC, Log, TEXT("Requesting move to HostSitTargetActor at %s"), *HostSitTargetActor->GetActorTransform().ToString());
+		ServerRPC_RequestMoveAndSit(HostSitTargetActor->GetActorTransform());
+	}
 }
 
 void ARene_PlayerController::SetAutoMoving(bool bNewAutoMoving)

@@ -52,6 +52,14 @@ AUE_ReNeCharacter::AUE_ReNeCharacter()
 	bIsMovingToSit = false;
 	bIsSitting = false;
 
+	// [B] 도착 판정 거리 기본값 설정
+	SitArrivalThreshold = 50.0f; // 50cm
+
+	// [D] 부드러운 착석 보정 변수 초기화
+	bIsBlendingToSitTarget = false;
+	SitBlendDuration = 0.25f;
+	SitBlendElapsed = 0.f;
+
 	// --- 속도 및 회전 개선용 변수 초기화 ---
 	OriginalMaxWalkSpeed = 0.0f;
 	bIsTurningToSit = false;
@@ -178,25 +186,57 @@ void AUE_ReNeCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// 서버에서만, 그리고 이동 중일 때만 실행
-	if (HasAuthority() && bIsMovingToSit)
+	if (HasAuthority())
 	{
-		// 목표 지점과의 거리를 확인
-		const float DistanceToTarget = FVector::Dist(GetActorLocation(), TargetSitTransform.GetLocation());
-
-		// 거리가 1미터 이내이고, 속도가 거의 0이면 도착한 것으로 간주
-		if (DistanceToTarget < 100.0f && GetVelocity().IsNearlyZero())
+		// [C] 이동 중 도착 판정 (2D 거리 사용)
+		if (bIsMovingToSit)
 		{
-			bIsMovingToSit = false; // 이동 중 상태 해제
+			const float DistanceToTarget2D = FVector::Dist2D(GetActorLocation(), TargetSitTransform.GetLocation());
 
-			// PlayerController의 자동 이동 플래그 해제
-			if (ARene_PlayerController* PC = Cast<ARene_PlayerController>(Controller))
+			// [C] Z를 무시한 2D 거리가 임계값보다 작고, 속도가 거의 0이면 도착으로 간주
+			if (DistanceToTarget2D < SitArrivalThreshold && GetVelocity().IsNearlyZero())
 			{
-				PC->SetAutoMoving(false);
-			}
+				UE_LOG(Rene, Log, TEXT("Character has arrived at sit target (2D Distance: %.2f). Starting blend."), DistanceToTarget2D);
 
-			// 서버에서 '앉음' 상태로 변경
-			Server_SetIsSitting(true);
+				bIsMovingToSit = false;
+				
+				// [D] 보정 상태로 전환
+				bIsBlendingToSitTarget = true;
+				SitBlendElapsed = 0.0f;
+				SitBlendStartLoc = GetActorLocation();
+				SitBlendStartRot = GetActorRotation();
+
+				// 보간 중 AI나 다른 이동 입력을 막기 위해 즉시 이동을 멈춤
+				GetCharacterMovement()->StopMovementImmediately();
+			}
+		}
+		// [D] 목표 지점으로 부드럽게 보정하는 로직
+		else if (bIsBlendingToSitTarget)
+		{
+			SitBlendElapsed += DeltaTime;
+			const float Alpha = FMath::Clamp(SitBlendElapsed / SitBlendDuration, 0.0f, 1.0f);
+
+			// 위치와 회전을 부드럽게 보간
+			const FVector NewLocation = FMath::Lerp(SitBlendStartLoc, TargetSitTransform.GetLocation(), Alpha);
+			const FRotator NewRotation = FMath::RInterpTo(SitBlendStartRot, TargetSitTransform.GetRotation().Rotator(), DeltaTime, 10.0f); // RInterpTo로 부드러운 회전
+
+			SetActorLocationAndRotation(NewLocation, NewRotation, false, nullptr, ETeleportType::None);
+
+			// 보정이 완료되면
+			if (Alpha >= 1.0f)
+			{
+				UE_LOG(Rene, Log, TEXT("Sit target blend finished. Setting final state."));
+				bIsBlendingToSitTarget = false;
+
+				// PlayerController의 자동 이동 플래그 해제
+				if (ARene_PlayerController* PC = Cast<ARene_PlayerController>(Controller))
+				{
+					PC->SetAutoMoving(false);
+				}
+
+				// 서버에서 '앉음' 상태로 최종 변경
+				Server_SetIsSitting(true);
+			}
 		}
 	}
 
@@ -342,6 +382,15 @@ void AUE_ReNeCharacter::OnRep_bIsSitting()
 	{
 		// 일어나는 애니메이션 재생 또는 상태 변경 로직
 		// LOGWARNF(TEXT("Player %s is now standing up."), *GetName());
+
+		// Restore the camera view to this character if it's locally controlled
+		if (ARene_PlayerController* PC = Cast<ARene_PlayerController>(Controller))
+		{
+			if (PC->IsLocalController())
+			{
+				PC->SetViewTargetWithBlend(this, 0.8f);
+			}
+		}
 
 		// =================================================================
 		//                 통제권 전환 로직 (아래)

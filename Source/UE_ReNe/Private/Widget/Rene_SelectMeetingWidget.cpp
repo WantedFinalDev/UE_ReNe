@@ -80,6 +80,11 @@ void URene_SelectMeetingWidget::OnStartPrivateInterviewClicked()
 		PlayerController->ServerRPC_RequestMoveAndSit(PrivateInterviewTargetActor->GetActorTransform());
 		LOGWARNF(TEXT("Requesting move and sit to: %s"), *PrivateInterviewTargetActor->GetActorTransform().ToString());
 
+		// Delay camera switch to allow player to see movement start
+		const float CameraSwitchDelay = 2.5f; // << 여기에서 지연 시간을 초 단위로 조절할 수 있습니다.
+		FTimerHandle DummyTimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(DummyTimerHandle, this, &URene_SelectMeetingWidget::SwitchToPrivateInterviewCamera_Delayed, CameraSwitchDelay, false);
+
 		// 2. Handle P2P Interview Request Flow
 		if (PlayerController->HasAuthority())
 		{
@@ -97,6 +102,31 @@ void URene_SelectMeetingWidget::OnStartPrivateInterviewClicked()
 		}
 		
 		this->RemoveFromParent();
+	}
+}
+
+void URene_SelectMeetingWidget::SwitchToPrivateInterviewCamera_Delayed()
+{
+	ARene_PlayerController* PlayerController = Cast<ARene_PlayerController>(GetOwningPlayer());
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	ACameraActor* PrivateCamera = nullptr;
+	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
+	{
+		if (It->ActorHasTag(FName("PrivateInterviewCamera")))
+		{
+			PrivateCamera = *It;
+			break;
+		}
+	}
+
+	if (PrivateCamera)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Switching to PrivateInterviewCamera after delay."));
+		PlayerController->SetViewTargetWithBlend(PrivateCamera, 0.8f);
 	}
 }
 
@@ -145,9 +175,9 @@ void URene_SelectMeetingWidget::OnStartAIInterviewClicked()
 
 	// Construct JSON request body
 	TSharedPtr<FJsonObject> RequestObj = MakeShared<FJsonObject>();
-	RequestObj->SetNumberField(TEXT("jobseeker_id"), 1); // Placeholder as per API spec
-	RequestObj->SetNumberField(TEXT("company_id"), 2);   // Placeholder as per API spec
-	RequestObj->SetNumberField(TEXT("job_group_id"), 2); // Placeholder as per API spec
+	RequestObj->SetNumberField(TEXT("jobseeker_id"), 2); // Placeholder as per API spec 베타
+	RequestObj->SetNumberField(TEXT("company_id"), 4);   // Placeholder as per API spec
+	RequestObj->SetNumberField(TEXT("job_group_id"), 4); // Placeholder as per API spec
 
 	FString RequestBody;
 	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
