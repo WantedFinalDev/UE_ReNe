@@ -6,6 +6,7 @@
 #include "Player/Rene_PlayerController.h"
 #include "Network/Rene_FileUploader.h"
 #include "Global/Rene_GameInstance.h" // GameInstance 헤더 추가
+#include "Widget/Rene_UploadingPopupWidget.h"
 
 void URene_ProfileWidget::NativeConstruct()
 {
@@ -21,11 +22,18 @@ void URene_ProfileWidget::NativeConstruct()
 void URene_ProfileWidget::OnClickUpload()
 {
 	ARene_PlayerController* PC = Cast<ARene_PlayerController>(GetOwningPlayer());
+	
 	if (PC)
 	{
 		FString FilePath;
 		if (PC->ShowFileDialog(TEXT("Select File to Upload"), TEXT(""), TEXT(""), FilePath))
 		{
+			if (PC->UploadingPopup_UI)
+			{
+				PC->UploadingPopup_UI->ShowWidget();
+				PC->UploadingPopup_UI->ShowUploadingState();
+			}
+
 			if (PC->FileUploader)
 			{
 				// GameInstance에서 사용자 데이터 가져오기
