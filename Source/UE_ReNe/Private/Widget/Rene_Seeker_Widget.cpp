@@ -6,6 +6,7 @@
 #include "Global/Rene_GameInstance.h"
 #include "Player/Rene_PlayerController.h"
 #include "Widget/Rene_ProfileWidget.h"
+#include "Widget/Rene_DashBoardWidget.h" // 헤더 추가
 
 
 void URene_Seeker_Widget::NativeConstruct()
@@ -41,7 +42,15 @@ void URene_Seeker_Widget::OnClickedReturn()
 void URene_Seeker_Widget::OnClickedDash()
 {
 	sw_Main->SetActiveWidgetIndex(1);
-	//	Set Seeker Web page URL
+	
+	// [추가] 대시보드 위젯을 찾아 URL 새로고침
+	if (UWidget* ActiveWidget = sw_Main->GetActiveWidget())
+	{
+		if (URene_DashBoardWidget* DashBoardWidget = Cast<URene_DashBoardWidget>(ActiveWidget))
+		{
+			DashBoardWidget->RefreshDashboardURL();
+		}
+	}
 }
 
 void URene_Seeker_Widget::OnClickedDashToMain()

@@ -48,4 +48,8 @@ struct FRene_NetworkSettings : public FTableRowBase
     // Endpoint for company login.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Network")
     FString CompanyLoginEndpoint;
+    
+    // Endpoint for dashboard.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Network")
+    FString DashboardEndpoint;
 };

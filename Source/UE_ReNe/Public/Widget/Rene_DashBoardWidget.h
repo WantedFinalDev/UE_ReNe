@@ -17,6 +17,10 @@ class UE_RENE_API URene_DashBoardWidget : public UUserWidget
 	
 	UFUNCTION(BlueprintCallable)
 	void SetURL(const FString& url);
+
+	// [추가] URL을 GameInstance 설정에 맞춰 새로고침하는 함수
+	UFUNCTION(BlueprintCallable)
+	void RefreshDashboardURL();
 	
 	
 	
@@ -28,6 +32,7 @@ class UE_RENE_API URene_DashBoardWidget : public UUserWidget
 	
 	/* Field */
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=URL)
 	FString URL;
 	
 	UPROPERTY(meta=(BindWidget))
