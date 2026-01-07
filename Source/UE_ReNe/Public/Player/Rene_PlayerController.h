@@ -45,10 +45,15 @@ public:
 	void ClientRPC_CreateInfodeskUI();
 	
 	void OnToggleMenu();
+	UFUNCTION(BlueprintCallable)
 	void ShowInfodeskUI();
+	UFUNCTION(BlueprintCallable)
 	void ShowHUD();
+	UFUNCTION(BlueprintCallable)
 	void OnToggleHomeMenu();
+	UFUNCTION(BlueprintCallable)
 	void OnCompanyUI();
+	UFUNCTION(BlueprintCallable)
 	void OnSeekerUI();
 	
 	UFUNCTION(BlueprintCallable)
@@ -58,8 +63,9 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_SendUserData(struct FReneUserData data);
-
+	UFUNCTION(BlueprintCallable)
 	void EnableUIControll();
+	UFUNCTION(BlueprintCallable)
 	void DisableUIControll();
 
 	UFUNCTION(BlueprintCallable)
@@ -135,6 +141,7 @@ public:
 	// Host Sit Logic
 	void RequestMoveToHostSitTarget();
 	void SetAutoMoving(bool bNewAutoMoving);
+	UFUNCTION(BlueprintPure)
 	bool IsAutoMoving() const { return bIsAutoMoving; }
 
 	// [추가] AI 면접 시작 요청 (위젯에서 호출)

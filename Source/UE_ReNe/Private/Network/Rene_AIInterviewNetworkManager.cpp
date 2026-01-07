@@ -40,7 +40,8 @@ void URene_AIInterviewNetworkManager::SendCachedRequest()
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 
 	TSharedPtr<FJsonObject> RequestObj = MakeShared<FJsonObject>();
-	RequestObj->SetNumberField(TEXT("user_id"), PendingData.UserID);
+	// [수정] API 명세에 맞춰 user_id -> jobseeker_id 변경
+	RequestObj->SetNumberField(TEXT("jobseeker_id"), PendingData.UserID);
 	RequestObj->SetNumberField(TEXT("company_id"), PendingData.CompanyID);
 	RequestObj->SetNumberField(TEXT("job_group_id"), PendingData.JobGroupID);
 
