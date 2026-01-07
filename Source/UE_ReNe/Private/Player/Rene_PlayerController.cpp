@@ -357,6 +357,16 @@ void ARene_PlayerController::ShowHUD()
 	}
 }
 
+void ARene_PlayerController::ServerRPC_ShowHUD_Implementation()
+{
+	ClientRPC_ShowHUD();
+}
+
+void ARene_PlayerController::ClientRPC_ShowHUD_Implementation()
+{
+	ShowHUD();
+}
+
 void ARene_PlayerController::OnToggleHomeMenu()
 {
 	if (!IsValid(HUD_ui)) return;
@@ -682,7 +692,15 @@ void ARene_PlayerController::EndInterview()
 		SetIsInAIInterview(false);
 		CloseReportAndWebView();
 	}
-	ShowHUD();
+	
+	if (HasAuthority())
+	{
+		ShowHUD();
+	}
+	else
+	{
+		ServerRPC_ShowHUD();
+	}
 }
 
 void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
