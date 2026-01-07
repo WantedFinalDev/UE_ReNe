@@ -674,7 +674,7 @@ void ARene_PlayerController::EndInterview()
 
 	if (LocalVoiceRecorder && !AISessionID.IsEmpty())
 	{
-		CurrentInterviewStage = TEXT("LAST_COMMENTS");
+		CurrentInterviewStage = TEXT("CLOSING");
 		LocalVoiceRecorder->RequestForceEndInterview(AISessionID);
 	}
 	else
@@ -707,7 +707,7 @@ void ARene_PlayerController::OnAIResponseStateChanged(bool bIsWaiting)
 		{
 			InterviewWidgetInstance->ShowPressToTalk(false);
 
-			if (CurrentInterviewStage == TEXT("LAST_COMMENTS"))
+			if (CurrentInterviewStage == TEXT("CLOSING"))
 			{
 				InterviewWidgetInstance->SetLoadingText(TEXT("면접 결과 분석 대기 중..."));
 			}

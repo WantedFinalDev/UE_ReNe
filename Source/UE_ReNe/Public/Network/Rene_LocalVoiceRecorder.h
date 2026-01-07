@@ -49,7 +49,7 @@ public:
     UPROPERTY(BlueprintAssignable, Category = "AI Interview|Events")
     FOnAIInterviewFinished OnAIInterviewFinished;
 
-    /** 인터뷰 스테이지(예: LAST_COMMENTS)가 수신되었을 때 호출됩니다. */
+    /** 인터뷰 스테이지(예: CLOSING)가 수신되었을 때 호출됩니다. */
     UPROPERTY(BlueprintAssignable, Category = "AI Interview|Events")
     FOnInterviewStageReceived OnInterviewStageReceived;
 

@@ -28,7 +28,6 @@ class UE_RENE_API URene_DashBoardWidget : public UUserWidget
 	
 	/* Field */
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=URL)
 	FString URL;
 	
 	UPROPERTY(meta=(BindWidget))
