@@ -117,15 +117,18 @@ void URene_GameInstance::DestroyReneSession()
 	}
 }
 
-void URene_GameInstance::SetReneUserData(const FString& id, const FString& pw, const FString& name, const int32 level, const FString& role)
+// [수정] job_group_id 매개변수 추가 및 저장 로직 반영
+void URene_GameInstance::SetReneUserData(const FString& id, const FString& pw, const FString& name, const int32 level, const FString& role, const int32 job_group_id)
 {
 	f_userdata.ID = id;
 	f_userdata.PW = pw;
 	f_userdata.Name = name;
 	f_userdata.Level = level;
-	f_userdata.Role = role; 
+	f_userdata.Role = role;
+	f_userdata.JobGroupID = job_group_id; // [추가]
 	
-	LOGWARNF(TEXT("UserData Cached : %s, Role: %s"), *f_userdata.Name, *f_userdata.Role);
+	// [수정] 로그에 JobGroupID 추가
+	LOGWARNF(TEXT("UserData Cached : %s, Role: %s, JobGroupID: %d"), *f_userdata.Name, *f_userdata.Role, f_userdata.JobGroupID);
 }
 
 const FRene_NetworkSettings& URene_GameInstance::GetNetworkSettings() const
@@ -179,7 +182,8 @@ void URene_GameInstance::OnLoginManagerComplete(bool bSuccess, const FReneUserDa
 		// Cache the user data
 		// Note: Password might be empty in UserData from response, so we might want to keep the one from request if needed.
 		// But here we just use what we got.
-		SetReneUserData(UserData.ID, UserData.PW, UserData.Name, UserData.Level, UserData.Role);
+		// [수정] UserData.JobGroupID 전달
+		SetReneUserData(UserData.ID, UserData.PW, UserData.Name, UserData.Level, UserData.Role, UserData.JobGroupID);
 	}
 
 	OnLoginComplete.Broadcast(bSuccess, UserData, ErrorMessage);

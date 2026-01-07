@@ -3,6 +3,7 @@
 #include "Interfaces/IHttpResponse.h"
 #include "Json.h"
 #include "JsonUtilities.h"
+#include "UE_ReNe.h" // 로그 매크로 사용을 위해 추가
 
 URene_LoginManager::URene_LoginManager()
 {
@@ -88,20 +89,19 @@ void URene_LoginManager::OnLoginResponseReceived(FHttpRequestPtr Request, FHttpR
 			// Use company_id as Level if not specified otherwise
 			ParsedUserData.Level = CompanyId; 
 			
-			// [추가] job_group_id 파싱 (API 명세서 오타 jop_group_id 대응)
-			if (JsonObject->HasField(TEXT("jop_group_id")))
-			{
-				ParsedUserData.JobGroupID = JsonObject->GetIntegerField(TEXT("jop_group_id"));
-			}
-			else if (JsonObject->HasField(TEXT("job_group_id")))
+			// [수정] 오타(jop_group_id) 제거 및 정석 필드명(job_group_id) 사용
+			if (JsonObject->HasField(TEXT("job_group_id")))
 			{
 				ParsedUserData.JobGroupID = JsonObject->GetIntegerField(TEXT("job_group_id"));
 			}
 			else
 			{
-				// Fallback if neither exists
+				// Fallback if not exists
 				ParsedUserData.JobGroupID = 0; 
 			}
+
+			// [추가] Company 로그인 시 JobGroupID 파싱 결과 로그 출력
+			UE_LOG(LogTemp, Warning, TEXT("LoginManager: Company Login Parsed - ID: %s, JobGroupID: %d"), *ParsedUserData.ID, ParsedUserData.JobGroupID);
 		}
 		else
 		{
