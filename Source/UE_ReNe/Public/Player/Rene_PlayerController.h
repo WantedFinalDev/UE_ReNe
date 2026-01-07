@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UE_ReNePlayerController.h"
 #include "GameFramework/PlayerController.h"
 #include "Data/ReneUserData.h"
 #include "Network/Rene_AIInterviewNetworkManager.h" // 헤더 추가
@@ -19,7 +20,7 @@ class URene_WebViewWidget;
 class ARene_AI_Interviewer;
 
 UCLASS()
-class UE_RENE_API ARene_PlayerController : public APlayerController
+class UE_RENE_API ARene_PlayerController : public AUE_ReNePlayerController
 {
 	GENERATED_BODY()
 	
