@@ -31,7 +31,8 @@ public:
 	void DestroyReneSession();
 	
 	// Login Process
-	void SetReneUserData(const FString& id, const FString& pw, const FString& name, const int32 level, const FString& role);
+	// [수정] job_group_id 매개변수 추가 (기본값 0)
+	void SetReneUserData(const FString& id, const FString& pw, const FString& name, const int32 level, const FString& role, const int32 job_group_id = 0);
 	FReneUserData GetCachedUserData() { return f_userdata; }
 
 	// 데이터 테이블에서 네트워크 설정을 가져오는 Getter 함수

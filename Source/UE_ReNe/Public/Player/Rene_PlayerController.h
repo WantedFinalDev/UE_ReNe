@@ -2,10 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "UE_ReNePlayerController.h"
-#include "DesktopPlatformModule.h"
+#include "GameFramework/PlayerController.h"
+#include "Data/ReneUserData.h"
+#include "Network/Rene_AIInterviewNetworkManager.h" // 헤더 추가
 #include "Rene_PlayerController.generated.h"
 
-class URene_HUD;
 class URene_Company_Widget;
 class URene_Seeker_Widget;
 class UInputMappingContext;
@@ -14,51 +15,48 @@ class URene_LocalVoiceRecorder;
 class URene_FileUploader;
 class URene_InterviewWidget;
 class URene_InterviewResultPopupWidget;
-class URene_WebViewWidget;
 class URene_HostSitWidget;
+class URene_WebViewWidget;
+class ARene_AI_Interviewer;
 
 UCLASS()
 class UE_RENE_API ARene_PlayerController : public AUE_ReNePlayerController
 {
 	GENERATED_BODY()
-
+	
 	/* Method */
 public:
 	ARene_PlayerController();
-
 	virtual void BeginPlay() override;
-	virtual void SetupInputComponent() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnRep_PlayerState() override;
+	virtual void SetupInputComponent() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	UFUNCTION(BlueprintCallable, Category = "File")
+	// File Dialog Helper
+	UFUNCTION(BlueprintCallable, Category = "Rene|System")
 	bool ShowFileDialog(const FString& DialogTitle, const FString& DefaultPath, const FString& FileTypes, FString& OutFilePath);
 
+	// UI Management
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_CreateSeekerUI();
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_CreateSeekerUI();
-
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_CreateInfodeskUI();
 	
-	UFUNCTION(BlueprintCallable)
 	void OnToggleMenu();
-	
 	UFUNCTION(BlueprintCallable)
 	void ShowInfodeskUI();
-	
 	UFUNCTION(BlueprintCallable)
 	void ShowHUD();
-	
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void OnToggleHomeMenu();
-	
+	UFUNCTION(BlueprintCallable)
 	void OnCompanyUI();
+	UFUNCTION(BlueprintCallable)
 	void OnSeekerUI();
 	
-	//	Widget Camera Moving
 	UFUNCTION(BlueprintCallable)
 	void SetWidgetCameraToInfo();
 	UFUNCTION(BlueprintCallable)
@@ -66,67 +64,66 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_SendUserData(struct FReneUserData data);
-
 	UFUNCTION(BlueprintCallable)
 	void EnableUIControll();
 	UFUNCTION(BlueprintCallable)
 	void DisableUIControll();
 
-	TObjectPtr<class UUserWidget> GetUserWidget();
+	UFUNCTION(BlueprintCallable)
+	class UUserWidget* GetUserWidget();
 
-	// --- Voice Chat ---
+	// Voice Chat & Recording
 	void OnStartTalking();
 	void OnStopTalking();
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_EndInterview(APlayerState* InterviewerState, APlayerState* CandidateState);
 
-	// --- Character Movement ---
+	// Movement & Interaction
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_RequestMoveAndSit(FTransform TargetTransform);
-
+	
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_TeleportToLocation(FVector TargetLocation);
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_RequestStandUp();
 
-	// --- AI Interview ---
+	// AI Interview Logic
 	void SetIsInAIInterview(bool bNewState);
 	void SetAISessionID(const FString& NewSessionID);
 	void ShowInterviewWidget();
 	void EndInterview();
-	void DisplayInitialAIMessage(const FString& InitialMessage);
-	void ShowAIReportPage();
-	
-	UFUNCTION()
-	void HandleShowReportClicked();
-	
-	void CloseReportAndWebView();
 
-	UFUNCTION(Server, Reliable)
-	void Server_SetInterviewResultID(int32 ResultID);
-
-	// --- AI Interview Event Handlers ---
 	UFUNCTION()
 	void OnAIMessageReceived(const FString& AIMessage);
-
 	UFUNCTION()
 	void OnAIResponseStateChanged(bool bIsWaiting);
-
 	UFUNCTION()
 	void OnAIInterviewFinished(int32 InterviewResultID);
-
 	UFUNCTION()
-	void HandleInterviewResultIDUpdated(int32 NewResultID);
+	void OnInterviewStageReceived(const FString& Stage);
+
+	void DisplayInitialAIMessage(const FString& InitialMessage);
 
 	UFUNCTION()
 	void OnAIVoiceStateChanged(bool bIsPlaying);
 
+	// AI Report Logic
 	UFUNCTION()
-	void OnInterviewStageReceived(const FString& Stage);
+	void HandleInterviewResultIDUpdated(int32 NewResultID);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_SetInterviewResultID(int32 ResultID);
 
-	// --- P2P Interview Request Flow ---
+	void ShowAIReportPage();
+
+	UFUNCTION()
+	void HandleShowReportClicked();
+
+	void CloseReportAndWebView();
+
+	// P2P Interview Request Logic
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_RequestPrivateInterview();
 
@@ -142,110 +139,89 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_InterviewRequestDeclined();
 
-	// --- Host Movement ---
+	// Host Sit Logic
 	void RequestMoveToHostSitTarget();
+	void SetAutoMoving(bool bNewAutoMoving);
+	UFUNCTION(BlueprintPure)
+	bool IsAutoMoving() const { return bIsAutoMoving; }
 
-	
-	
-private:
-	
-	
-	
+	// [추가] AI 면접 시작 요청 (위젯에서 호출)
+	void RequestAIInterviewStart(const FString& URL, int32 UserID, int32 CompanyID, int32 JobGroupID, AActor* TargetActor, ARene_AI_Interviewer* Interviewer);
+
 	
 	/* Field */
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<URene_FileUploader> FileUploader;
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UUserWidget> companyui_class;
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UUserWidget> seekerui_class;
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UUserWidget> info_widget;
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UUserWidget> HUD_Widget;
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UUserWidget> InterviewWidgetClass;
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UUserWidget> InterviewResultPopupWidgetClass;
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UUserWidget> HostSitWidgetClass;
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UUserWidget> WebViewWidgetClass;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSubclassOf<URene_Company_Widget> companyui_class;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSubclassOf<URene_Seeker_Widget> seekerui_class;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSubclassOf<UUserWidget> info_widget;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSubclassOf<URene_HUD> HUD_Widget;
-	
-	UPROPERTY()
-	TObjectPtr<URene_Company_Widget> company_ui;
-
-	UPROPERTY()
-	TObjectPtr<URene_Seeker_Widget> seeker_ui;
-	
-	UPROPERTY()
-	TObjectPtr<UUserWidget> infodesk_ui;
-	
-	UPROPERTY()
-	TObjectPtr<URene_HUD> HUD_ui;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputMappingContext> imc_Common;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> ia_Menu;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<class UInputMappingContext> imc_Common;
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<class UInputAction> ia_Menu;
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> PushToTalkAction;
 
-	// --- AI Interview ---
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Voice")
 	TObjectPtr<URene_LocalVoiceRecorder> LocalVoiceRecorder;
 
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<URene_InterviewWidget> InterviewWidgetClass;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Network")
+	TObjectPtr<URene_FileUploader> FileUploader;
 
-	UPROPERTY()
-	TObjectPtr<URene_InterviewWidget> InterviewWidgetInstance;
+	// [추가] AI 면접 네트워크 매니저
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Network")
+	TObjectPtr<URene_AIInterviewNetworkManager> AIInterviewManager;
 
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<URene_InterviewResultPopupWidget> InterviewResultPopupWidgetClass;
-
-	UPROPERTY()
-	TObjectPtr<URene_InterviewResultPopupWidget> InterviewResultPopupInstance;
-
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<URene_WebViewWidget> WebViewWidgetClass;
-
-	UPROPERTY()
-	TObjectPtr<URene_WebViewWidget> WebViewInstance;
-
-	// --- Host Sit ---
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<URene_HostSitWidget> HostSitWidgetClass;
-
-	TObjectPtr<AActor> HostSitTargetActor;
-
-	bool bIsInAIInterview;
-	bool bIsAISpeaking;
-	FString AISessionID;
-	FString CurrentInterviewStage;
-
-	// --- P2P Interview ---
-	UPROPERTY()
-	TObjectPtr<ARene_PlayerController> PendingRequestorPC;
-
-	bool bIsAutoMoving;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float HostSitWidgetShowDistance;
-
-	// --- Auto Movement State ---
-	UFUNCTION(BlueprintPure, Category = "Movement")
-	bool IsAutoMoving() const { return bIsAutoMoving; }
-
-	// Public so the widget can null out its reference
+	// [이동] private -> public (Rene_HostSitWidget에서 접근 필요)
 	UPROPERTY()
 	TObjectPtr<URene_HostSitWidget> HostSitWidgetInstance;
 
-	void SetAutoMoving(bool bNewAutoMoving);
-	
-	
 private:
+	UPROPERTY()
+	TObjectPtr<class URene_Company_Widget> company_ui;
+	UPROPERTY()
+	TObjectPtr<class URene_Seeker_Widget> seeker_ui;
+	UPROPERTY()
+	TObjectPtr<class UUserWidget> infodesk_ui;
+	UPROPERTY()
+	TObjectPtr<class URene_HUD> HUD_ui;
+	UPROPERTY()
+	TObjectPtr<URene_InterviewWidget> InterviewWidgetInstance;
+	UPROPERTY()
+	TObjectPtr<URene_InterviewResultPopupWidget> InterviewResultPopupInstance;
 	
+	UPROPERTY()
+	TObjectPtr<URene_WebViewWidget> WebViewInstance;
+
+	bool bIsInAIInterview;
+	FString AISessionID;
+	bool bIsAISpeaking;
+	FString CurrentInterviewStage;
+
+	// [추가] 위젯 생성 전 수신된 초기 AI 메시지 캐싱
+	FString CachedInitialAIMessage;
+
+	// P2P Interview Request Variables
+	UPROPERTY()
+	TObjectPtr<ARene_PlayerController> PendingRequestorPC;
+
+	// Host Sit Variables
+	UPROPERTY()
+	TObjectPtr<AActor> HostSitTargetActor;
 	
-	
-	
+	float HostSitWidgetShowDistance;
+	bool bIsAutoMoving;
 };
