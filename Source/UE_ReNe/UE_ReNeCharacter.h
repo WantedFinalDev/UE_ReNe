@@ -98,6 +98,10 @@ public:
 	void StandUp();
 	void SetTargetSitTransform(const FTransform& NewTransform);
 
+	// 서버에서만 실행될 이동 및 착석 관련 함수들 (public으로 변경)
+	UFUNCTION(Server, Reliable)
+	void Server_SetIsSitting(bool bNewSittingState);
+
 protected:
 	// Tick 및 복제 함수 오버라이드
 	virtual void Tick(float DeltaTime) override;
@@ -106,10 +110,6 @@ protected:
 	// '앉음' 상태가 클라이언트에 복제되었을 때 호출될 함수
 	UFUNCTION()
 	void OnRep_bIsSitting();
-
-	// 서버에서만 실행될 이동 및 착석 관련 함수들
-	UFUNCTION(Server, Reliable)
-	void Server_SetIsSitting(bool bNewSittingState);
 
 private:
 	// 목표 지점 (클라이언트의 회전 동기화를 위해 복제)

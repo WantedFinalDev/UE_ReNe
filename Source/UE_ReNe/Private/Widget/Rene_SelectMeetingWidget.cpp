@@ -84,30 +84,34 @@ void URene_SelectMeetingWidget::OnStartPrivateInterviewClicked()
 		// To Infodesk UI
 		OnClickedInterview.Broadcast();
 		
-		PlayerController->ServerRPC_TeleportToLocation(FVector(100,510,119));
-		
-		// 1. Move and Sit (Always happens)
-		PlayerController->ServerRPC_RequestMoveAndSit(PrivateInterviewTargetActor->GetActorTransform());
-		LOGWARNF(TEXT("Requesting move and sit to: %s"), *PrivateInterviewTargetActor->GetActorTransform().ToString());
+		// [수정] 1. 카메라 전환 (1.5초 블렌드)
+		ACameraActor* PrivateCamera = nullptr;
+		for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
+		{
+			if (It->ActorHasTag(FName("PrivateInterviewCamera")))
+			{
+				PrivateCamera = *It;
+				break;
+			}
+		}
+		if (PrivateCamera)
+		{
+			PlayerController->SetViewTargetWithBlend(PrivateCamera, 1.5f);
+		}
 
-		// Delay camera switch to allow player to see movement start
-		const float CameraSwitchDelay = 2.5f; // << 여기에서 지연 시간을 초 단위로 조절할 수 있습니다.
-		FTimerHandle DummyTimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(DummyTimerHandle, this, &URene_SelectMeetingWidget::SwitchToPrivateInterviewCamera_Delayed, CameraSwitchDelay, false);
+		// [수정] 2. 순간이동 및 즉시 착석 (걷기 생략)
+		PlayerController->ServerRPC_TeleportAndSit(PrivateInterviewTargetActor->GetActorTransform());
+		LOGWARNF(TEXT("Requesting TeleportAndSit to: %s"), *PrivateInterviewTargetActor->GetActorTransform().ToString());
 
-		// 2. Handle P2P Interview Request Flow
+		// 3. Handle P2P Interview Request Flow
 		if (PlayerController->HasAuthority())
 		{
 			// I am the Host (Server)
-			// If I click this, I am either initiating or accepting.
-			// For now, let's assume I am accepting if there is a pending request, or just waiting if not.
-			// Since we don't have a separate "Accept" button in this widget, we treat this click as "I am ready/Accept".
 			PlayerController->ServerRPC_AcceptPrivateInterview();
 		}
 		else
 		{
 			// I am the Client
-			// I want to request an interview with the Host.
 			PlayerController->ServerRPC_RequestPrivateInterview();
 		}
 		
@@ -117,27 +121,7 @@ void URene_SelectMeetingWidget::OnStartPrivateInterviewClicked()
 
 void URene_SelectMeetingWidget::SwitchToPrivateInterviewCamera_Delayed()
 {
-	ARene_PlayerController* PlayerController = Cast<ARene_PlayerController>(GetOwningPlayer());
-	if (!PlayerController)
-	{
-		return;
-	}
-
-	ACameraActor* PrivateCamera = nullptr;
-	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
-	{
-		if (It->ActorHasTag(FName("PrivateInterviewCamera")))
-		{
-			PrivateCamera = *It;
-			break;
-		}
-	}
-
-	if (PrivateCamera)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Switching to PrivateInterviewCamera after delay."));
-		PlayerController->SetViewTargetWithBlend(PrivateCamera, 0.8f);
-	}
+	// [수정] 더 이상 사용되지 않음 (즉시 전환으로 변경됨)
 }
 
 void URene_SelectMeetingWidget::OnStartAIInterviewClicked()
@@ -232,7 +216,7 @@ void URene_SelectMeetingWidget::OnStartAIInterviewClicked()
 	}
 	// [수정 끝]
 
-	// [변경] 직접 HTTP 요청 및 이동 호출 -> PC에 위임
+	// [변경] 직접 HTTP 요청 및 이동 호출 -> PC에 위임 (순간이동 및 착석 포함)
 	PlayerController->RequestAIInterviewStart(AIInterviewStartURL, RequestUserID, FinalCompanyID, FinalJobGroupID, AIInterviewTargetActor, ActualAIInterviewer);
 	
 	//	To Infodesk UI
