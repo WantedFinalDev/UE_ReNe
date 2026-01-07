@@ -7,6 +7,7 @@
 #include "Network/Rene_AIInterviewNetworkManager.h" // 헤더 추가
 #include "Rene_PlayerController.generated.h"
 
+class URene_UploadingPopupWidget;
 class URene_Company_Widget;
 class URene_Seeker_Widget;
 class UInputMappingContext;
@@ -55,6 +56,12 @@ public:
 	void ServerRPC_ShowHUD();
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_ShowHUD();
+	
+	//	Upload Popup
+	UFUNCTION()
+	void OnUploadSuccess(const FString& ResponseBody);
+	UFUNCTION()
+	void OnUploadFail(const FString& ErrorMsg);
 	
 	
 	UFUNCTION(BlueprintCallable)
@@ -174,6 +181,12 @@ public:
 	TSubclassOf<class UUserWidget> HostSitWidgetClass;
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UUserWidget> WebViewWidgetClass;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<URene_UploadingPopupWidget> UploadingPopup_Widget_Class;
+	
+	UPROPERTY()
+	TObjectPtr<URene_UploadingPopupWidget> UploadingPopup_UI;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<class UInputMappingContext> imc_Common;

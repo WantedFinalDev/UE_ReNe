@@ -35,6 +35,7 @@
 // [추가] DesktopPlatform 관련 헤더
 #include "Developer/DesktopPlatform/Public/IDesktopPlatform.h"
 #include "Developer/DesktopPlatform/Public/DesktopPlatformModule.h"
+#include "Widget/Rene_UploadingPopupWidget.h"
 
 
 DEFINE_LOG_CATEGORY_STATIC(LogVoicePC, Log, All);
@@ -130,6 +131,21 @@ void ARene_PlayerController::BeginPlay()
 		{
 			RenePlayerState->OnInterviewResultIDUpdated.AddDynamic(this, &ARene_PlayerController::HandleInterviewResultIDUpdated);
 		}
+		
+		FileUploader->OnSuccess.AddDynamic(this, &ARene_PlayerController::OnUploadSuccess);
+		FileUploader->OnFailure.AddDynamic(this, &ARene_PlayerController::OnUploadFail);
+		
+		if (IsValid(UploadingPopup_Widget_Class))
+		{
+			UploadingPopup_UI = CreateWidget<URene_UploadingPopupWidget>(this, UploadingPopup_Widget_Class);
+			if (UploadingPopup_UI)
+			{
+				UploadingPopup_UI->AddToViewport(999);
+				UploadingPopup_UI->SetVisibility(ESlateVisibility::Collapsed);
+			}
+		}
+		
+		
 	}
 }
 
@@ -365,6 +381,22 @@ void ARene_PlayerController::ServerRPC_ShowHUD_Implementation()
 void ARene_PlayerController::ClientRPC_ShowHUD_Implementation()
 {
 	ShowHUD();
+}
+
+void ARene_PlayerController::OnUploadSuccess(const FString& ResponseBody)
+{
+	if (UploadingPopup_UI)
+	{
+		UploadingPopup_UI->ShowCompleteState();
+	}
+}
+
+void ARene_PlayerController::OnUploadFail(const FString& ErrorMsg)
+{
+	if (UploadingPopup_UI)
+	{
+		UploadingPopup_UI->ShowErrorState();
+	}
 }
 
 void ARene_PlayerController::OnToggleHomeMenu()
