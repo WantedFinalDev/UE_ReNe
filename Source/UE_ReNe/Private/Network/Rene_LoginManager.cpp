@@ -80,6 +80,9 @@ void URene_LoginManager::OnLoginResponseReceived(FHttpRequestPtr Request, FHttpR
 			int32 UserId = JsonObject->GetIntegerField(TEXT("user_id"));
 			ParsedUserData.ID = FString::FromInt(UserId);
 			ParsedUserData.Level = 1; // Default level
+			
+			UE_LOG(LogTemp, Warning, TEXT("LoginManager: Jobseeker Login Parsed - ID: %s"), *ParsedUserData.ID);
+
 		}
 		else if (CurrentRole == TEXT("company"))
 		{
