@@ -26,4 +26,8 @@ struct FReneUserData
 	
 	UPROPERTY(BlueprintReadWrite)
 	FString Role = TEXT("CompanyOrSeeker");
+
+	// [추가] 직군 ID (Company 로그인 시 수신)
+	UPROPERTY(BlueprintReadWrite)
+	int32 JobGroupID = 0;
 };

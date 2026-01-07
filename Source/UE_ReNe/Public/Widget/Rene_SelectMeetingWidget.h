@@ -29,6 +29,10 @@ public:
 	// 레벨 블루프린트에서 호출할 함수 (실제 AI 면접관 액터)
 	UFUNCTION(BlueprintCallable)
 	void SetActualAIInterviewer(ARene_AI_Interviewer* InAIInterviewer);
+
+	// [추가] 면접 대상 기업 및 직군 ID 설정 (Blueprint에서 호출 필수)
+	UFUNCTION(BlueprintCallable, Category = "Rene|Interview")
+	void SetInterviewDetails(int32 InCompanyID, int32 InJobGroupID);
 	
 	UFUNCTION(BlueprintCallable)
 	void OnClickedBackButton();
@@ -72,6 +76,10 @@ private:
 	// 실제 AI 면접관 액터 (음성 재생 등)
 	UPROPERTY()
 	TObjectPtr<ARene_AI_Interviewer> ActualAIInterviewer;
+
+	// [추가] 면접 요청에 사용할 대상 ID (기본값 0)
+	int32 TargetCompanyID = 0;
+	int32 TargetJobGroupID = 0;
 	
 	UPROPERTY(BlueprintAssignable)
 	FSelectMeetingOnClickedBack OnClickedBack;

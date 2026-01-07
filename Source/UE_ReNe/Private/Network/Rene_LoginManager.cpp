@@ -88,7 +88,20 @@ void URene_LoginManager::OnLoginResponseReceived(FHttpRequestPtr Request, FHttpR
 			// Use company_id as Level if not specified otherwise
 			ParsedUserData.Level = CompanyId; 
 			
-			// Note: job_group_id is available in response but not currently in FReneUserData
+			// [추가] job_group_id 파싱 (API 명세서 오타 jop_group_id 대응)
+			if (JsonObject->HasField(TEXT("jop_group_id")))
+			{
+				ParsedUserData.JobGroupID = JsonObject->GetIntegerField(TEXT("jop_group_id"));
+			}
+			else if (JsonObject->HasField(TEXT("job_group_id")))
+			{
+				ParsedUserData.JobGroupID = JsonObject->GetIntegerField(TEXT("job_group_id"));
+			}
+			else
+			{
+				// Fallback if neither exists
+				ParsedUserData.JobGroupID = 0; 
+			}
 		}
 		else
 		{

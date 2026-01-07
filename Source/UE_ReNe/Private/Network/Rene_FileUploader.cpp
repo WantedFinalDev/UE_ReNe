@@ -99,7 +99,7 @@ void URene_FileUploader::StartFileUpload(const FString& FilePath, EUploadUserTyp
     else // JobSeeker
     {
         FinalURL += NetworkSettings.JobSeekerDocsUploadEndpoint;
-        IdFieldName = TEXT("jobseeker_id");
+        IdFieldName = TEXT("user_id");
     }
     UE_LOG(LogFileUploader, Log, TEXT("Target URL: %s"), *FinalURL);
     UE_LOG(LogFileUploader, Log, TEXT("ID Field Name: %s"), *IdFieldName);
@@ -114,7 +114,7 @@ void URene_FileUploader::StartFileUpload(const FString& FilePath, EUploadUserTyp
 
     TArray<uint8> RequestContent;
     
-    // Add user ID field (company_id or jobseeker_id)
+    // Add user ID field (company_id or user_id)
     RequestContent.Append((uint8*)TCHAR_TO_ANSI(*("--" + Boundary + "\r\n")), ("--" + Boundary + "\r\n").Len());
     FString UserIdHeader = FString::Printf(TEXT("Content-Disposition: form-data; name=\"%s\"\r\n\r\n"), *IdFieldName);
     RequestContent.Append((uint8*)TCHAR_TO_ANSI(*UserIdHeader), UserIdHeader.Len());
