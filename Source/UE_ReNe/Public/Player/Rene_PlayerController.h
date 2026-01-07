@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UE_ReNePlayerController.h"
 #include "GameFramework/PlayerController.h"
 #include "Data/ReneUserData.h"
 #include "Network/Rene_AIInterviewNetworkManager.h" // 헤더 추가
@@ -19,7 +20,7 @@ class URene_WebViewWidget;
 class ARene_AI_Interviewer;
 
 UCLASS()
-class UE_RENE_API ARene_PlayerController : public APlayerController
+class UE_RENE_API ARene_PlayerController : public AUE_ReNePlayerController
 {
 	GENERATED_BODY()
 	
@@ -44,12 +45,18 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientRPC_CreateInfodeskUI();
 	
-	UFUNCTION(BlueprintCallable)
 	void OnToggleMenu();
 	UFUNCTION(BlueprintCallable)
 	void ShowInfodeskUI();
+	
 	UFUNCTION(BlueprintCallable)
 	void ShowHUD();
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_ShowHUD();
+	UFUNCTION(Client, Reliable)
+	void ClientRPC_ShowHUD();
+	
+	
 	UFUNCTION(BlueprintCallable)
 	void OnToggleHomeMenu();
 	UFUNCTION(BlueprintCallable)
@@ -64,7 +71,6 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_SendUserData(struct FReneUserData data);
-
 	UFUNCTION(BlueprintCallable)
 	void EnableUIControll();
 	UFUNCTION(BlueprintCallable)
@@ -83,10 +89,6 @@ public:
 	// Movement & Interaction
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_RequestMoveAndSit(FTransform TargetTransform);
-	
-	// [추가] 순간이동 및 즉시 착석 (걷기 생략)
-	UFUNCTION(Server, Reliable)
-	void ServerRPC_TeleportAndSit(FTransform TargetTransform);
 	
 	UFUNCTION(Server, Reliable)
 	void ServerRPC_TeleportToLocation(FVector TargetLocation);
@@ -147,8 +149,7 @@ public:
 	// Host Sit Logic
 	void RequestMoveToHostSitTarget();
 	void SetAutoMoving(bool bNewAutoMoving);
-	
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintPure)
 	bool IsAutoMoving() const { return bIsAutoMoving; }
 
 	// [추가] AI 면접 시작 요청 (위젯에서 호출)

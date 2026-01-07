@@ -31,7 +31,6 @@
 #include "Widget/Rene_ProfileWidget.h"
 #include "Widget/Rene_HostSitWidget.h"
 #include "Widget/Rene_WebViewWidget.h"
-#include "Camera/CameraActor.h" // [추가] ACameraActor 헤더 포함
 
 // [추가] DesktopPlatform 관련 헤더
 #include "Developer/DesktopPlatform/Public/IDesktopPlatform.h"
@@ -358,6 +357,16 @@ void ARene_PlayerController::ShowHUD()
 	}
 }
 
+void ARene_PlayerController::ServerRPC_ShowHUD_Implementation()
+{
+	ClientRPC_ShowHUD();
+}
+
+void ARene_PlayerController::ClientRPC_ShowHUD_Implementation()
+{
+	ShowHUD();
+}
+
 void ARene_PlayerController::OnToggleHomeMenu()
 {
 	if (!IsValid(HUD_ui)) return;
@@ -611,23 +620,6 @@ void ARene_PlayerController::ServerRPC_RequestMoveAndSit_Implementation(FTransfo
 	UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, TargetTransform.GetLocation());
 }
 
-// [추가] 순간이동 및 즉시 착석 구현
-void ARene_PlayerController::ServerRPC_TeleportAndSit_Implementation(FTransform TargetTransform)
-{
-	if (!HasAuthority()) return;
-
-	if (AUE_ReNeCharacter* ControlledCharacter = Cast<AUE_ReNeCharacter>(GetPawn()))
-	{
-		// 1. 즉시 이동 및 회전
-		ControlledCharacter->SetActorLocationAndRotation(TargetTransform.GetLocation(), TargetTransform.GetRotation(), false, nullptr, ETeleportType::TeleportPhysics);
-		
-		// 2. 즉시 앉음 상태로 전환 (서버 함수 직접 호출)
-		ControlledCharacter->Server_SetIsSitting(true);
-		
-		UE_LOG(LogVoicePC, Log, TEXT("ServerRPC_TeleportAndSit: Teleported to %s and set sitting state."), *TargetTransform.GetLocation().ToString());
-	}
-}
-
 void ARene_PlayerController::ServerRPC_TeleportToLocation_Implementation(FVector TargetLocation)
 {
 	if (!HasAuthority()) return;
@@ -692,7 +684,7 @@ void ARene_PlayerController::EndInterview()
 
 	if (LocalVoiceRecorder && !AISessionID.IsEmpty())
 	{
-		CurrentInterviewStage = TEXT("LAST_COMMENTS");
+		CurrentInterviewStage = TEXT("CLOSING");
 		LocalVoiceRecorder->RequestForceEndInterview(AISessionID);
 	}
 	else
@@ -700,7 +692,15 @@ void ARene_PlayerController::EndInterview()
 		SetIsInAIInterview(false);
 		CloseReportAndWebView();
 	}
-	ShowHUD();
+	
+	if (HasAuthority())
+	{
+		ShowHUD();
+	}
+	else
+	{
+		ServerRPC_ShowHUD();
+	}
 }
 
 void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
@@ -725,7 +725,7 @@ void ARene_PlayerController::OnAIResponseStateChanged(bool bIsWaiting)
 		{
 			InterviewWidgetInstance->ShowPressToTalk(false);
 
-			if (CurrentInterviewStage == TEXT("LAST_COMMENTS"))
+			if (CurrentInterviewStage == TEXT("CLOSING"))
 			{
 				InterviewWidgetInstance->SetLoadingText(TEXT("면접 결과 분석 대기 중..."));
 			}
@@ -834,13 +834,7 @@ void ARene_PlayerController::HandleShowReportClicked()
         {
         	UE_LOG(LogVoicePC, Warning, TEXT("Attempting to load URL: %s"), *FinalReportURL);
             WebViewInstance->LoadURL(FinalReportURL);
-            WebViewInstance->AddToViewport(100); // [수정] Z-Order를 100으로 설정하여 최상단 노출 보장
-            
-            // [수정] 기존 팝업 위젯 숨기기 (선택 사항)
-            if (InterviewResultPopupInstance)
-            {
-                InterviewResultPopupInstance->SetVisibility(ESlateVisibility::Collapsed);
-            }
+            WebViewInstance->AddToViewport();
         }
     }
 }
@@ -993,27 +987,11 @@ void ARene_PlayerController::RequestAIInterviewStart(const FString& URL, int32 U
 		UE_LOG(LogVoicePC, Error, TEXT("RequestAIInterviewStart: AIInterviewManager is null."));
 	}
 
-	// [수정] 걷기 대신 순간이동 및 즉시 착석 사용
+	// 이동 시작 (기존 위젯 로직 이동)
 	if (TargetActor)
 	{
-		// 1. 카메라 전환 (1.5초 블렌드)
-		ACameraActor* InterviewCamera = nullptr;
-		for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
-		{
-			ACameraActor* Camera = *It; // [수정] 이터레이터에서 액터 포인터 추출
-			if (Camera && Camera->ActorHasTag(FName("AIInterviewCamera")))
-			{
-				InterviewCamera = Camera;
-				break;
-			}
-		}
-		if (InterviewCamera)
-		{
-			SetViewTargetWithBlend(InterviewCamera, 1.5f);
-		}
-
-		// 2. 순간이동 및 착석
-		ServerRPC_TeleportAndSit(TargetActor->GetActorTransform());
-		UE_LOG(LogVoicePC, Log, TEXT("RequestAIInterviewStart: Teleport and Sit requested to %s"), *TargetActor->GetName());
+		ServerRPC_TeleportToLocation(FVector(100,510,558)); // 기존 좌표 유지
+		ServerRPC_RequestMoveAndSit(TargetActor->GetActorTransform());
+		UE_LOG(LogVoicePC, Log, TEXT("RequestAIInterviewStart: Movement requested to %s"), *TargetActor->GetName());
 	}
 }
