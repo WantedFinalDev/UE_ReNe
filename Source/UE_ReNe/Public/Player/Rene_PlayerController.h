@@ -48,8 +48,15 @@ public:
 	void OnToggleMenu();
 	UFUNCTION(BlueprintCallable)
 	void ShowInfodeskUI();
+	
 	UFUNCTION(BlueprintCallable)
 	void ShowHUD();
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_ShowHUD();
+	UFUNCTION(Client, Reliable)
+	void ClientRPC_ShowHUD();
+	
+	
 	UFUNCTION(BlueprintCallable)
 	void OnToggleHomeMenu();
 	UFUNCTION(BlueprintCallable)
