@@ -4,5 +4,9 @@
 void URene_WebBrowser::SetURL(const FString& url)
 {
 	if (!url.IsEmpty())
+	{
 		InitialURL = url;
+		LoadURL(url);
+	}
+	
 }

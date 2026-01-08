@@ -17,6 +17,7 @@
 #include "Global/Rene_GameInstance.h"
 #include "Network/Rene_LocalVoiceRecorder.h"  // New include for local voice recorder
 #include "Network/Rene_FileUploader.h" // 헤더 추가
+#include "Network/Rene_AIInterviewNetworkManager.h" // [추가] 헤더 추가
 #include "UE_ReNeCharacter.h" // 헤더 변경
 #include "AIController.h" // AIController 사용을 위해 헤더 추가
 #include "EngineUtils.h"
@@ -30,6 +31,11 @@
 #include "Widget/Rene_ProfileWidget.h"
 #include "Widget/Rene_HostSitWidget.h"
 #include "Widget/Rene_WebViewWidget.h"
+
+// [추가] DesktopPlatform 관련 헤더
+#include "Developer/DesktopPlatform/Public/IDesktopPlatform.h"
+#include "Developer/DesktopPlatform/Public/DesktopPlatformModule.h"
+#include "Widget/Rene_UploadingPopupWidget.h"
 
 
 DEFINE_LOG_CATEGORY_STATIC(LogVoicePC, Log, All);
@@ -54,6 +60,7 @@ ARene_PlayerController::ARene_PlayerController()
 	
 	LocalVoiceRecorder = CreateDefaultSubobject<URene_LocalVoiceRecorder>(TEXT("LocalVoiceRecorder")); // Create the new component
 	FileUploader = CreateDefaultSubobject<URene_FileUploader>(TEXT("FileUploaderComponent"));
+	AIInterviewManager = CreateDefaultSubobject<URene_AIInterviewNetworkManager>(TEXT("AIInterviewManager")); // [추가] 컴포넌트 생성
 
 	bIsInAIInterview = false; // Initialize the flag
 	bIsAISpeaking = false;
@@ -124,6 +131,21 @@ void ARene_PlayerController::BeginPlay()
 		{
 			RenePlayerState->OnInterviewResultIDUpdated.AddDynamic(this, &ARene_PlayerController::HandleInterviewResultIDUpdated);
 		}
+		
+		FileUploader->OnSuccess.AddDynamic(this, &ARene_PlayerController::OnUploadSuccess);
+		FileUploader->OnFailure.AddDynamic(this, &ARene_PlayerController::OnUploadFail);
+		
+		if (IsValid(UploadingPopup_Widget_Class))
+		{
+			UploadingPopup_UI = CreateWidget<URene_UploadingPopupWidget>(this, UploadingPopup_Widget_Class);
+			if (UploadingPopup_UI)
+			{
+				UploadingPopup_UI->AddToViewport(999);
+				UploadingPopup_UI->SetVisibility(ESlateVisibility::Collapsed);
+			}
+		}
+		
+		
 	}
 }
 
@@ -351,6 +373,32 @@ void ARene_PlayerController::ShowHUD()
 	}
 }
 
+void ARene_PlayerController::ServerRPC_ShowHUD_Implementation()
+{
+	ClientRPC_ShowHUD();
+}
+
+void ARene_PlayerController::ClientRPC_ShowHUD_Implementation()
+{
+	ShowHUD();
+}
+
+void ARene_PlayerController::OnUploadSuccess(const FString& ResponseBody)
+{
+	if (UploadingPopup_UI)
+	{
+		UploadingPopup_UI->ShowCompleteState();
+	}
+}
+
+void ARene_PlayerController::OnUploadFail(const FString& ErrorMsg)
+{
+	if (UploadingPopup_UI)
+	{
+		UploadingPopup_UI->ShowErrorState();
+	}
+}
+
 void ARene_PlayerController::OnToggleHomeMenu()
 {
 	if (!IsValid(HUD_ui)) return;
@@ -468,7 +516,8 @@ void ARene_PlayerController::DisableUIControll()
 	SetInputMode(im);
 }
 
-TObjectPtr<class UUserWidget> ARene_PlayerController::GetUserWidget()
+// [수정] 반환 타입 변경 (TObjectPtr -> UUserWidget*)
+class UUserWidget* ARene_PlayerController::GetUserWidget()
 {
 	if (IsValid(company_ui))
 		return company_ui;
@@ -634,6 +683,12 @@ void ARene_PlayerController::ShowInterviewWidget()
 {
 	if (!IsLocalController()) return;
 
+	// [추가] 대기 중인 AI 면접 요청이 있다면 지금 전송 (이동/앉기 완료 시점)
+	if (AIInterviewManager)
+	{
+		AIInterviewManager->SendCachedRequest();
+	}
+
 	if (InterviewWidgetClass && !InterviewWidgetInstance)
 	{
 		InterviewWidgetInstance = CreateWidget<URene_InterviewWidget>(this, InterviewWidgetClass);
@@ -643,6 +698,14 @@ void ARene_PlayerController::ShowInterviewWidget()
 			FInputModeGameAndUI InputMode;
 			SetInputMode(InputMode);
 			bShowMouseCursor = true;
+
+			// [추가] 캐싱된 초기 메시지가 있다면 표시
+			if (!CachedInitialAIMessage.IsEmpty())
+			{
+				InterviewWidgetInstance->UpdateSubtitle(CachedInitialAIMessage);
+				UE_LOG(LogVoicePC, Log, TEXT("ShowInterviewWidget: Displayed cached initial AI message: %s"), *CachedInitialAIMessage);
+				CachedInitialAIMessage.Empty(); // 캐시 초기화
+			}
 		}
 	}
 }
@@ -653,7 +716,7 @@ void ARene_PlayerController::EndInterview()
 
 	if (LocalVoiceRecorder && !AISessionID.IsEmpty())
 	{
-		CurrentInterviewStage = TEXT("LAST_COMMENTS");
+		CurrentInterviewStage = TEXT("CLOSING");
 		LocalVoiceRecorder->RequestForceEndInterview(AISessionID);
 	}
 	else
@@ -661,7 +724,15 @@ void ARene_PlayerController::EndInterview()
 		SetIsInAIInterview(false);
 		CloseReportAndWebView();
 	}
-	ShowHUD();
+	
+	if (HasAuthority())
+	{
+		ShowHUD();
+	}
+	else
+	{
+		ServerRPC_ShowHUD();
+	}
 }
 
 void ARene_PlayerController::ServerRPC_RequestStandUp_Implementation()
@@ -686,7 +757,7 @@ void ARene_PlayerController::OnAIResponseStateChanged(bool bIsWaiting)
 		{
 			InterviewWidgetInstance->ShowPressToTalk(false);
 
-			if (CurrentInterviewStage == TEXT("LAST_COMMENTS"))
+			if (CurrentInterviewStage == TEXT("CLOSING"))
 			{
 				InterviewWidgetInstance->SetLoadingText(TEXT("면접 결과 분석 대기 중..."));
 			}
@@ -708,8 +779,19 @@ void ARene_PlayerController::OnAIResponseStateChanged(bool bIsWaiting)
 
 void ARene_PlayerController::DisplayInitialAIMessage(const FString& InitialMessage)
 {
-	if (bIsInAIInterview && InterviewWidgetInstance)
-		InterviewWidgetInstance->UpdateSubtitle(InitialMessage);
+	if (bIsInAIInterview)
+	{
+		if (InterviewWidgetInstance)
+		{
+			InterviewWidgetInstance->UpdateSubtitle(InitialMessage);
+		}
+		else
+		{
+			// [추가] 위젯이 아직 생성되지 않았다면 캐싱
+			CachedInitialAIMessage = InitialMessage;
+			UE_LOG(LogVoicePC, Log, TEXT("DisplayInitialAIMessage: Widget not ready. Cached message: %s"), *InitialMessage);
+		}
+	}
 }
 
 void ARene_PlayerController::OnAIInterviewFinished(int32 InterviewResultID)
@@ -834,7 +916,15 @@ void ARene_PlayerController::CloseReportAndWebView()
 		}
 		ServerRPC_RequestStandUp();
 		ServerRPC_TeleportToLocation(FVector(-559.999985,69.999981,112.000021));
-		DisableUIControll();
+		
+		if (HasAuthority())
+		{
+			ShowHUD();
+		}
+		else
+		{
+			ServerRPC_ShowHUD();
+		}
 	}
 }
 
@@ -923,4 +1013,25 @@ void ARene_PlayerController::SetAutoMoving(bool bNewAutoMoving)
 {
 	bIsAutoMoving = bNewAutoMoving;
 	UE_LOG(LogVoicePC, Log, TEXT("SetAutoMoving: %s"), bNewAutoMoving ? TEXT("True") : TEXT("False"));
+}
+
+// [추가] AI 면접 시작 요청 (위젯에서 호출)
+void ARene_PlayerController::RequestAIInterviewStart(const FString& URL, int32 UserID, int32 CompanyID, int32 JobGroupID, AActor* TargetActor, ARene_AI_Interviewer* Interviewer)
+{
+	if (AIInterviewManager)
+	{
+		AIInterviewManager->CacheInterviewRequest(URL, UserID, CompanyID, JobGroupID, Interviewer);
+	}
+	else
+	{
+		UE_LOG(LogVoicePC, Error, TEXT("RequestAIInterviewStart: AIInterviewManager is null."));
+	}
+
+	// 이동 시작 (기존 위젯 로직 이동)
+	if (TargetActor)
+	{
+		ServerRPC_TeleportToLocation(FVector(100,510,558)); // 기존 좌표 유지
+		ServerRPC_RequestMoveAndSit(TargetActor->GetActorTransform());
+		UE_LOG(LogVoicePC, Log, TEXT("RequestAIInterviewStart: Movement requested to %s"), *TargetActor->GetName());
+	}
 }

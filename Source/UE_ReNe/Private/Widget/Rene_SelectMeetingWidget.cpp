@@ -9,6 +9,8 @@
 #include "Dom/JsonObject.h" // For JSON objects
 #include "AI/Rene_AI_Interviewer.h" // For ARene_AI_Interviewer
 #include "Global/Rene_GameInstance.h" // For network settings
+#include "Global/Rene_PlayerState.h" // [추가] PlayerState 접근용
+#include "GameFramework/GameStateBase.h" // [추가] GameState 접근용
 #include "EngineUtils.h" // For TActorIterator
 #include "Camera/CameraActor.h" // For ACameraActor
 
@@ -53,6 +55,14 @@ void URene_SelectMeetingWidget::SetActualAIInterviewer(ARene_AI_Interviewer* InA
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Set Actual AI Interviewer: Null reference provided."));
 	}
+}
+
+// [변경] 호스트 정보 자동 탐색으로 인해 더 이상 필수 아님. (호환성 유지 위해 남겨둠)
+void URene_SelectMeetingWidget::SetInterviewDetails(int32 InCompanyID, int32 InJobGroupID)
+{
+	TargetCompanyID = InCompanyID;
+	TargetJobGroupID = InJobGroupID;
+	UE_LOG(LogTemp, Log, TEXT("Interview Details Set (Manual Override): CompanyID=%d, JobGroupID=%d"), TargetCompanyID, TargetJobGroupID);
 }
 
 void URene_SelectMeetingWidget::OnClickedBackButton()
@@ -165,130 +175,74 @@ void URene_SelectMeetingWidget::OnStartAIInterviewClicked()
 	}
 	// --- 설정 가져오기 끝 ---
 
-	FHttpModule& HttpModule = FHttpModule::Get();
-	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
+	// [수정 시작] 데이터 가져오기 로직
+	
+	// 1. user_id: 내 PlayerState에서 가져옴 (로그인된 구직자 ID)
+	int32 RequestUserID = 0;
+	if (ARene_PlayerState* MyPS = PlayerController->GetPlayerState<ARene_PlayerState>())
+	{
+		RequestUserID = FCString::Atoi(*MyPS->GetReneUserId());
+	}
+	
+	if (RequestUserID == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OnStartAIInterviewClicked: UserID is 0. User might not be logged in."));
+	}
 
-	Request->OnProcessRequestComplete().BindUObject(this, &URene_SelectMeetingWidget::OnAIInterviewStartResponse);
-	Request->SetURL(AIInterviewStartURL);
-	Request->SetVerb(TEXT("POST"));
-	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+	// 2. company_id, job_group_id: 호스트(Server) PlayerState에서 가져옴
+	int32 HostCompanyID = 0;
+	int32 HostJobGroupID = 0;
 
-	// Construct JSON request body
-	TSharedPtr<FJsonObject> RequestObj = MakeShared<FJsonObject>();
-	RequestObj->SetNumberField(TEXT("jobseeker_id"), 2); // Placeholder as per API spec 베타
-	RequestObj->SetNumberField(TEXT("company_id"), 4);   // Placeholder as per API spec
-	RequestObj->SetNumberField(TEXT("job_group_id"), 4); // Placeholder as per API spec
+	// 수동 설정값이 있으면 우선 사용 (테스트 목적 등)
+	if (TargetCompanyID > 0 && TargetJobGroupID > 0)
+	{
+		HostCompanyID = TargetCompanyID;
+		HostJobGroupID = TargetJobGroupID;
+	}
+	else
+	{
+		// GameState를 통해 모든 플레이어 순회
+		if (AGameStateBase* GameState = GetWorld()->GetGameState())
+		{
+			for (APlayerState* PS : GameState->PlayerArray)
+			{
+				if (ARene_PlayerState* RenePS = Cast<ARene_PlayerState>(PS))
+				{
+					FReneUserData UserData = RenePS->GetReneUserData();
+					if (UserData.Role.Equals(TEXT("company"), ESearchCase::IgnoreCase))
+					{
+						HostCompanyID = FCString::Atoi(*UserData.ID);
+						HostJobGroupID = UserData.JobGroupID;
+						UE_LOG(LogTemp, Log, TEXT("Found Host Company: ID=%d, JobGroup=%d, Name=%s"), HostCompanyID, HostJobGroupID, *UserData.Name);
+						break; // 호스트를 찾았으므로 중단
+					}
+				}
+			}
+		}
+	}
 
-	FString RequestBody;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
-	FJsonSerializer::Serialize(RequestObj.ToSharedRef(), Writer);
+	// Fallback
+	const int32 FALLBACK_ID = 4; 
+	int32 FinalCompanyID = (HostCompanyID > 0) ? HostCompanyID : FALLBACK_ID;
+	int32 FinalJobGroupID = (HostJobGroupID > 0) ? HostJobGroupID : FALLBACK_ID;
 
-	Request->SetContentAsString(RequestBody);
-	Request->ProcessRequest();
+	if (HostCompanyID == 0 || HostJobGroupID == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OnStartAIInterviewClicked: Could not find Host Company info. Using fallback values (%d, %d)."), FinalCompanyID, FinalJobGroupID);
+	}
+	// [수정 끝]
 
-	UE_LOG(LogTemp, Log, TEXT("Sent AI Interview Start request to: %s"), *AIInterviewStartURL);
+	// [변경] 직접 HTTP 요청 및 이동 호출 -> PC에 위임
+	PlayerController->RequestAIInterviewStart(AIInterviewStartURL, RequestUserID, FinalCompanyID, FinalJobGroupID, AIInterviewTargetActor, ActualAIInterviewer);
 	
 	//	To Infodesk UI
 	OnClickedInterview.Broadcast();
 
-	// The existing move and sit logic can remain here, as the AI's initial greeting will play after the server response.
-	PlayerController->ServerRPC_TeleportToLocation(FVector(100,510,558));
-	PlayerController->ServerRPC_RequestMoveAndSit(AIInterviewTargetActor->GetActorTransform());
-	LOGWARNF(TEXT("Requesting move and sit to: %s"), *AIInterviewTargetActor->GetActorLocation().ToString());
 	this->RemoveFromParent();
 }
 
 void URene_SelectMeetingWidget::OnAIInterviewStartResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-	ARene_PlayerController* PlayerController = Cast<ARene_PlayerController>(GetOwningPlayer());
-	
-	if (!PlayerController)
-	{
-		UE_LOG(LogTemp, Error, TEXT("OnAIInterviewStartResponse: PlayerController is null. Cannot process response."));
-		return;
-	}
-	if (!ActualAIInterviewer)
-	{
-		UE_LOG(LogTemp, Error, TEXT("OnAIInterviewStartResponse: ActualAIInterviewer is null. Cannot play AI voice."));
-		return;
-	}
-
-	if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
-	{
-		FString ResponseBody = Response->GetContentAsString();
-		UE_LOG(LogTemp, Log, TEXT("AI Interview Start successful. Server response: %s"), *ResponseBody);
-
-		TSharedPtr<FJsonObject> JsonObject;
-		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
-
-		if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
-		{
-			FString SessionID;
-			FString AIAudioBase64;
-			FString AIMessage; // For logging or UI display
-
-			if (JsonObject->TryGetStringField(TEXT("session_id"), SessionID) &&
-				JsonObject->TryGetStringField(TEXT("ai_audio_base64"), AIAudioBase64) &&
-				JsonObject->TryGetStringField(TEXT("ai_message"), AIMessage))
-			{
-				PlayerController->SetIsInAIInterview(true);
-				PlayerController->SetAISessionID(SessionID);
-				
-				UE_LOG(LogTemp, Log, TEXT("AI Interview started. SessionID: %s, AI Message: %s"), *SessionID, *AIMessage);
-
-				// Display the initial subtitle message
-				PlayerController->DisplayInitialAIMessage(AIMessage);
-
-				// Switch to the interview camera
-				ACameraActor* InterviewCamera = nullptr;
-				for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
-				{
-					if (It->ActorHasTag(FName("AIInterviewCamera")))
-					{
-						InterviewCamera = *It;
-						break;
-					}
-				}
-
-				if (InterviewCamera)
-				{
-					PlayerController->SetViewTargetWithBlend(InterviewCamera, 0.8f);
-				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("Could not find ACameraActor with tag 'AIInterviewCamera' in the level."));
-				}
-
-				if (!AIAudioBase64.IsEmpty())
-				{
-					ActualAIInterviewer->PlayAIVoiceResponse(AIAudioBase64);
-				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("AI audio (Base64) field is empty in initial server response."));
-				}
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("Failed to parse session_id, ai_audio_base64, or ai_message from AI Interview Start response."));
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to deserialize JSON from AI Interview Start response. Response: %s"), *ResponseBody);
-		}
-	}
-	else
-	{
-		FString ErrorMessage = TEXT("Unknown error");
-		if (Response.IsValid())
-		{
-			ErrorMessage = FString::Printf(TEXT("HTTP %d: %s"), Response->GetResponseCode(), *Response->GetContentAsString());
-		}
-		else
-		{
-			ErrorMessage = TEXT("HTTP request failed or no response received.");
-		}
-		UE_LOG(LogTemp, Error, TEXT("AI Interview Start failed. Reason: %s"), *ErrorMessage);
-	}
+	// 이 함수는 이제 사용되지 않지만, 델리게이트 바인딩이 없으므로 안전함.
+	// 추후 삭제 가능.
 }

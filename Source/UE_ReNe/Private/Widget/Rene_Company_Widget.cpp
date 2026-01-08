@@ -12,6 +12,7 @@
 #include "Global/Rene_PlayerState.h"
 #include "Widget/Rene_ProfileWidget.h"
 #include "Widget/Rene_UserListImplementWidget.h"
+#include "Widget/Rene_DashBoardWidget.h" // 헤더 추가
 
 void URene_Company_Widget::NativeConstruct()
 {
@@ -47,7 +48,24 @@ void URene_Company_Widget::OnClickedMainToDash()
 	if (!IsValid(sw_Switcher)) return;
 	
 	sw_Switcher->SetActiveWidgetIndex(1);
-	
+
+	// [추가] 대시보드 위젯을 찾아 URL 새로고침 (로그 추가)
+	if (UWidget* ActiveWidget = sw_Switcher->GetActiveWidget())
+	{
+		if (URene_DashBoardWidget* DashBoardWidget = Cast<URene_DashBoardWidget>(ActiveWidget))
+		{
+			UE_LOG(LogTemp, Log, TEXT("CompanyWidget: Found DashBoardWidget. Refreshing URL..."));
+			DashBoardWidget->RefreshDashboardURL();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("CompanyWidget: Active widget is NOT URene_DashBoardWidget. Class: %s"), *ActiveWidget->GetClass()->GetName());
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CompanyWidget: No active widget found in switcher."));
+	}
 }
 
 void URene_Company_Widget::OnClickedDashToMain()

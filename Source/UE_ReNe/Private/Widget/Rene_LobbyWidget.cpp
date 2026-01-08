@@ -7,6 +7,8 @@
 #include "Global/Rene_GameInstance.h"
 #include "Widget/Rene_ProfileWidget.h"
 #include "Widget/Rene_SessionInfoWidget.h"
+#include "Widget/Rene_DashBoardWidget.h" // 헤더 추가
+#include "UE_ReNe.h" // 로그 매크로 추가
 
 void URene_LobbyWidget::NativeConstruct()
 {
@@ -79,12 +81,20 @@ void URene_LobbyWidget::OnClickedBack()
 void URene_LobbyWidget::OnClickedDash()
 {
 	Switcher->SetActiveWidgetIndex(2);
+
+	// [수정] Switcher 구조 문제(CanvasPanel 등)를 피하기 위해 BindWidget 변수 직접 사용
+	if (WBP_DashBoardUI)
+	{
+		UE_LOG(LogTemp, Log, TEXT("LobbyWidget: Using BindWidget WBP_DashBoardUI. Refreshing URL..."));
+		WBP_DashBoardUI->RefreshDashboardURL();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("LobbyWidget: WBP_DashBoardUI is null! Check BindWidget name in Blueprint."));
+	}
 }
 
 void URene_LobbyWidget::OnClickedReturnMain()
 {
 	Switcher->SetActiveWidgetIndex(0);
 }
-
-
-
