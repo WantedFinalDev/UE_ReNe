@@ -29,7 +29,8 @@ public class UE_ReNe : ModuleRules
 			"DesktopPlatform",
 			"WebBrowser",
 			"Json",
-			"JsonUtilities"
+			"JsonUtilities",
+			"GameplayTags"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

@@ -1,0 +1,13 @@
+﻿#pragma once
+
+#include "NativeGameplayTags.h"
+
+// For Use WidgetStack ID 
+namespace FE_GameplayTags
+{
+	// ProjectAPI + UE_DECLARE_GAMEPLAY_TAG_EXTERN(Name);
+	UE_RENE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(FE_WidgetStack_Modal);
+	UE_RENE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(FE_WidgetStack_GameMenu);
+	UE_RENE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(FE_WidgetStack_HUD);
+	UE_RENE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(FE_WidgetStack_FrontEnd);
+}

@@ -12,7 +12,8 @@
 				"Engine",
 				"AIModule",
 				"UMG",
-				"WebBrowserWidget"
+				"WebBrowserWidget",
+				"CommonUI"
 			]
 		}
 	],
@@ -75,6 +76,10 @@
 				"Win64",
 				"Linux"
 			]
+		},
+		{
+			"Name": "CommonUI",
+			"Enabled": true
 		}
 	]
 }
