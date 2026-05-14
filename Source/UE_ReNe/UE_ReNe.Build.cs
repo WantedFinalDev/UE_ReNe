@@ -30,7 +30,8 @@ public class UE_ReNe : ModuleRules
 			"WebBrowser",
 			"Json",
 			"JsonUtilities",
-			"GameplayTags"
+			"GameplayTags",
+			"CommonUI"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

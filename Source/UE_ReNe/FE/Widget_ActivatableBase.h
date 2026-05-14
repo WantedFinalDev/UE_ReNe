@@ -4,6 +4,8 @@
 #include "CommonActivatableWidget.h"
 #include "Widget_ActivatableBase.generated.h"
 
+class AFE_PlayerController;
+
 UCLASS(Abstract, BlueprintType, meta=(DisableNativeTick))
 class UE_RENE_API UWidget_ActivatableBase : public UCommonActivatableWidget
 {
@@ -11,7 +13,8 @@ class UE_RENE_API UWidget_ActivatableBase : public UCommonActivatableWidget
 	
 	/* Method */
 public:
-
+	UFUNCTION(BlueprintPure)
+	AFE_PlayerController* GetOwningFrontEndPC();
 		
 
 
@@ -29,7 +32,7 @@ public:
 
 
 private:
-
+	TWeakObjectPtr<AFE_PlayerController> CachedOwnPC;
 
 
 
