@@ -7,7 +7,7 @@
 #include "Rene_LoginManager.generated.h"
 
 // Renamed delegate to avoid conflict with OnlineIdentityInterface.h
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FReneOnLoginCompleteDelegate, bool, bSuccess, const FReneUserData&, UserData, FString, ErrorMessage);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FReneOnLoginCompleteDelegate, bool, bSuccess, const FReneUserData&, UserData, const FString&, ErrorMessage);
 
 /**
  * Manages user login via HTTP requests.

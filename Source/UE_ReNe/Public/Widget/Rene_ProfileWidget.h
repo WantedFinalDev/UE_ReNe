@@ -29,7 +29,7 @@ public:
 	UFUNCTION()
 	void OnClickReturn();
 	UFUNCTION()
-	void SetProfileName(bool bSuccess, const FReneUserData& UserData, FString ErrorMessage);
+	void SetProfileName(bool bSuccess, const FReneUserData& UserData, const FString& ErrorMessage);
 	
 	
 	

@@ -1,28 +1,30 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "CommonActivatableWidget.h"
-#include "Blueprint/UserWidget.h"
-#include "Components/CheckBox.h"
-#include "Components/TextBlock.h"
-#include "Data/ReneUserData.h" // FReneUserData 사용을 위해 추가
 #include "FE/Widget_ActivatableBase.h"
-#include "Rene_StartWidget.generated.h"
-
+#include "Data/ReneUserData.h"
+#include "Widget_Login_conv.generated.h"
 
 class UWidgetSwitcher;
-class URene_LobbyWidget;
+class UCheckBox;
 class UEditableTextBox;
+class UTextBlock;
 class UButton;
 
 UCLASS()
-class UE_RENE_API URene_StartWidget : public UWidget_ActivatableBase
+class UE_RENE_API UWidget_Login_conv : public UWidget_ActivatableBase
 {
 	GENERATED_BODY()
-	
+
 	/* Method */
 public:
-	virtual void NativeConstruct() override;
+	UFUNCTION(BlueprintNativeEvent)
+	void OnLoginResponse(bool bSuccess, const FReneUserData& UserData, const FString& ErrorMessage);
+	
+	virtual void OnLoginResponse_Implementation(bool bSuccess, const FReneUserData& UserData, const FString& ErrorMessage);
+	
+protected:
+	virtual void NativeOnInitialized() override;
 	
 	
 	
@@ -31,20 +33,14 @@ private:
 	void OnClickedEnter();
 	UFUNCTION()
 	void OnClickedExit();
-	UFUNCTION()
-	void OnClickedReturn();
+	
 
-	UFUNCTION()
-	void OnLoginResponse(bool bSuccess, const FReneUserData& UserData, const FString& ErrorMessage);
 	
 	
 	
 	
 	/* Field */
-public:
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UWidgetSwitcher> sw_Switcher;
-	
+public:	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> btn_Enter;
 	
@@ -58,9 +54,6 @@ public:
 	TObjectPtr<UEditableTextBox> etxt_PW;
 	
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<URene_LobbyWidget> WBP_LobbyUI;
-	
-	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCheckBox> cbox_Company;
 	
 	UPROPERTY(meta=(BindWidget))
@@ -69,8 +62,6 @@ public:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UTextBlock> txt_Error;
 	
+	
 private:
-	
-	
-	
 };

@@ -53,7 +53,7 @@ private:
 	void OnJoinReneSession(FName session_name, EOnJoinSessionCompleteResult::Type result);
 
 	UFUNCTION()
-	void OnLoginManagerComplete(bool bSuccess, const FReneUserData& UserData, FString ErrorMessage);
+	void OnLoginManagerComplete(bool bSuccess, const FReneUserData& UserData, const FString& ErrorMessage);
 	
 	
 	/* Field */

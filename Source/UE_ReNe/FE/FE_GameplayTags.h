@@ -14,5 +14,6 @@ namespace FE_GameplayTags
 	// FE Widgets
 	UE_RENE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(FE_Widget_PressAnyKeyScreen);
 	UE_RENE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(FE_Widget_MainMenuScreen);
+	UE_RENE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(LoginScreen);
 	
 }

@@ -14,7 +14,7 @@ void ARene_Start_GameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	checkf(IsValid(StartUIClass), TEXT("WBP_StartUI is Empty"));
+	// checkf(IsValid(StartUIClass), TEXT("WBP_StartUI is Empty"));
 	
 }
 
@@ -24,10 +24,12 @@ void ARene_Start_GameMode::PostLogin(APlayerController* NewPlayer)
 	
 	LOGWARN();
 	
+	/*
 	NewPlayer->bShowMouseCursor = true;
 	FInputModeUIOnly im;
 	NewPlayer->SetInputMode(im);
 	
 	StartUI = CreateWidget<URene_StartWidget>(GetWorld(), StartUIClass);
 	StartUI->AddToViewport();
+	*/
 }

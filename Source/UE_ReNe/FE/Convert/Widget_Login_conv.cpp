@@ -1,31 +1,32 @@
-#include "Widget/Rene_StartWidget.h"
+﻿#include "Widget_Login_conv.h"
 
 #include "UE_ReNe.h"
 #include "Components/Button.h"
+#include "Components/CheckBox.h"
 #include "Components/EditableTextBox.h"
-#include "Components/WidgetSwitcher.h"
+#include "Components/TextBlock.h"
 #include "Global/Rene_GameInstance.h"
-#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "Widget/Rene_LobbyWidget.h"
-#include "Widget/Rene_ProfileWidget.h"
 
-void URene_StartWidget::NativeConstruct()
+
+void UWidget_Login_conv::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 	
-	btn_Enter->OnClicked.AddDynamic(this, &URene_StartWidget::OnClickedEnter);
-	btn_Exit->OnClicked.AddDynamic(this, &URene_StartWidget::OnClickedExit);
-	WBP_LobbyUI->WBP_ProfileUI->OnClickReturnDynamic.AddDynamic(this, &URene_StartWidget::OnClickedReturn);
+	if (btn_Enter&&btn_Exit)
+	{
+		btn_Enter->OnClicked.AddDynamic(this, &UWidget_Login_conv::OnClickedEnter);
+		btn_Exit->OnClicked.AddDynamic(this, &UWidget_Login_conv::OnClickedExit);
+	}
 
 	// Bind to GameInstance login delegate
 	if (URene_GameInstance* gi = Cast<URene_GameInstance>(GetGameInstance()))
 	{
-		gi->OnLoginComplete.AddDynamic(this, &URene_StartWidget::OnLoginResponse);
+		gi->OnLoginComplete.AddDynamic(this, &UWidget_Login_conv::OnLoginResponse);
 	}
 }
 
-void URene_StartWidget::OnClickedEnter()
+void UWidget_Login_conv::OnClickedEnter()
 {
 	if (etxt_ID->GetText().ToString() == TEXT("Test"))
 	{
@@ -45,6 +46,7 @@ void URene_StartWidget::OnClickedEnter()
 			// Request Login via GameInstance
 			gi->RequestLogin(etxt_ID->GetText().ToString(), etxt_PW->GetText().ToString(), userRole);
 		}
+		return;
 	}
 	
 	if (cbox_Company->IsChecked() && cbox_Seeker->IsChecked())
@@ -91,7 +93,12 @@ void URene_StartWidget::OnClickedEnter()
 	}
 }
 
-void URene_StartWidget::OnLoginResponse(bool bSuccess, const FReneUserData& UserData, const FString& ErrorMessage)
+void UWidget_Login_conv::OnClickedExit()
+{
+	UKismetSystemLibrary::QuitGame(GetWorld(), GetWorld()->GetFirstPlayerController(), EQuitPreference::Quit, false);
+}
+
+void UWidget_Login_conv::OnLoginResponse_Implementation(bool bSuccess, const FReneUserData& UserData, const FString& ErrorMessage)
 {
 	// Re-enable button
 	btn_Enter->SetIsEnabled(true);
@@ -100,23 +107,15 @@ void URene_StartWidget::OnLoginResponse(bool bSuccess, const FReneUserData& User
 	{
 		// Login Successful
 		txt_Error->SetText(FText::GetEmpty());
-		sw_Switcher->SetActiveWidgetIndex(1);
+		
+		////*********////
+		// sw_Switcher->SetActiveWidgetIndex(1);
+		// Push Widget Stack 삽입 필요
 	}
 	else
 	{
 		// Login Failed
 		txt_Error->SetText(FText::FromString(ErrorMessage));
-	}
+	}	
 }
-
-void URene_StartWidget::OnClickedExit()
-{
-	UKismetSystemLibrary::QuitGame(GetWorld(), GetWorld()->GetFirstPlayerController(), EQuitPreference::Quit, false);
-}
-
-void URene_StartWidget::OnClickedReturn()
-{
-	sw_Switcher->SetActiveWidgetIndex(0);
-}
-
 

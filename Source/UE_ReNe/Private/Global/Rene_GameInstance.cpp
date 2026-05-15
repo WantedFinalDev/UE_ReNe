@@ -175,7 +175,7 @@ void URene_GameInstance::RequestLogin(const FString& Email, const FString& Passw
 	LoginManager->RequestLogin(Email, Password, Role, CachedNetworkSettings.ServerBaseURL, Endpoint);
 }
 
-void URene_GameInstance::OnLoginManagerComplete(bool bSuccess, const FReneUserData& UserData, FString ErrorMessage)
+void URene_GameInstance::OnLoginManagerComplete(bool bSuccess, const FReneUserData& UserData, const FString& ErrorMessage)
 {
 	if (bSuccess)
 	{

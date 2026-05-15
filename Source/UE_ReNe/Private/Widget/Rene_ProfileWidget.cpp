@@ -71,7 +71,7 @@ void URene_ProfileWidget::OnClickReturn()
 	OnClickReturnDynamic.Broadcast();
 }
 
-void URene_ProfileWidget::SetProfileName(bool bSuccess, const FReneUserData& UserData, FString ErrorMessage)
+void URene_ProfileWidget::SetProfileName(bool bSuccess, const FReneUserData& UserData, const FString& ErrorMessage)
 {
 	if (bSuccess)
 		txt_UserName->SetText(FText::FromString(UserData.Name));

@@ -11,6 +11,7 @@ namespace FE_GameplayTags
 	// widgets
 	UE_DEFINE_GAMEPLAY_TAG(FE_Widget_PressAnyKeyScreen, "FE.Widget.PressAnyKeyScreen");
 	UE_DEFINE_GAMEPLAY_TAG(FE_Widget_MainMenuScreen, "FE.Widget.MainMenuScreen");
+	UE_DEFINE_GAMEPLAY_TAG(LoginScreen, "FE.Widget.Login");
 	
 }
 

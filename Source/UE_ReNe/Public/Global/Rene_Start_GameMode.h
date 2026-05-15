@@ -29,14 +29,14 @@ public:
 	 *	TODO : LobbyWidget을 WidgetSwitcher로 전환&로드
 	 *	
 	 */
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<class URene_StartWidget> StartUIClass;
+	// UPROPERTY(EditAnywhere)
+	// TSubclassOf<class URene_StartWidget> StartUIClass;
 	
 	
 	
 private:
-	UPROPERTY()
-	class URene_StartWidget* StartUI;
+	/*UPROPERTY()
+	class URene_StartWidget* StartUI;*/
 	
 	
 	
